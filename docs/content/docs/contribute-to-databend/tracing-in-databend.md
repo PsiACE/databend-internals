@@ -1,26 +1,26 @@
 +++
-title = "Databend 全链路跟踪"
-description = "全链路跟踪意味着能够追踪到每一个调用请求的完整调用链路、收集性能数据并反馈异常。Databend 使用 tracing 赋能可观测性，实现全链路跟踪。"
+title = "Databend 全链路追踪"
+description = "全链路追踪意味着能够追踪到每一个调用请求的完整调用链路、收集性能数据并反馈异常。Databend 使用 tracing 赋能可观测性，实现全链路追踪。"
 draft = false
 weight = 630
 sort_by = "weight"
 template = "docs/page.html"
 
 [extra]
-lead = "全链路跟踪意味着能够追踪到每一个调用请求的完整调用链路、收集性能数据并反馈异常。Databend 使用 tracing 赋能可观测性，实现全链路跟踪。"
+lead = "全链路追踪意味着能够追踪到每一个调用请求的完整调用链路、收集性能数据并反馈异常。Databend 使用 tracing 赋能可观测性，实现全链路追踪。"
 toc = true
 top = false
 +++
 
 ## Databend 与 Tracing
 
-初步了解 Databend 怎么实现全链路跟踪。
+初步了解 Databend 怎么实现全链路追踪。
 
 ### 初识 Tracing
 
 ![Tracing Logo](/contribute-to-databend/tracing-in-databend/01-tracing.svg)
 
-Tracing 由 Tokio 项目维护，无需 Tokio 运行时，检测 Rust 程序来收集结构化的、基于事件的诊断信息。
+Tracing 是由 Tokio 团队维护的 Rust 应用追踪框架，用来收集结构化的、基于事件的诊断信息。
 
 项目地址：https://github.com/tokio-rs/tracing
 
@@ -110,7 +110,7 @@ tracing::subscriber::set_global_default(subscriber)
 }
 ```
 
-### 观测 Databend 跟踪的方式
+### 观测 Databend 追踪的方式
 
 Databend 原生提供了多种观测方式，以方便诊断和调试：
 
@@ -120,15 +120,15 @@ Databend 原生提供了多种观测方式，以方便诊断和调试：
 4. jaeger ：运行 jaeger ，访问 http://127.0.0.1:16686/ 。
 5. console ：按特定方式构建后，运行 tokio-console 。
 
-## Jaeger 分布式跟踪
+## Jaeger 分布式追踪
 
-使用 Jaeger 对 Databend 进行全链路跟踪。
+使用 Jaeger 对 Databend 进行全链路追踪。
 
 ### Opentelemetry & Jaeger
 
-**OpenTelemetry** 是工具、API 和 SDK 的集合。使用它来检测、生成、收集和导出遥测数据（度量、日志和跟踪），以帮助您分析软件的性能和行为。
+**OpenTelemetry** 是工具、API 和 SDK 的集合。使用它来检测、生成、收集和导出遥测数据（度量、日志和追踪），以帮助您分析软件的性能和行为。
 
-**Jaeger** 是一个开源的端到端分布式跟踪系统。由 Uber 捐赠给 CNCF 。它可以用于监视基于微服务的分布式系统，提供以下能力：
+**Jaeger** 是一个开源的端到端分布式追踪系统。由 Uber 捐赠给 CNCF 。它可以用于监视基于微服务的分布式系统，提供以下能力：
 
 - 分布式上下文传播
 - 分布式事务监视
@@ -153,7 +153,7 @@ Databend 原生提供了多种观测方式，以方便诊断和调试：
 
 _x 轴是执行时刻，y 轴是持续的时间，圆点反映 span 的聚集程度。_
 
-执行下述语句即可得到上图所示跟踪结果：
+执行下述语句即可得到上图所示追踪结果：
 
 ```SQL
 CREATE TABLE t1(a INT);
@@ -163,7 +163,7 @@ INSERT INTO t1 SELECT * FROM t1;
 
 **Timeline**
 
-下图是点击最大的圆点得到的跟踪情况：
+下图是点击最大的圆点得到的追踪情况：
 
 ![span tracing](/contribute-to-databend/tracing-in-databend/04-jaeger-span-tracing.png)
 
@@ -246,7 +246,7 @@ tokio-console 是专为异步程序设计的调试与诊断工具，能够列出
 
 ## 还能做什么
 
-与分布式跟踪和日志系统相关的一些其他内容。
+与分布式追踪和日志系统相关的一些其他内容。
 
 ### 可观测性 + +
 
