@@ -18,5 +18,5 @@ jobs:
         env:
           PAGES_BRANCH: gh-pages
           BUILD_DIR: docs
-          TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TOKEN: ${{ secrets.INTERNALS_TOKEN }}
           BUILD_FLAGS: --drafts
