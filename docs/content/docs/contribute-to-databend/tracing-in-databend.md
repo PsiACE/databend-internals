@@ -18,7 +18,7 @@ top = false
 
 ### 初识 Tracing
 
-![Tracing Logo](/contribute-to-databend/tracing-in-databend/01-tracing.svg)
+![Tracing Logo](https://psiace.github.io/databend-internals/contribute-to-databend/tracing-in-databend/01-tracing.svg)
 
 Tracing 是由 Tokio 团队维护的 Rust 应用追踪框架，用来收集结构化的、基于事件的诊断信息。
 
@@ -136,7 +136,7 @@ Databend 原生提供了多种观测方式，以方便诊断和调试：
 - 服务依赖性分析
 - 性能/延迟优化
 
-![Opentelemetry & Jaeger](/contribute-to-databend/tracing-in-databend/02-jaeger-and-opentelemetry.png)
+![Opentelemetry & Jaeger](https://psiace.github.io/databend-internals/contribute-to-databend/tracing-in-databend/02-jaeger-and-opentelemetry.png)
 
 ### Step by Step
 
@@ -149,7 +149,7 @@ Databend 原生提供了多种观测方式，以方便诊断和调试：
 
 ### 结果探索
 
-![dot graph](/contribute-to-databend/tracing-in-databend/03-jaeger-dot-graph.png)
+![dot graph](https://psiace.github.io/databend-internals/contribute-to-databend/tracing-in-databend/03-jaeger-dot-graph.png)
 
 _x 轴是执行时刻，y 轴是持续的时间，圆点反映 span 的聚集程度。_
 
@@ -165,19 +165,19 @@ INSERT INTO t1 SELECT * FROM t1;
 
 下图是点击最大的圆点得到的追踪情况：
 
-![span tracing](/contribute-to-databend/tracing-in-databend/04-jaeger-span-tracing.png)
+![span tracing](https://psiace.github.io/databend-internals/contribute-to-databend/tracing-in-databend/04-jaeger-span-tracing.png)
 
 使用 timeline 模式来展现 tracing 的各个跨度之间的关系。以时间为主线进行分析,方便使用者观看在某个时间点观看程序信息。
 
 点开第一个跨度，可以看到这是执行 `INSERT INTO t1 SELECT *FROM t1` 查询时的情况。
 
-![span info](/contribute-to-databend/tracing-in-databend/05-jaeger-span-info.png)
+![span info](https://psiace.github.io/databend-internals/contribute-to-databend/tracing-in-databend/05-jaeger-span-info.png)
 
 **Graph**
 
 切换到 graph 模式，可以看到各个 span 之间的调用链，每个 span 具体用时 ,以及百分比。
 
-![span graph](/contribute-to-databend/tracing-in-databend/06-jaeger-span-graph.png)
+![span graph](https://psiace.github.io/databend-internals/contribute-to-databend/tracing-in-databend/06-jaeger-span-graph.png)
 
 通过这个视图使用者很容易知道系统瓶颈,快速定位问题。
 
@@ -185,7 +185,7 @@ INSERT INTO t1 SELECT * FROM t1;
 
 连起来的各个部分形成整个 trace 的调用链。因为比较时一般会比较两个相同类型的调用，所以看到的会是重合后的视图。
 
-![span compare](/contribute-to-databend/tracing-in-databend/07-jaeger-span-compare.png)
+![span compare](https://psiace.github.io/databend-internals/contribute-to-databend/tracing-in-databend/07-jaeger-span-compare.png)
 
 对于颜色的一个说明：
 
@@ -200,7 +200,7 @@ tokio-rs 团队出品的诊断和调试工具，可以帮助我们诊断与 toki
 
 ### console 是什么
 
-![tokio console](/contribute-to-databend/tracing-in-databend/08-tokio-console.png)
+![tokio console](https://psiace.github.io/databend-internals/contribute-to-databend/tracing-in-databend/08-tokio-console.png)
 
 tokio-console 是专为异步程序设计的调试与诊断工具，能够列出 tokio 的任务，提供对程序的任务和资源的实时、易于导航的视图，总结了它们的当前状态和历史行为。主要包含以下组件：
 
@@ -226,13 +226,13 @@ tokio-console 是专为异步程序设计的调试与诊断工具，能够列出
 1. 任务是一个轻量级的、非阻塞的执行单元。类似操作系统的线程，但是是由 tokio 运行时管理，一般叫做“绿色线程”，与 Go 的 goroutine，Kotlin 的 coroutine 类似。
 2. 任务是协同调度的。大多数操作系统实现抢占式多任务。操作系统允许每个线程运行一段时间，然后抢占它，暂停该线程并切换到另一个线程。另一方面，任务实现协同多任务。一个任务被允许运行直到它让出执行权，运行时会切换到执行下一个任务。
 
-![tokio console basic](/contribute-to-databend/tracing-in-databend/09-tokio-console-basic.png)
+![tokio console basic](https://psiace.github.io/databend-internals/contribute-to-databend/tracing-in-databend/09-tokio-console-basic.png)
 
 **基础视图**
 
 通过左右切换，可以得到总忙时间或轮询次数等指标对任务进行排序。控制台通过高亮来提示较大差异，比如从毫秒到秒的切换。
 
-![tokio console sort](/contribute-to-databend/tracing-in-databend/10-tokio-console-sort.png)
+![tokio console sort](https://psiace.github.io/databend-internals/contribute-to-databend/tracing-in-databend/10-tokio-console-sort.png)
 
 控制台还实现了一个“警告”系统。通过监视应用程序中任务的运行时操作，控制台可以检测可能提示 bug 或性能问题的行为模式，并突出显示这些行为模式供用户分析。比如已经运行了很长时间而没有让步的任务，唤醒的次数比被其他任务唤醒的次数还要多的任务。
 
@@ -240,7 +240,7 @@ tokio-console 是专为异步程序设计的调试与诊断工具，能够列出
 
 上下切换选中任务，enter 查看关于每个任务的翔实数据，比如轮询持续时间的直方图。
 
-![tokio console task](/contribute-to-databend/tracing-in-databend/11-tokio-console-task.png)
+![tokio console task](https://psiace.github.io/databend-internals/contribute-to-databend/tracing-in-databend/11-tokio-console-task.png)
 
 不仅列出任务。console 还会插入异步互斥和信号量等资源。Tokio Console 的资源详细信息视图显示了哪些任务已经进入临界区，哪些任务正在等待获得访问权限。
 
