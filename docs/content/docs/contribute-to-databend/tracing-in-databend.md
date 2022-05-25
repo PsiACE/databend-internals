@@ -10,6 +10,7 @@ template = "docs/page.html"
 lead = "全链路追踪意味着能够追踪到每一个调用请求的完整调用链路、收集性能数据并反馈异常。Databend 使用 tracing 赋能可观测性，实现全链路追踪。"
 toc = true
 top = false
+giscus = true
 +++
 
 ## Databend 与 Tracing

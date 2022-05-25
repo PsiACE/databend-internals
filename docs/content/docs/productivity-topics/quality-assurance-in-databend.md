@@ -10,6 +10,7 @@ template = "docs/page.html"
 lead = "<blockquote>质量保障（Quality Assurance）用于确认产品和服务能够满足规定的质量需求。让我们一起来看一下 Databend 的质量保障实践。</blockquote>"
 toc = true
 top = false
+giscus = true
 +++
 
 作为从 Day 1 就开源的现代云数仓，Databend 依托于 GitHub Actions 建立了一套相对完备的质量保障体系，以支撑快速迭代。
