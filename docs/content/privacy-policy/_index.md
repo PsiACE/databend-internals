@@ -21,7 +21,7 @@ __TLDR__: 本站不使用 _Cookies_ 且不收集任何个人数据。
 
 ## 联络我们
 
-如果你有任何疑问，请随时 [联络我们](https://github.com/psiace/databend-internals) 。
+如果你有任何疑问，请随时联络 <psiace@datafuselabs.com> 进行沟通。
 
 ---
 
