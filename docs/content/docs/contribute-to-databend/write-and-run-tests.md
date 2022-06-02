@@ -1,5 +1,5 @@
 +++
-title = "编写和运行测试"
+title = "如何为 Databend 添加新的测试"
 description = "测试是提高软件健壮性、加速迭代进程的不二法宝。本文将会介绍如何为 Databend 添加不同种类的测试。"
 draft = false
 weight = 620
@@ -7,7 +7,7 @@ sort_by = "weight"
 template = "docs/page.html"
 
 [extra]
-lead = "测试是提高软件健壮性、加速迭代进程的不二法宝。本文将会介绍如何为 Databend 添加并运行不同种类的测试。"
+lead = "测试是提高软件健壮性、加速迭代进程的不二法宝。本文将会介绍如何为 Databend 添加不同种类的测试。"
 toc = true
 top = false
 giscus = true
@@ -110,3 +110,85 @@ error:
 二者的区别在于 `make unit-test` 封装了 ulimit 命令控制最大文件数和栈的大小以确保测试能够顺利运行，如果使用 MacOS 则更建议使用 `make unit-test` 。
 
 通过过滤机制，可以轻松指定运行名字中具有特定内容的测试，例如 `cargo test test_expr_error` 。
+
+## 如何编写和运行功能测试
+
+在全新的 SQL 逻辑测试加入之后，功能测试暂时出现两种方案并行的情况，在接下来的一段时间应该会逐步过渡到 SQL 逻辑测试。
+
+从本质上讲，这两类功能测试都遵循 Golden Files 风格，总体上的流程都是先启动 databend 实例，然后使用对应的客户端/驱动去执行查询，再比较查询结果和预期结果之间的差异，并判断测试是否通过。
+
+sqllogictest 从设计上会提供更全面的能力：
+
+- 拓展比较结果文件的方式到其他协议（涵盖 http handler）
+- 提示每个语句的结果
+- 提供错误处理的能力
+- 支持排序、重试等测试逻辑
+
+### 编写
+
+**stateless/statefull 测试**
+
+stateless/statefull 测试放在 `tests/suites` 目录下。
+
+输入是一系列 sql ，对应目录中的 `*.sql` 文件。
+
+```sql
+SELECT '==Array(Int32)==';
+
+CREATE TABLE IF NOT EXISTS t2(id Int null, arr Array(Int32) null) Engine = Fuse;
+
+INSERT INTO t2 VALUES(1, [1,2,3]);
+INSERT INTO t2 VALUES(2, [1,2,4]);
+INSERT INTO t2 VALUES(3, [3,4,5]);
+SELECT max(arr), min(arr) FROM t2;
+SELECT arg_max(id, arr), arg_min(id, arr) FROM (SELECT id, arr FROM t2);
+```
+
+输出是一系列纯文本，如果没有输出则需要置空，对应目录中的 `*.result` 文件。
+
+```text
+==Array(Int32)==
+[3, 4, 5]	[1, 2, 3]
+3	1
+```
+
+对于 SQL 中存在错误的情况，有两种方式：
+
+- 既可以沿用上面的方式，此时同样需要在 result 中标注。
+- 也可以采用 `ErrorCode` 注释的方式，这里在 result 中置空就好。
+
+```sql
+SELECT INET_ATON('hello');-- {ErrorCode 1060}
+```
+
+**sqllogictest 测试**
+
+sqllogictest 测试放在 `tests/logictest` 目录下。
+
+语句规范在 sqlite sqllogictest 的基础上进行拓展，可以分成以下几类：
+
+- `statement ok` ：SQL 语句正确，且成功执行。
+- `statement error <error regex>` ：SQL 语句输出期望的错误。
+- `statement query <desired_query_schema_type> <options> <labels>` ：SQL语句成功执行并输出预期结果。
+
+```sql
+statement query B label(mysql,http)
+select count(1) > 1 from information_schema.columns;
+
+----  mysql
+1
+
+----  http
+true
+```
+
+上面的例子展示了如何对 mysql 和 http 分别设计对应的输出结果。
+
+sqllogictest 同样支持生成测试用例 `python3 gen_suites.py` 。
+
+### 运行
+
+这几类测试都有对应的 `make` 命令：
+
+- `stateless` 测试：`make stateless-test` 。
+- `sqllogictest` 测试：`make sqllogic-test` 。
