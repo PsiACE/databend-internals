@@ -32,7 +32,7 @@ Databend 的单元测试组织形式有别于一般的 Rust 项目，是直接�
 
 可以简单地将单元测试分为两类，一类是不需要外部文件介入的纯 Rust 测试，一类是 Golden Files 测试。
 
-**纯 Rust 测试**
+**Rust 测试**
 
 与平时编写 Rust 单元测试相同，只是引用待测试 crate 时需要使用该 crate 的名字，且待测试的内容需要设为 `pub` 。另外，Databend 内部有一些用于模拟全局状态的函数，可能会有助于编写测试。
 
@@ -111,6 +111,56 @@ error:
 
 通过过滤机制，可以轻松指定运行名字中具有特定内容的测试，例如 `cargo test test_expr_error` 。
 
+### 排查
+
+**Rust 测试**
+
+同其他项目中的 Rust 测试一样，你可以根据友好的错误提示轻松定位出现故障的测试。如果需要详细的 Backtrace ，可以在运行测试命令时添加环境变量 `RUST_BACKTRACE=1` 。
+
+```shell
+failures:
+
+---- buffer::buffer_read_number_ext::test_read_number_ext stdout ----
+Error: Code: 1046, displayText = Cannot parse value:[] to number type, cause: lexical parse error: 'the string to parse was empty' at index 0.
+
+<Backtrace disabled by default. Please use RUST_BACKTRACE=1 to enable> 
+thread 'buffer::buffer_read_number_ext::test_read_number_ext' panicked at 'assertion failed: `(left == right)`
+  left: `1`,
+ right: `0`: the test returned a termination value with a non-zero status code (1) which indicates a failure', /rustc/cd282d7f75da9080fda0f1740a729516e7fbec68/library/test/src/lib.rs:185:5
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    buffer::buffer_read_number_ext::test_read_number_ext
+
+test result: FAILED. 19 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+error: test failed, to rerun pass '-p common-io --test it'
+```
+
+**Golden Files 测试**
+
+虽然 Golden Files 测试使用与 Rust 测试同样的命令执行，但错误提示就不那么友好了：
+
+```shell
+thread 'parser::test_expr' panicked at 'assertion failed: edit distance between...is 4 and not 0, see diffset above', /home/psiace/.cargo/registry/src/github.com-1ecc6299db9ec823/goldenfile-1.3.0/src/differs.rs:15:5
+
+
+failures:
+    parser::test_expr
+    parser::test_expr_error
+
+test result: FAILED. 9 passed; 2 failed; 0 ignored; 0 measured; 0 filtered out; finished in 3.07
+```
+
+每个 goldenfiles 测试都是由若干子测试组成，即便告知是哪个错误也并不好定位。尽管向上滚动终端可以查看 diff ，但受限于缓冲区和空格的显示问题，也不能很好的处理测试中出现的全部问题。
+
+这里提供一个简单的流程以方便排查：
+
+1. 确保之前的更改都已经提交，然后运行 `REGENERATE_GOLDENFILES=1 cargo test -p <package> --test it` 。
+2. 执行 `git diff` 来显示前后 goldenfiles 文件的差异。
+3. 仔细辨别问题出现原因，确定是失误还是存在其他问题。
+
 ## 如何编写和运行功能测试
 
 在全新的 SQL 逻辑测试加入之后，功能测试暂时出现两种方案并行的情况，在接下来的一段时间应该会逐步过渡到 SQL 逻辑测试。
@@ -188,7 +238,64 @@ sqllogictest 同样支持生成测试用例 `python3 gen_suites.py` 。
 
 ### 运行
 
-这几类测试都有对应的 `make` 命令：
+> 由于 stateless/statefull 测试和 sqllogictest 测试均由 Python 编写，在运行前请确保你已经安装全部的依赖。
 
-- `stateless` 测试：`make stateless-test` 。
-- `sqllogictest` 测试：`make sqllogic-test` 。
+这几类测试都有对应的 `make` 命令，并支持集群模式测试：
+
+- `stateless` 测试：`make stateless-test` & `make stateless-cluster-test` 。
+- `stateful` 测试：`make stateful-test` & `make stateful-cluster-test` 。（需要启动 MinIO，并配置好所需文件，本地跑比较麻烦）
+- `sqllogictest` 测试：`make sqllogic-test` & `make sqllogic-cluster-test` 。
+
+### 排查
+
+**stateless/statefull 测试**
+
+目前 stateless/statefull 测试能够提供文件级的报错和 Diff ，但遗憾是，执行无法确定具体报错语句是哪一条。
+
+```
+02_0057_function_nullif:                                                [ FAIL ] - result differs with:
+--- /projects/datafuselabs/databend/tests/suites/0_stateless/02_function/02_0057_function_nullif.result
++++ /projects/datafuselabs/databend/tests/suites/0_stateless/02_function/02_0057_function_nullif.stdout
+@@ -3,7 +3,7 @@
+ 1
+ 1
+ NULL
+-a
++b
+ b
+ a
+ NULL
+
+Having 1 errors! 207 tests passed.                     0 tests skipped.
+The failure tests:
+    /projects/datafuselabs/databend/tests/suites/0_stateless/02_function/02_0057_function_nullif.sql
+```
+
+对于超时（Timeout!）类错误，默认 10 分钟超时。为方便调试，可以将 databend-test 文件中的 timeout 改短。
+
+**sqllogictest 测试**
+
+sqllogictest 测试能提供精准到语句的报错，并提供更多有效的上下文帮助排查问题。
+
+```
+AssertionError: Expected:
+INFORMATION_SCHEMA
+default
+ Actual:
+  INFORMATION_SCHEMA
+          db_12_0003
+             default
+ Statement:
+Parsed Statement
+    at_line: 77,
+    s_type: Statement: query, type: T, query_type: T, retry: False,
+    suite_name: gen/02_function/02_0005_function_compare,
+    text:
+        select * from system.databases where name not like '%sys%' order by name;
+    results: [(<re.Match object; span=(0, 4), match='----'>, 83, 'INFORMATION_SCHEMA\ndefault')],
+ Start Line: 83, Result Label: 
+```
+
+**提示**
+
+移除 databend-query-standalone-embedded-meta.sh 等脚本中的 nohup 有助于在测试时同时输出日志到终端，可能同样有助于调试。
