@@ -40,3 +40,15 @@ $> git fetch git@github.com:datafuselabs/databend.git --tags
 ### protoc failed: Unknown flag: --experimental_allow_proto3_optional
 
 `protoc` 现在可以随源码一起构建，考虑到发行版中的 `protoc` 版本不好统一，建议删除并重新构建项目源码。
+
+### Undefined symbols "_lzma_auto_decoder"
+
+提示需要 `lzma`，安装 `xz` 或者 `lzip` 可以解决。
+
+```bash
+Undefined symbols for architecture x86_64:
+    "_lzma_auto_decoder", referenced from:
+           xz2::stream::Stream::new_auto_decoder::hc1bac2a8128d00b2 in databend_query-6ac85c55ade712f3.xz2
+ld: symbol(s) not found for architecture x86_64
+clang: error: linker command failed with exit code 1 (use -v to see invocation)
+```
