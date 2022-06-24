@@ -115,16 +115,16 @@ Benchmark 1:  "SELECT avg(number) FROM numbers_mt(100000000000)"
 
 | Command | Mean [s] | Min [s] | Max [s] | Relative |
 |:---|---:|---:|---:|---:|
-| ` "SELECT avg(number) FROM numbers_mt(100000000000)" ` | 3.524 ± 0.025 | 3.497 | 3.567 | 2.94 ± 0.06 |
-| ` "SELECT sum(number) FROM numbers_mt(100000000000)" ` | 3.531 ± 0.024 | 3.494 | 3.574 | 2.94 ± 0.06 |
-| ` "SELECT min(number) FROM numbers_mt(100000000000)" ` | 5.970 ± 0.043 | 5.925 | 6.083 | 4.98 ± 0.09 |
-| ` "SELECT max(number) FROM numbers_mt(100000000000)" ` | 6.201 ± 0.137 | 6.025 | 6.535 | 5.17 ± 0.15 |
-| ` "SELECT count(number) FROM numbers_mt(100000000000)" ` | 2.368 ± 0.050 | 2.334 | 2.499 | 1.97 ± 0.05 |
-| ` "SELECT sum(number+number+number) FROM numbers_mt(100000000000)" ` | 17.406 ± 0.830 | 16.375 | 18.474 | 14.51 ± 0.74 |
-| ` "SELECT sum(number) / count(number) FROM numbers_mt(100000000000)" ` | 3.580 ± 0.018 | 3.556 | 3.621 | 2.98 ± 0.05 |
-| ` "SELECT sum(number) / count(number), max(number), min(number) FROM numbers_mt(100000000000)" ` | 10.391 ± 0.113 | 10.167 | 10.527 | 8.66 ± 0.18 |
-| ` "SELECT number FROM numbers_mt(10000000000) ORDER BY number DESC LIMIT 10" ` | 2.175 ± 0.022 | 2.155 | 2.216 | 1.81 ± 0.04 |
-| ` "SELECT max(number), sum(number) FROM numbers_mt(1000000000) GROUP BY number % 3, number % 4, number % 5 LIMIT 10" ` | 1.199 ± 0.021 | 1.164 | 1.247 | 1.00 |
+| ` "SELECT avg(number) FROM numbers_mt(100000000000)" ` | 3.690 ± 0.193 | 3.425 | 4.086 | 2.58 ± 0.16 |
+| ` "SELECT sum(number) FROM numbers_mt(100000000000)" ` | 3.660 ± 0.156 | 3.386 | 3.911 | 2.56 ± 0.13 |
+| ` "SELECT min(number) FROM numbers_mt(100000000000)" ` | 9.581 ± 0.158 | 9.246 | 9.884 | 6.69 ± 0.23 |
+| ` "SELECT max(number) FROM numbers_mt(100000000000)" ` | 6.388 ± 0.142 | 6.203 | 6.624 | 4.46 ± 0.17 |
+| ` "SELECT count(number) FROM numbers_mt(100000000000)" ` | 2.647 ± 0.108 | 2.424 | 2.757 | 1.85 ± 0.09 |
+| ` "SELECT sum(number+number+number) FROM numbers_mt(100000000000)" ` | 19.408 ± 1.125 | 17.857 | 21.616 | 13.55 ± 0.89 |
+| ` "SELECT sum(number) / count(number) FROM numbers_mt(100000000000)" ` | 3.869 ± 0.133 | 3.600 | 4.073 | 2.70 ± 0.12 |
+| ` "SELECT sum(number) / count(number), max(number), min(number) FROM numbers_mt(100000000000)" ` | 15.488 ± 0.263 | 15.133 | 16.064 | 10.81 ± 0.38 |
+| ` "SELECT number FROM numbers_mt(10000000000) ORDER BY number DESC LIMIT 10" ` | 2.971 ± 0.085 | 2.871 | 3.186 | 2.07 ± 0.09 |
+| ` "SELECT max(number), sum(number) FROM numbers_mt(1000000000) GROUP BY number % 3, number % 4, number % 5 LIMIT 10" ` | 1.432 ± 0.044 | 1.399 | 1.545 | 1.00 |
 
 ## 持续基准测试
 
@@ -234,7 +234,7 @@ pattern ='.*[.]csv' file_format=(type='CSV' field_delimiter='\t' record_delimite
             "mean":0.34774024905853534
         },
         ...
-    }
+    ]
 }   
 ```
 
