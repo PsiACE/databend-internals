@@ -96,7 +96,7 @@ run "$1" "$2" "$3"
 在这个例子中，MySQL 兼容服务的端口是 `3307` ，基准测试用到的 SQL 文件为 `bench.sql` , 预期的输出在 `databend-hyperfine.md` 。
 
 ```bash
-./benchmark.sh 3307 bench.sql databend-hyperfine.md. 
+./benchmark.sh 3307 bench.sql databend-hyperfine.md
 ```
 
 当然，你可以根据自己的配置和需要进行调整。
@@ -281,14 +281,20 @@ pattern ='.*[.]csv' file_format=(type='CSV' field_delimiter='\t' record_delimite
 
 **Graphs**
 
+![graphs](https://psiace.github.io/databend-internals/contribute-to-databend/how-to-benchmark/01-graph.png)
+
 - 以折线图的形式展示性能变化，并支持通过拖动图表下方的选择器调整展示的时间区间。
 - 横轴为日期，纵轴为执行用时，鼠标悬浮到上方即可查看当次执行的信息。
 
 **Compare**
 
+![compare](https://psiace.github.io/databend-internals/contribute-to-databend/how-to-benchmark/02-compare.png)
+
 - 支持任选两天对比执行用时的变化，以百分比形式展示。
 
 **Status**
+
+![status](https://psiace.github.io/databend-internals/contribute-to-databend/how-to-benchmark/03-status.png)
 
 - 关注当前最新性能测试结果中各指标的情况，以柱型图展示。
 - 横轴为不同类型，纵轴为执行用时。
