@@ -2,7 +2,7 @@
 title = "如何设置 Databend 开发环境"
 description = "工欲善其事，必先利其器。在开启 Databend 贡献之旅前，一起来配置适合自己的开发环境吧。"
 draft = false
-weight = 620
+weight = 610
 sort_by = "weight"
 template = "docs/page.html"
 

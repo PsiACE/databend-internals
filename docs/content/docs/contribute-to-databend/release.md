@@ -40,8 +40,6 @@ giscus = true
 ├── configs
 │   ├── databend-meta.toml
 │   └── databend-query.toml
-├── meta.log
-├── query.log
 ├── readme.txt
 └── scripts
     ├── start.sh
