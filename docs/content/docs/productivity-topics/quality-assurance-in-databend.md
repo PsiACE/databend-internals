@@ -95,7 +95,7 @@ Databend 的跨平台编译主要是针对 Linux(GNU) 和 MacOS 这两个平台�
 - In-Memory 向量化引擎的性能：一些数值计算任务，由 numbers 表函数提供百亿级别的数据。
 - 常规查询分析任务下的性能：目前选用 OnTime 数据集和对应的一组常见分析查询。
 
-所有数据都会收集到 [datafuselabs/databend-perf](https://github.com/datafuselabs/databend-perf) 这一 repo 中。访问 <https://perf.github.com> 即可查看可视化结果。
+所有数据都会收集到 [datafuselabs/databend-perf](https://github.com/datafuselabs/databend-perf) 这一 repo 中。访问 <https://perf.databend.rs> 即可查看可视化结果。
 
 ## 测试篇
 
