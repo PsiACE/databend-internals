@@ -15,13 +15,13 @@ giscus = true
 
 ## CPU Profiling
 
-CPU 分析，按照一定的频率采集所监听的应用程序 CPU（含寄存器）的使用情况，可确定应用程序在主动消耗 CPU 周期时花费时间的位置。D
+CPU 分析，按照一定的频率采集所监听的应用程序 CPU（含寄存器）的使用情况，可确定应用程序在主动消耗 CPU 周期时花费时间的位置。
 
 pprof 是 Google 开源的代码性能分析工具，可以直接生成代码分析报告，不仅支持通过命令式交互查看，也很方便进行可视化展示。Databend 使用 [pprof-rs](https://crates.io/crates/pprof) 完成对 pprof 工具的支持。
 
 ### 必备工作
 
-CPU 分析属于 Databend 的内置能力，使用的前提仅仅是部署一个 Databend 实例。
+CPU 分析属于 Databend 的内置能力，部署一个 Databend 实例即可开始使用。
 
 ### 命令行交互
 
@@ -33,7 +33,7 @@ go tool pprof http://localhost:<your-databend-port>/debug/pprof/profile?seconds=
 
 ```bash
 Fetching profile over HTTP from http://localhost:8080/debug/pprof/profile?seconds=20
-Saved profile in /home/bohu/pprof/pprof.cpu.007.pb.gz
+Saved profile in pprof/pprof.cpu.007.pb.gz
 Type: cpu
 Entering interactive mode (type "help" for commands, "o" for options)
 (pprof) top
@@ -57,7 +57,7 @@ Showing top 10 nodes out of 204
 
 执行下述命令可以进行可视化：
 
-```
+```bash
 go tool pprof -http=0.0.0.0:<your-profile-port> $HOME/pprof/pprof.cpu.007.pb.gz
 ```
 
@@ -67,7 +67,7 @@ Databend 暂时不支持在 musl 平台上运行 pprof 。
 
 ## Memory Profiling
 
-内存分析，在应用程序进行堆分配时记录堆栈跟踪，用于监视当前和历史内存使用情况，以及检查内存泄漏。
+内存分析，在应用程序进行堆分配时记录堆栈追踪，用于监视当前和历史内存使用情况，以及检查内存泄漏。
 
 通过与 `jemalloc` 的集成（可选），Databend 得以整合多种内存分析能力。这里使用 `jeprof` 进行内存分析。
 
@@ -84,7 +84,7 @@ jeprof ./target/debug/databend-query http://localhost:<your-databend-port>/debug
 
 结果如下所示：
 
-```
+```bash
 Using local file ./target/debug/databend-query.
 Gathering CPU profile from http://localhost:8080/debug/mem/pprof/profile?seconds=30 for 30 seconds to ~/jeprof/databend-query.1650949265.localhost
 Be patient...
