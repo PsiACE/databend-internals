@@ -15,7 +15,7 @@ giscus = true
 
 > 在「[产品力：Databend 的质量保障](https://psiace.github.io/databend-internals/docs/productivity-topics/quality-assurance-in-databend/)」一文中，已经介绍到组成 Databend 测试的两个重要部分 —— 单元测试和功能测试。如有遗忘，不妨回顾一下。
 
-## 如何编写和运行单元测试
+## 单元测试
 
 Databend 的单元测试组织形式有别于一般的 Rust 项目，是直接一股脑放在 `tests/it` 目录下的。同时，在各个 crate 的 `Cargo.toml` 中，也针对性地禁用了 `doctest` 和 `bin/lib test` 。
 
@@ -167,7 +167,7 @@ goldenfiles 的报错可能会涉及多个测试文件，受限于长文本支�
 2. 执行 `git diff` 来显示前后 goldenfiles 文件的差异。
 3. 仔细辨别问题出现原因，确定是否存在预期外的问题。
 
-## 如何编写和运行功能测试
+## 功能测试
 
 功能测试暂时出现两种方案并行的情况，除了旧有的 stateless/stateful 测试方案外，还引入了全新的 SQL 逻辑测试，后续 stateless 测试会过渡到 SQL 逻辑测试上。
 

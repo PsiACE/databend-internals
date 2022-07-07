@@ -24,7 +24,14 @@ Filename                                Type            Size            Used    
 /dev/zram0                              partition       8388604         8388264         100
 ```
 
-通常情况下，OOM 会在链接阶段发生。一些可能有效的解决方案包括：增加内存/Swap，更换 Linker，启用新的符号修饰方案。可以参考下面内容：
+通常情况下，OOM 会在链接阶段发生。一些可能有效的解决方案包括：
+
+- 减少并行任务数
+- 增加内存/Swap
+- 更换 Linker
+- 启用新的符号修饰方案
+
+可以参考下面内容：
 
 - <https://wiki.archlinux.org/title/Swap#Swap_file_creation>
 - <https://psiace.me/escape-oom-at-build-time/>

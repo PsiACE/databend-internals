@@ -144,9 +144,11 @@ Databend 原生提供了多种观测方式，以方便诊断和调试：
 遵循下述步骤，即可使用 Jaeger 探索 Databend ：
 
 1. 构建二进制程式：`cargo build`（可以使用 `--bin` 指定）。
-2. 将日志级别设定为 `DEBUG` ，运行需要调试的应用程式。例如，`LOG_LEVEL=DEBUG ./databend-query` 。
+2. 指定 Jaeger endpoint ，并将日志级别设定为 `DEBUG` ，接着运行需要调试的应用程式。例如，`DATABEND_JAEGER_AGENT_ENDPOINT=localhost:6831 LOG_LEVEL=DEBUG ./databend-query` 。
 3. 运行 jaeger ：`docker run -d -p6831:6831/udp -p6832:6832/udp -p16686:16686 jaegertracing/all-in- one:latest` 。
 4. 打开 `http://127.0.0.1:16686/` 以查看 jaeger 收集的信息。
+
+**注意** 只有正确配置 `DATABEND_JAEGER_AGENT_ENDPOINT` 才能启用 Jaeger 支持。
 
 ### 结果探索
 

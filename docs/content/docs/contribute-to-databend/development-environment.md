@@ -137,9 +137,3 @@ $ cargo install taplo-cli
 **其他步骤**
 
 点击左下角「打开远程窗口」选中「Reopen in Container」即可体验。
-
-要想运行 sqllogic-test ，可能还需要执行以下命令安装部分依赖：
-
-```
-$ pip install PyHamcrest environs fire
-```

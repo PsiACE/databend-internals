@@ -62,5 +62,3 @@ Databend 的日常维护工作主要分为两大类：一类是工具链更新�
 
 - 如果 `cargo upgrade --workspace` 无法更新依赖，可以尝试先执行一遍 `cargo update` 。
 - 在日常维护过程中，可能需要对 `Cargo.lock` 做一些手脚，请确保一切检查都可以顺利通过，并在 PR 中进行解释。
-
-
