@@ -21,12 +21,12 @@ Databend 的单元测试组织形式有别于一般的 Rust 项目，是直接�
 
 **优点**
 
-- 减少需要构建的测试目标，提高测试编译/链接速度。*
+- 减少需要构建的测试目标，提高测试编译/链接速度。
 - 当需要添加新单元测试时（不修改 `src`），只需要编译对应的 `it(test)` ，节省时间。
 
 **缺点**
 
-由于 `tests/it` 会把需要测试的 crate 当作一个外部对象，所有待测试的内容都需要被设定为 `pub` 。不利于软件设计上的分层，整个项目结构会迅速的被破坏，需要引入编码规范并更加依赖开发者的主动维护。
+- `tests/it` 会把需要测试的 crate 当作一个外部对象，所有待测试的内容都需要被设定为 `pub` 。不利于软件设计上的分层，整个项目结构会迅速的被破坏，需要引入编码规范并更加依赖开发者的主动维护。
 
 ### 编写
 
@@ -34,9 +34,11 @@ Databend 的单元测试组织形式有别于一般的 Rust 项目，是直接�
 
 **Rust 测试**
 
-与平时编写 Rust 单元测试相同，只是引用待测试 crate 时需要使用该 crate 的名字，且待测试的内容需要设为 `pub` 。另外，Databend 内部有一些用于模拟全局状态的函数，可能会有助于编写测试。
+与平时编写 Rust 单元测试相同，只是待测试的内容需要设为 `pub` ，且引用待测试 crate 需要使用该 crate 的名字。
 
-```Rust
+Databend 提供一些用于模拟全局状态的函数，如 `create_query_context` 等，可能会有助于编写测试。
+
+```rust
 #[tokio::test(flavor = "multi_thread", worker_threads = 1)]
 async fn test_credits_table() -> Result<()> {
     let ctx = crate::tests::create_query_context().await?;
@@ -52,15 +54,17 @@ async fn test_credits_table() -> Result<()> {
 }
 ```
 
-上面示例用于粗浅测试 `credits_table`，构建 `read_plan` 来读取新建的 `CreditsTable` 表，再对列数进行断言。
+上面示例来自 `credits_table` 的测试，先构建 `read_plan` 读取新建的 `CreditsTable` 表，再对列数进行断言。
 
 **Golden Files 测试**
 
-Golden Files 测试是一种常用的测试手段，如果执行情况和预期结果存在差异则认为测试失败。进来，
+> Golden File Testing are like unit tests, except the expected output is stored in a separate file. -- Max Grigorev at [ZuriHac](https://wiki.haskell.org/ZuriHac2010)
 
-Databend 使用 `goldenfile` 这个 crate 来编写 Rust 中的 Golden Files 测试。目前 Databend 有计划用此替代 `assert_blocks` 系列断言。
+Golden Files 测试是一种常用的测试手段，相当于是一类快照测试，如果执行情况和预期结果存在差异则认为测试失败。
 
-```Rust
+Databend 使用 `goldenfile` 这个 crate 来编写 Golden Files 测试。目前 Databend 有计划用此替代 `assert_blocks` 系列断言。
+
+```rust
 #[test]
 fn test_expr_error() {
     let mut mint = Mint::new("tests/it/testdata");
@@ -70,7 +74,6 @@ fn test_expr_error() {
         r#"5 * (a and ) 1"#,
         r#"a + +"#,
         r#"CAST(col1 AS foo)"#,
-        // TODO(andylokandy): This is a bug being tracking in https://github.com/segeljakt/pratt/issues/7
         r#"1 a"#,
         r#"CAST(col1)"#,
         r#"G.E.B IS NOT NULL AND
@@ -84,9 +87,11 @@ fn test_expr_error() {
 }
 ```
 
-编写 Golden Files 测试需要指定挂载的目录和对应预期结果的文件。在执行测试的主体部分（在 `run_parser` 这个宏中），除了封装运行测试的必要逻辑外，还需要定义输出时的格式。
+编写 Golden Files 测试时需要指定挂载的目录和对应预期结果的文件。
 
-同时，测试文件必须按指定格式编写。或者，使用 `REGENERATE_GOLDENFILES=1` 会重新生成。
+在执行测试的主体部分（如上面示例中的 `run_parser!` 宏），除了封装运行测试的必要逻辑外，还需要定义输出时的格式。
+
+测试文件必须按指定格式编写。或者，使用 `REGENERATE_GOLDENFILES=1` 生成。
 
 下面 Golden File 的例子节选自 `common/ast` 模块测试的 `testdata/expr-error.txt`，`Output` 对应解析 `5 * (a and ) 1` 的预期结果。
 
@@ -115,9 +120,9 @@ error:
 
 **Rust 测试**
 
-同其他项目中的 Rust 测试一样，你可以根据友好的错误提示轻松定位出现故障的测试。如果需要详细的 Backtrace ，可以在运行测试命令时添加环境变量 `RUST_BACKTRACE=1` 。
+同其他项目中的 Rust 测试一样，可以根据友好的错误提示轻松定位出现故障的测试。如果需要详细的 Backtrace ，可以在运行测试命令时添加环境变量 `RUST_BACKTRACE=1` 。
 
-```shell
+```bash
 failures:
 
 ---- buffer::buffer_read_number_ext::test_read_number_ext stdout ----
@@ -128,92 +133,97 @@ thread 'buffer::buffer_read_number_ext::test_read_number_ext' panicked at 'asser
   left: `1`,
  right: `0`: the test returned a termination value with a non-zero status code (1) which indicates a failure', /rustc/cd282d7f75da9080fda0f1740a729516e7fbec68/library/test/src/lib.rs:185:5
 note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
-
-
-failures:
-    buffer::buffer_read_number_ext::test_read_number_ext
-
-test result: FAILED. 19 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
-
-error: test failed, to rerun pass '-p common-io --test it'
 ```
 
 **Golden Files 测试**
 
-虽然 Golden Files 测试使用与 Rust 测试同样的命令执行，但错误提示就不那么友好了：
+Golden Files 测试的执行命令与 Rust 测试相同，但在错误提示方面有所差异。得益于 goldenfiles 引入了 `similar-assert` ，可以轻松识别 diff ：
 
-```shell
-thread 'parser::test_expr' panicked at 'assertion failed: edit distance between...is 4 and not 0, see diffset above', /home/psiace/.cargo/registry/src/github.com-1ecc6299db9ec823/goldenfile-1.3.0/src/differs.rs:15:5
-
-
-failures:
-    parser::test_expr
-    parser::test_expr_error
-
-test result: FAILED. 9 passed; 2 failed; 0 ignored; 0 measured; 0 filtered out; finished in 3.07
+```bash
+Differences (-left|+right):
+ ---------- Output ---------
+ 'I'm who I'm.'
+ ---------- AST ------------
+ Literal {
+     span: [
+-        QuotedString(0..18),
++        QuotedString(0..16),
+     ],
+     lit: String(
+         "I'm who I'm.",
+     ),
+ }
+.cargo/git/checkouts/rust-goldenfile-6352648ef139d984/16c5783/src/differs.rs:15:5
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
 ```
 
-每个 goldenfiles 测试都是由若干子测试组成，即便告知是哪个错误也并不好定位。尽管向上滚动终端可以查看 diff ，但受限于缓冲区和空格的显示问题，也不能很好的处理测试中出现的全部问题。
+上面示例中，`+` 对应测试实际结果，`-` 对应测试预期结果，其他为相关的上下文。
 
-这里提供一个简单的流程以方便排查：
+goldenfiles 的报错可能会涉及多个测试文件，受限于长文本支持和空格显示，排查仍可能存在不便。
 
-1. 确保之前的更改都已经提交，然后运行 `REGENERATE_GOLDENFILES=1 cargo test -p <package> --test it` 。
+这里提供一个相对友好的排查思路：
+
+1. 确保之前的更改都已经提交，然后运行 `REGENERATE_GOLDENFILES=1 cargo test -p <package> --test it` 重新生成对应的测试。
 2. 执行 `git diff` 来显示前后 goldenfiles 文件的差异。
-3. 仔细辨别问题出现原因，确定是失误还是存在其他问题。
+3. 仔细辨别问题出现原因，确定是否存在预期外的问题。
 
 ## 如何编写和运行功能测试
 
-在全新的 SQL 逻辑测试加入之后，功能测试暂时出现两种方案并行的情况，在接下来的一段时间应该会逐步过渡到 SQL 逻辑测试。
+功能测试暂时出现两种方案并行的情况，除了旧有的 stateless/stateful 测试方案外，还引入了全新的 SQL 逻辑测试，后续 stateless 测试会过渡到 SQL 逻辑测试上。
 
-从本质上讲，这两类功能测试都遵循 Golden Files 风格，总体上的流程都是先启动 databend 实例，然后使用对应的客户端/驱动去执行查询，再比较查询结果和预期结果之间的差异，并判断测试是否通过。
+从本质上讲，这两类功能测试流程相同：
 
-sqllogictest 从设计上会提供更全面的能力：
+- 启动 databend 实例。
+- 使用对应的客户端/驱动执行查询。
+- 对比查询情况和预期行为之间的差异，判断测试是否通过。
 
-- 拓展比较结果文件的方式到其他协议（涵盖 http handler）
-- 提示每个语句的结果
-- 提供错误处理的能力
-- 支持排序、重试等测试逻辑
+但是，在设计上，SQL 逻辑测试可以提供更全面的能力：
+
+- 拓展比较结果文件的方式到其他协议（涵盖 http handler）。
+- 提示每个语句的结果。
+- 提供错误处理的能力。
+- 支持排序、重试等测试逻辑。
 
 ### 编写
 
-**stateless/statefull 测试**
+**stateless/stateful 测试**
 
-stateless/statefull 测试放在 `tests/suites` 目录下。
+stateless/stateful 测试放在 `tests/suites` 目录下：
 
-输入是一系列 sql ，对应目录中的 `*.sql` 文件。
+- 输入是一系列 sql 语句，对应目录中的 `*.sql` 文件。
 
-```sql
-SELECT '==Array(Int32)==';
+    ```sql
+    SELECT '==Array(Int32)==';
 
-CREATE TABLE IF NOT EXISTS t2(id Int null, arr Array(Int32) null) Engine = Fuse;
+    CREATE TABLE IF NOT EXISTS t2(id Int null, arr Array(Int32) null) Engine = Fuse;
 
-INSERT INTO t2 VALUES(1, [1,2,3]);
-INSERT INTO t2 VALUES(2, [1,2,4]);
-INSERT INTO t2 VALUES(3, [3,4,5]);
-SELECT max(arr), min(arr) FROM t2;
-SELECT arg_max(id, arr), arg_min(id, arr) FROM (SELECT id, arr FROM t2);
-```
+    INSERT INTO t2 VALUES(1, [1,2,3]);
+    INSERT INTO t2 VALUES(2, [1,2,4]);
+    INSERT INTO t2 VALUES(3, [3,4,5]);
+    SELECT max(arr), min(arr) FROM t2;
+    SELECT arg_max(id, arr), arg_min(id, arr) FROM (SELECT id, arr FROM t2);
+    ```
 
-输出是一系列纯文本，如果没有输出则需要置空，对应目录中的 `*.result` 文件。
+- 输出对应查询结果（含报错），如果没有输出则需要置空，对应目录中的 `*.result` 文件。
 
-```text
-==Array(Int32)==
-[3, 4, 5]	[1, 2, 3]
-3	1
-```
+    ```text
+    ==Array(Int32)==
+    [3, 4, 5]	[1, 2, 3]
+    3	1
+    ```
 
-对于 SQL 中存在错误的情况，有两种方式：
+测试可以覆盖 SQL 执行过程中遇到预期错误的情况，有两种方式：
 
-- 既可以沿用上面的方式，此时同样需要在 result 中标注。
-- 也可以采用 `ErrorCode` 注释的方式，这里在 result 中置空就好。
+- 沿用上面的方法，在 `result` 文件中标注具体报错信息。
+- 也可以采用 `ErrorCode` 注释的方式，此时无需在 `result` 文件中添加对应内容。
 
-```sql
-SELECT INET_ATON('hello');-- {ErrorCode 1060}
-```
+    ```sql
+    SELECT INET_ATON('hello');-- {ErrorCode 1060}
+    ```
 
-**sqllogictest 测试**
+**SQL 逻辑测试**
 
-sqllogictest 测试放在 `tests/logictest` 目录下。
+SQL 逻辑测试放在 `tests/logictest` 目录下。
 
 语句规范在 sqlite sqllogictest 的基础上进行拓展，可以分成以下几类：
 
@@ -232,25 +242,25 @@ select count(1) > 1 from information_schema.columns;
 true
 ```
 
-上面的例子展示了如何对 mysql 和 http 分别设计对应的输出结果。
+上面的例子展示了如何对 mysql 和 http 分别设计对应的输出结果。其中 `B` 表示结果为布尔类型，`label` 用来标记协议。
 
-sqllogictest 同样支持生成测试用例 `python3 gen_suites.py` 。
+SQL 逻辑测试同样支持测试集生成 `python3 gen_suites.py` 。
 
 ### 运行
 
-> 由于 stateless/statefull 测试和 sqllogictest 测试均由 Python 编写，在运行前请确保你已经安装全部的依赖。
+> 由于 stateless/stateful 测试和 sqllogictest 测试均由 Python 编写，在运行前请确保你已经安装全部的依赖。
 
 这几类测试都有对应的 `make` 命令，并支持集群模式测试：
 
 - `stateless` 测试：`make stateless-test` & `make stateless-cluster-test` 。
-- `stateful` 测试：`make stateful-test` & `make stateful-cluster-test` 。（需要启动 MinIO，并配置好所需文件，本地跑比较麻烦）
+- `stateful` 测试：`make stateful-test` & `make stateful-cluster-test` 。（一般在 CI 中运行，本地需要正确配置 MINIO 环境）。
 - `sqllogictest` 测试：`make sqllogic-test` & `make sqllogic-cluster-test` 。
 
 ### 排查
 
-**stateless/statefull 测试**
+**stateless/stateful 测试**
 
-目前 stateless/statefull 测试能够提供文件级的报错和 Diff ，但遗憾是，执行无法确定具体报错语句是哪一条。
+目前 stateless/stateful 测试能够提供文件级的报错和 diff ，但无法确定报错是由哪一条语句产生。
 
 ```
 02_0057_function_nullif:                                                [ FAIL ] - result differs with:
@@ -270,8 +280,6 @@ Having 1 errors! 207 tests passed.                     0 tests skipped.
 The failure tests:
     /projects/datafuselabs/databend/tests/suites/0_stateless/02_function/02_0057_function_nullif.sql
 ```
-
-对于超时（Timeout!）类错误，默认 10 分钟超时。为方便调试，可以将 databend-test 文件中的 timeout 改短。
 
 **sqllogictest 测试**
 
@@ -293,9 +301,12 @@ Parsed Statement
     text:
         select * from system.databases where name not like '%sys%' order by name;
     results: [(<re.Match object; span=(0, 4), match='----'>, 83, 'INFORMATION_SCHEMA\ndefault')],
+    runs_on: {'mysql', 'clickhouse', 'http'},
  Start Line: 83, Result Label: 
+make: *** [Makefile:82: sqllogic-test] Error 1
 ```
 
 **提示**
 
-移除 databend-query-standalone-embedded-meta.sh 等脚本中的 nohup 有助于在测试时同时输出日志到终端，可能同样有助于调试。
+- stateless/stateful 超时类错误（Timeout!）的默认时间限制为 10 分钟。为方便排查，可以将 `databend-test` 文件中的 `timeout` 改短。
+- 移除 `databend-query-standalone-embedded-meta.sh` 等脚本中的 `nohup` 有助于在测试时同时输出日志到终端，可能同样有助于排查。
