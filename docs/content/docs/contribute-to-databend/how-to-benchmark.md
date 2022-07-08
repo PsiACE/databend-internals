@@ -85,7 +85,9 @@ run "$1" "$2" "$3"
 - 允许指定 Databend MySQL 兼容服务的端口。
 - 允许指定输入的 SQL 文件，以及输出时的 Markdown 文件。
 
-先运行 `chmod a+x ./benchmark.sh` 赋予其可执行权限。用法如下所示：
+在使用前需要先运行 `chmod a+x ./benchmark.sh` 赋予其可执行权限。
+
+用法如下所示：
 
 ```bash
 ./benchmark.sh <port> <sql> <result>
@@ -152,7 +154,6 @@ Databend 的持续基准测试由 GitHub Action + Vercel + DatabendCloud 强力�
 2. 利用 perf-tool 和 DatabendCloud 进行交互，运行测试。
 3. 持久化性能数据到 databend-perf 这一 repo 中 。
 4. 执行脚本处理数据，使之生成前端需要的格式。
-    - reload 测试并不即时处理数据，会随第二天的 perf 测试更新。
 5. 构建前端，完成可视化。
 
 ### 测试套件
@@ -170,7 +171,7 @@ statements:
     query: "SELECT avg(number) FROM numbers_mt(10000000000);"
 ```
 
-`metadata` 中的 `table` 是必须的，且每类测试都必须唯一。`statements` 则只需要指定 `name` 和 `query` 。
+`metadata` 中的 `table` 字段是必须的，且分配给每类 benchmark 的值都唯一。`statements` 则只需要指定 `name` 和 `query` 。
 
 **向量化执行基准测试**
 
@@ -188,7 +189,7 @@ statements:
 
 **Ontime 数据集载入基准测试**
 
-定义在 reload/ontime.yaml ，同样基于美国交通部公开的 OnTime 数据集，由原来 60.8 GB 数据全部合并后拆分成 100 份，通过 s3 进行 COPY INTO 。
+定义在 reload/ontime.yaml ，同样基于美国交通部公开的 OnTime 数据集，通过 s3 进行 COPY INTO 。
 
 关键语句：
 
@@ -197,6 +198,8 @@ COPY INTO ontime FROM 's3://<bucket>/m_ontime/'
 credentials=(aws_key_id='AWS_KEY_ID' aws_secret_key='AWS_SECRET_KEY') 
 pattern ='.*[.]csv' file_format=(type='CSV' field_delimiter='\t' record_delimiter='\n' skip_header=1);
 ```
+
+上面 SQL 语句中的 `m_ontime/` 目录即为数据集：由原来 60.8 GB 数据全部合并后，再拆分成 100 个大小相近的文件。
 
 ### 数据处理
 
@@ -256,7 +259,9 @@ pattern ='.*[.]csv' file_format=(type='CSV' field_delimiter='\t' record_delimite
                 ...
             ],
         ...
-     "version":[
+        }
+    ],
+    "version":[
         "v0.7.0-nightly",
         "v0.7.1-nightly",
         "v0.7.2-nightly",
@@ -301,7 +306,8 @@ pattern ='.*[.]csv' file_format=(type='CSV' field_delimiter='\t' record_delimite
 
 ### 后续优化
 
-目前 perf.databend.rs 基本满足当前 Databend 对性能监控的需求，但仍然需要关注以下几个方向的内容：
-- **选取更有代表性的指标** 由于执行次数较少（只有 10 次），可供选择的指标可能不够具有代表性。例如：将次数提高到 100 次以获取 P90 来替代当前使用的中位数可能是比较合适的。
-- **增加性能测试场景的覆盖** 目前我们只考虑了 numbers 和 ontime 这样的测试，后续可以继续新增对其他数据集和场景的性能测试，比如 ssb 。
-- **丰富性能监控的方向** 从吞吐量、索引构建等方向选取指标，并监控 IO 和网络性能表现。对部分重点查询提供一些特化的监控能力，比如解析 Json 的性能表现。
+目前 <https://perf.databend.rs> 为 Databend 提供了基本的持续性能监控方案，但仍然需要关注以下几个方向的内容：
+
+- **选取更有代表性的指标** 执行次数较少（只有 10 次），可供选择的指标可能不够具有代表性。例如：将次数提高到 100 次以获取 P90 来替代当前使用的中位数可能是比较合适的。
+- **增加性能测试场景的覆盖** 后续可以继续新增对其他数据集和场景的性能测试，比如 ssb 、hits 。
+- **丰富性能监控的方向** 监控 IO 和网络性能表现，对部分重点查询提供额外的性能评估，比如解析 Json 的性能表现。
