@@ -17,40 +17,42 @@ giscus = true
 
 CPU 分析，按照一定的频率采集所监听的应用程序 CPU（含寄存器）的使用情况，可确定应用程序在主动消耗 CPU 周期时花费时间的位置。
 
-pprof 是 Google 开源的代码性能分析工具，可以直接生成代码分析报告，不仅支持通过命令式交互查看，也很方便进行可视化展示。Databend 使用 [pprof-rs](https://crates.io/crates/pprof) 完成对 pprof 工具的支持。
+pprof 是 Google 开源的代码性能分析工具，可以直接生成代码分析报告，不仅支持通过命令式交互查看，也便于可视化展示。Databend 使用 [pprof-rs](https://crates.io/crates/pprof) 完成对 pprof 工具的支持。
 
 ### 必备工作
 
-CPU 分析属于 Databend 的内置能力，部署一个 Databend 实例即可开始使用。
+- CPU 分析属于 Databend 的内置能力，部署一个 Databend 实例即可开始使用。
 
 ### 命令行交互
 
 ```bash
-go tool pprof http://localhost:<your-databend-port>/debug/pprof/profile?seconds=20
+go tool pprof http://localhost:<your-databend-port>/debug/pprof/profile?seconds=<your-profile-second>
 ```
 
-结果如下所示：
+若 http 端口为 8080 ，采样时间为 20 秒，结果示例如下：
 
 ```bash
+$ go tool pprof http://localhost:8080/debug/pprof/profile?seconds=20
 Fetching profile over HTTP from http://localhost:8080/debug/pprof/profile?seconds=20
-Saved profile in pprof/pprof.cpu.007.pb.gz
+Saved profile in ~/pprof/pprof.samples.cpu.001.pb.gz
 Type: cpu
+Time: Jul 15, 2022 at 9:45am (CST)
+Duration: 20s, Total samples = 141.41ms ( 0.71%)
 Entering interactive mode (type "help" for commands, "o" for options)
 (pprof) top
-Showing nodes accounting for 5011, 100% of 5011 total
-Dropped 248 nodes (cum <= 25)
-Showing top 10 nodes out of 204
+Showing nodes accounting for 141.41ms, 100% of 141.41ms total
+Showing top 10 nodes out of 218
       flat  flat%   sum%        cum   cum%
-      5011   100%   100%       5011   100%  backtrace::backtrace::libunwind::trace
-         0     0%   100%        162  3.23%  <&alloc::vec::Vec<T,A> as core::iter::traits::collect::IntoIterator>::into_iter
-         0     0%   100%         45   0.9%  <&mut I as core::iter::traits::iterator::Iterator>::next
-         0     0%   100%         77  1.54%  <[A] as core::slice::cmp::SlicePartialEq<B>>::equal
-         0     0%   100%         35   0.7%  <[u8; 8] as ahash::convert::Convert<u64>>::convert
-         0     0%   100%        199  3.97%  <[u8] as ahash::convert::ReadFromSlice>::read_last_u64
-         0     0%   100%         73  1.46%  <[u8] as ahash::convert::ReadFromSlice>::read_last_u64::as_array
-         0     0%   100%        220  4.39%  <[u8] as ahash::convert::ReadFromSlice>::read_u64
-         0     0%   100%        701 13.99%  <ahash::fallback_hash::AHasher as core::hash::Hasher>::write
-         0     0%   100%         26  0.52%  <ahash::random_state::RandomState as core::hash::BuildHasher>::build_hash
+  141.41ms   100%   100%   141.41ms   100%  backtrace::backtrace::libunwind::trace
+         0     0%   100%    10.10ms  7.14%  <&mut regex_syntax::utf8::Utf8Sequences as core::iter::traits::iterator::Iterator>::next
+         0     0%   100%    10.10ms  7.14%  <<std::thread::Builder>::spawn_unchecked_<sled::threadpool::queue::spawn_to<sled::pagecache::iterator::scan_segment_headers_and_tail::{closure#0}::{closure#0}, core::option::Option<(u64, sled::pagecache::logger::SegmentHeader)>>::{closure#0}::{closure#0}, ()>::{closure#1} as core::ops::function::FnOnce<()>>::call_once::{shim:vtable#0}
+         0     0%   100%    10.10ms  7.14%  <<std::thread::Builder>::spawn_unchecked_<sled::threadpool::queue::spawn_to<sled::pagecache::iterator::scan_segment_headers_and_tail::{closure#0}::{closure#0}, core::option::Option<(u64, sled::pagecache::logger::SegmentHeader)>>::{closure#0}::{closure#1}, ()>::{closure#1} as core::ops::function::FnOnce<()>>::call_once::{shim:vtable#0}
+         0     0%   100%    10.10ms  7.14%  <<std::thread::Builder>::spawn_unchecked_<sled::threadpool::queue::spawn_to<sled::pagecache::iterator::scan_segment_headers_and_tail::{closure#0}::{closure#0}, core::option::Option<(u64, sled::pagecache::logger::SegmentHeader)>>::{closure#0}::{closure#2}, ()>::{closure#1} as core::ops::function::FnOnce<()>>::call_once::{shim:vtable#0}
+         0     0%   100%    10.10ms  7.14%  <<std::thread::Builder>::spawn_unchecked_<sled::threadpool::queue::spawn_to<sled::pagecache::iterator::scan_segment_headers_and_tail::{closure#0}::{closure#0}, core::option::Option<(u64, sled::pagecache::logger::SegmentHeader)>>::{closure#0}::{closure#3}, ()>::{closure#1} as core::ops::function::FnOnce<()>>::call_once::{shim:vtable#0}
+         0     0%   100%    10.10ms  7.14%  <[&str]>::iter
+         0     0%   100%    10.10ms  7.14%  <[(char, &[char])]>::binary_search_by::<<[(char, &[char])]>::binary_search_by_key<char, regex_syntax::unicode::simple_fold::imp::{closure#0}>::{closure#0}>
+         0     0%   100%    10.10ms  7.14%  <[(char, &[char])]>::binary_search_by_key::<char, regex_syntax::unicode::simple_fold::imp::{closure#0}>
+         0     0%   100%    10.10ms  7.14%  <[(char, &[char])]>::binary_search_by_key::<char, regex_syntax::unicode::simple_fold::imp::{closure#0}>::{closure#0}
 ```
 
 ### 可视化
@@ -58,8 +60,18 @@ Showing top 10 nodes out of 204
 执行下述命令可以进行可视化：
 
 ```bash
-go tool pprof -http=0.0.0.0:<your-profile-port> $HOME/pprof/pprof.cpu.007.pb.gz
+go tool pprof -http=0.0.0.0:<your-profile-port> <your profile data>
 ```
+
+例如，执行下述语句可以在 8088 端口开启 WEB UI 。
+
+```bash
+go tool pprof -http=0.0.0.0:8088 ~/pprof/pprof.samples.cpu.001.pb.gz 
+```
+
+访问 `http://0.0.0.0:8088/ui/flamegraph` 即可得到火焰图。
+
+![pprof flamegraph](https://psiace.github.io/databend-internals/contribute-to-databend/how-to-profile/01-pprof-flamegraph.png)
 
 ### 注意事项
 
@@ -69,40 +81,47 @@ Databend 暂时不支持在 musl 平台上运行 pprof 。
 
 内存分析，在应用程序进行堆分配时记录堆栈追踪，用于监视当前和历史内存使用情况，以及检查内存泄漏。
 
-通过与 `jemalloc` 的集成（可选），Databend 得以整合多种内存分析能力。这里使用 `jeprof` 进行内存分析。
+通过与 `jemalloc` 的集成，Databend 得以整合多种内存分析能力。这里使用 `jeprof` 进行内存分析。
 
 ### 必备工作
 
+- [安装 Jemalloc](https://github.com/jemalloc/jemalloc/blob/dev/INSTALL.md)，并启用其剖析能力 `./configure --enable-prof`
 - 在构建二进制文件时启用 `memory-profiling` 特性：`cargo build --features memory-profiling`
-- 在创建 Databend 实例时，设置环境变量 `MALLOC_CONF=prof:true` 以启用内存分析。 
+- 在创建 Databend 实例时，设置环境变量 `MALLOC_CONF=prof:true` 以启用内存分析。示例：
+
+  ```shell
+  MALLOC_CONF=prof:true ./target/debug/databend-query
+  ```
 
 ### 堆快照转储
 
 ```bash
-jeprof ./target/debug/databend-query http://localhost:<your-databend-port>/debug/mem
+jeprof <your-profile-target> http://localhost:<your-databend-port>/debug/mem
 ```
 
-结果如下所示：
+下面的例子选用 debug 模式下编译的 databend-query 作为 target，端口为 8080，结果如下所示：
 
 ```bash
+$ jeprof ./target/debug/databend-query http://localhost:8080/debug/mem
 Using local file ./target/debug/databend-query.
-Gathering CPU profile from http://localhost:8080/debug/mem/pprof/profile?seconds=30 for 30 seconds to ~/jeprof/databend-query.1650949265.localhost
+Gathering CPU profile from http://localhost:8080/debug/mem/pprof/profile?seconds=30 for 30 seconds to
+  ~/jeprof/databend-query.1658367127.localhost
 Be patient...
-Wrote profile to /home/zhaobr/jeprof/databend-query.1650949265.localhost
+Wrote profile to ~/jeprof/databend-query.1658367127.localhost
 Welcome to jeprof!  For help, type 'help'.
- (jeprof) top
-Total: 16.2 MB
-    10.2  62.7%  62.7%     10.2  62.7% ::alloc
-    6.0  37.3% 100.0%      6.0  37.3% ::alloc_zeroed
-    0.0   0.0% 100.0%     10.2  62.7% ::allocate
-    0.0   0.0% 100.0%      0.5   3.3% ::call
-    0.0   0.0% 100.0%      4.0  24.7% ::default
-    0.0   0.0% 100.0%      1.2   7.2% ::deref
-    0.0   0.0% 100.0%      1.2   7.2% ::deref::__stability (inline)
-    0.0   0.0% 100.0%      1.2   7.2% ::deref::__static_ref_initialize (inline)
-    0.0   0.0% 100.0%      0.5   3.1% ::from
-    0.0   0.0% 100.0%      9.2  56.6% ::from_iter
-(jeprof)
+(jeprof) top
+Total: 11.1 MB
+     6.0  54.6%  54.6%      6.0  54.6% ::alloc_zeroed
+     5.0  45.4% 100.0%      5.0  45.4% ::alloc
+     0.0   0.0% 100.0%      0.5   4.5% ::add_node::{closure#0}
+     0.0   0.0% 100.0%      5.0  45.4% ::alloc_impl
+     0.0   0.0% 100.0%      5.0  45.4% ::allocate
+     0.0   0.0% 100.0%      4.5  40.8% ::allocate_in
+     0.0   0.0% 100.0%      0.5   4.5% ::apply_batch_inner
+     0.0   0.0% 100.0%     11.1 100.0% ::block_on::
+     0.0   0.0% 100.0%     11.1 100.0% ::block_on::::{closure#0}
+     0.0   0.0% 100.0%      0.5   4.5% ::clone
+(jeprof) 
 ```
 
 ### 生成内存分配调用图
@@ -112,9 +131,9 @@ Total: 16.2 MB
 在下面的命令行中，以 10s 为间隔，获取前后两个时间节点的内存画像。
 
 ```bash
-curl 'http://localhost:8080/debug/mem/pprof/profile?seconds=0' > a.prof
+curl 'http://localhost:<your-databend-port>/debug/mem/pprof/profile?seconds=0' > a.prof
 sleep 10
-curl 'http://localhost:8080/debug/mem/pprof/profile?seconds=0' > b.prof
+curl 'http://localhost:<your-databend-port>/debug/mem/pprof/profile?seconds=0' > b.prof
 ```
 
 接着，可以利用这两份内存画像来生成 `pdf` 格式的内存分配调用图。
@@ -127,15 +146,15 @@ jeprof \
     --edgefraction=0.001 \
     --maxdegree=64 \
     --pdf \
-    ./target/debug/databend-meta \
+    <your-profile-target> \
     --base=a.prof \
     b.prof \
     > mem.pdf
 ```
 
-结果如图所示：
+同样选用 debug 模式下编译的 databend-query 作为 target，端口为 8080，结果如图所示：
 
-![jeprof call graph](https://user-images.githubusercontent.com/44069/174307263-a2c9bbe6-e417-48b7-bf4d-cbbbaad03a6e.png)
+![jeprof call graph](https://psiace.github.io/databend-internals/contribute-to-databend/how-to-profile/02-jeprof-mem.png)
 
 ### 注意事项
 
