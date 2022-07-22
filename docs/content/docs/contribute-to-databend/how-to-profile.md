@@ -1,5 +1,5 @@
 +++
-title = "怎样完成 Databend 性能剖析"
+title = "Databend 性能剖析方法与工具"
 description = "Databend 整合了一些性能剖析工具，可以方便进行深入分析。本文将会介绍如何进行 CPU / Memory Profiling 。"
 draft = false
 weight = 650
@@ -89,7 +89,7 @@ Databend 暂时不支持在 musl 平台上运行 pprof 。
 - 在构建二进制文件时启用 `memory-profiling` 特性：`cargo build --features memory-profiling`
 - 在创建 Databend 实例时，设置环境变量 `MALLOC_CONF=prof:true` 以启用内存分析。示例：
 
-  ```shell
+  ```bash
   MALLOC_CONF=prof:true ./target/debug/databend-query
   ```
 

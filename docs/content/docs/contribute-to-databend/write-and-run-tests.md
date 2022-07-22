@@ -95,7 +95,7 @@ fn test_expr_error() {
 
 下面 Golden File 的例子节选自 `common/ast` 模块测试的 `testdata/expr-error.txt`，`Output` 对应解析 `5 * (a and ) 1` 的预期结果。
 
-```text
+```plain text
 ---------- Input ----------
 5 * (a and ) 1
 ---------- Output ---------
@@ -139,7 +139,7 @@ note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
 
 Golden Files 测试的执行命令与 Rust 测试相同，但在错误提示方面有所差异。得益于 goldenfiles 引入了 `similar-assert` ，可以轻松识别 diff ：
 
-```bash
+```plain text
 Differences (-left|+right):
  ---------- Output ---------
  'I'm who I'm.'
@@ -206,7 +206,7 @@ stateless/stateful 测试放在 `tests/suites` 目录下：
 
 - 输出对应查询结果（含报错），如果没有输出则需要置空，对应目录中的 `*.result` 文件。
 
-    ```text
+    ```plain text
     ==Array(Int32)==
     [3, 4, 5]	[1, 2, 3]
     3	1
