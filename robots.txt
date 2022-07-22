@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://psiace.github.io/databend-internals/sitemap.xml
