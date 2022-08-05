@@ -52,7 +52,7 @@ Databend 在 issue 中还引入了“Good First issue”的 label 来引导社�
 
 画虎画皮难画骨，我们先从 Databend 的“骨”聊起。
 
-![databend arch](https://psiace.github.io/databend-internals/source-reading/intro/01-databend-arch.png)
+![databend arch](https://psiace.github.io/databend-internals/source-reading/intro/02-databend-arch.png)
 
 虽然我们是使用 Rust 从零开始实现的，但不是完全闭门造轮子，一些优秀的开源组件或者生态也有在其中集成。如：我们兼容了 Ansi-SQL 标准，提供了 MySQL/ClickHouse 等主流协议的支持，拥抱了万物互联的 Arrow 生态，存储格式基于大数据主流的 Parquet 格式等。我们不仅会积极地回馈了贡献给上游，如 Arrow2/Tokio 等开源库，一些通用的组件我们也抽成独立的项目开源在Github（openraft, opendal, opencache, opensrv 等）。
 
