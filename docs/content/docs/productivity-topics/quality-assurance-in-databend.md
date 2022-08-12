@@ -2,7 +2,7 @@
 title = "Databend 的质量保障"
 description = "质量保障（Quality Assurance）用于确认产品和服务能够满足规定的质量需求。让我们一起来看一下 Databend 的质量保障实践。"
 draft = false
-weight = 520
+weight = 320
 sort_by = "weight"
 template = "docs/page.html"
 

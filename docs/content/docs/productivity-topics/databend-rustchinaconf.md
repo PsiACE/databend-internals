@@ -2,7 +2,7 @@
 title = "使用 Rust 构建云原生数仓 Databend"
 description = "本篇文章是对 Databend 在 RustChinaConf 2022 上演讲的一个全文回顾。涉及「Databend 的架构和设计」以及「Databend 团队的 Rust 之旅」。"
 draft = false
-weight = 510
+weight = 310
 sort_by = "weight"
 template = "docs/page.html"
 
