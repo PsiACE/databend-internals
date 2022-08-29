@@ -119,6 +119,20 @@ function 中暴露了多套注册方法, 根据函数接受的参数个数不同
 Domain是函数的输入的值域经过函数转换后得出的值域, 一些函数计算是符合单调性等特性的, 利用这类特性我们轻量级计算出函数的值域,这对后续的Partition Prune 有很大帮助, 例如: 数据在底层是通过 timestamp 排序的, 在索引层我们会有timestamp列的 Min/Max 索引, 那么对于带 `where to_date(timestamp) > '2020-01-01'` 过滤条件的SQL查询, 根据索引数据可以利用 `Domain` 计算出 `to_date(timestamp)` 列的 Min/Max 索引,从而进入 Prune 逻辑。
 
 
+- 类型自动转换规则:
+
+1. 数值类型在精度不丢失的情况下能自动向上转型,如` i8 --> i16 --> i32 --> i64`
+2. 所有 integer 类型能转为 int64 类型, 如 `u32 --> i64, u64 ---> i64`, 转型过程出现溢出会抛出错误
+3. 所有数值类型能转为 float64 类型, 如 `i32 --> f64, u64 --> f64`, 转型过程出现溢出会抛出错误
+4. `null`类型能转为`nullable<T>`类型, 如: `null --> nullable<i32>`
+5. `T` 类型能转为 `nullable<T>` 类型, 如: `i32 --> nullable<i32>`
+6. 嵌套规则: 如果 `T` 能转为 `U` 类型,则 `nullable<T>` 类型能转为 `nullable<U>` 类型, 则 `Array<T>` 类型能转为 `Array<U>` 类型
+
+
+由于数值类型较多,大部分情况下我们只需要定义 最大类型即可,如 `asin` 只需要定义 `NumberType<f64>` 类型的参数, 接收到其他类型的参数时会自动转型, 例如: `asin(i32)` 会自动转型为 `asin(f64)`; 在少数性能敏感计算,我们会给较小范围的 数值参数定义额外函数重载, 如 `plus`, `minus`, 此时由于自动转换规则的存在,我们必须注意重载的函数必须定义在最大类型的函数之前, 因为函数的查找是按注册顺序进行查找, 只捕获符合条件的第一个函数。
+
+所以:  `i32` 优先 定义于 `i64`, `u64` 优先定义于 `i64`, `i64` 优先定义于 `f64`, `null` 优先定义于 `nullable`。
+
 ### Learn More
 
 - [RFC: Formal Type System](https://github.com/datafuselabs/databend/discussions/5438)
