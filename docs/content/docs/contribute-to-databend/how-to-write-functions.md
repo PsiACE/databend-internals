@@ -108,11 +108,10 @@ function 中暴露了多套注册方法, 根据函数接受的参数个数不同
 
 |                                     | Auto Vectorization | Access Output Column Builder | Auto Null Passthrough | Auto Downcast | Throw Runtime Error | Varidic | Tuple |
 | ----------------------------------- | ------------------ | ---------------------------- | --------------------- | ------------- | ------------------- | ------- | ------- |
-| register_n_arg                      |                  |                            |                     |             |                   |       |       |
-| register_passthrough_nullable_n_arg |                  |                            |                     |             |                   |       |       |
-| register_n_arg_core                 |                  |                            |                     |             |                   |       |       |
-| register_function_factory           |                  |                            |                     |             |                   |       |       |
-
+| register_n_arg                      | ✔️                 | ❌                           | ✔️                    | ✔️            | ❌                  | ❌      | ❌      |
+| register_passthrough_nullable_n_arg | ❌                 | ✔️                           | ✔️                    | ✔️            | ✔️                  | ❌      | ❌      |
+| register_n_arg_core                 | ❌                 | ✔️                           | ❌                    | ✔️            | ✔️                  | ❌      | ❌      |
+| register_function_factory           | ❌                 | ✔️                           | ❌                    | ❌            | ✔️                  | ✔️      | ✔️      |
 
 -  Domain解析:
 
