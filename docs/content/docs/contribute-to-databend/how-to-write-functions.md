@@ -106,12 +106,12 @@ function 中暴露了多套注册方法, 根据函数接受的参数个数不同
 
 另外, 根据不同的功能需求, 我们提供了不同Level的注册API
 
-|                            | Auto Vectorization | Auto Null Passthrough | Auto Downcast | Access Output Column Builder | Throw Runtime Error | Varidic |
-|----------------------------|--------------------|-----------------------|---------------|------------------------------|---------------------|---------|
-| register_n_arg             | ✅                  | ✅                     | ✅             | ❌                            | ❌                   | ❌       |
-| register_with_writer_n_arg | ✅                  | ✅                     | ✅             | ✅                            | ✅                   | ❌       |
-| register_n_arg_core        | ❌                  | ❌                     | ✅             | ✅                            | ✅                   | ❌       |
-| register_function_factory           | ❌                  | ❌                     | ❌             | ✅                            | ✅                   | ✅       |
+|                                     | Auto Vectorization | Access Output Column Builder | Auto Null Passthrough | Auto Downcast | Throw Runtime Error | Varidic | Tuple |
+| ----------------------------------- | ------------------ | ---------------------------- | --------------------- | ------------- | ------------------- | ------- | ------- |
+| register_n_arg                      |                  |                            |                     |             |                   |       |       |
+| register_passthrough_nullable_n_arg |                  |                            |                     |             |                   |       |       |
+| register_n_arg_core                 |                  |                            |                     |             |                   |       |       |
+| register_function_factory           |                  |                            |                     |             |                   |       |       |
 
 
 -  Domain解析:
