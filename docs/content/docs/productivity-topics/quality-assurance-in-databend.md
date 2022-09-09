@@ -113,7 +113,7 @@ Databend 目前共有接近 800 条单元测试，对重点函数做到了应测
 
 每个功能都是由若干函数/过程组成的，功能测试正是为评估功能的正确性而设立。功能测试会以 standalone 和 cluster 两种模式进行，以确保 Databend 的分布式执行功能，。
 
-当前 Databend 的功能测试主要由 `sqllogictest` 测试和 `stateful` 测试两个部分组成，这两类测试都可以在 `tests/suit` 目录下找到。
+当前 Databend 的功能测试主要由 `sqllogictest` 测试和 `stateful` 测试两个部分组成，这两类测试都可以在 `tests` 目录下找到。
 
 `sqllogictest` 即 SQL 逻辑测试，是为了解决之前的 stateless 的一些旧有问题而专门设计实现的测试方案。[RFC | New SQL Logic Test Framework](https://databend.rs/doc/contributing/rfcs/new_sql_logic_test_framework) 中介绍了其基本背景和方案概要。
 

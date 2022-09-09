@@ -169,7 +169,7 @@ goldenfiles 的报错可能会涉及多个测试文件，受限于长文本支�
 
 ## 功能测试
 
-功能测试暂时出现两种方案并行的情况，除了旧有的 stateless/stateful 测试方案外，还引入了全新的 SQL 逻辑测试，后续 stateless 测试会过渡到 SQL 逻辑测试上。
+功能测试主要由 SQL 逻辑测试（sqllogictest）和 stateful 测试两个部分组成。
 
 从本质上讲，这两类功能测试流程相同：
 
@@ -177,7 +177,7 @@ goldenfiles 的报错可能会涉及多个测试文件，受限于长文本支�
 - 使用对应的客户端/驱动执行查询。
 - 对比查询情况和预期行为之间的差异，判断测试是否通过。
 
-但是，在设计上，SQL 逻辑测试可以提供更全面的能力：
+在设计上，SQL 逻辑测试可以提供更全面的能力：
 
 - 拓展比较结果文件的方式到其他协议（涵盖 http handler）。
 - 提示每个语句的结果。
@@ -186,9 +186,36 @@ goldenfiles 的报错可能会涉及多个测试文件，受限于长文本支�
 
 ### 编写
 
-**stateless/stateful 测试**
+**SQL 逻辑测试**
 
-stateless/stateful 测试放在 `tests/suites` 目录下：
+SQL 逻辑测试放在 `tests/logictest` 目录下。
+
+语句规范在 sqlite sqllogictest 的基础上进行拓展，可以分成以下几类：
+
+- `statement ok` ：SQL 语句正确，且成功执行。
+- `statement error <error regex>` ：SQL 语句输出期望的错误。
+- `statement query <desired_query_schema_type> <options> <labels>` ：SQL语句成功执行并输出预期结果。
+
+```sql
+statement query B label(mysql,http)
+select count(1) > 1 from information_schema.columns;
+
+----  mysql
+1
+
+----  http
+true
+```
+
+上面的例子展示了如何对 mysql 和 http 分别设计对应的输出结果。其中 `B` 表示结果为布尔类型，`label` 用来标记协议。
+
+SQL 逻辑测试同样支持测试集生成 `python3 gen_suites.py` 。
+
+**stateful 测试**
+
+stateful 测试放在 `tests/suites` 目录下：
+
+> 这里展示的是一类 stateless 写法，stateful 与之类似，区别在于 stateful 会加载数据集并执行查询。
 
 - 输入是一系列 sql 语句，对应目录中的 `*.sql` 文件。
 
@@ -221,65 +248,16 @@ stateless/stateful 测试放在 `tests/suites` 目录下：
     SELECT INET_ATON('hello');-- {ErrorCode 1060}
     ```
 
-**SQL 逻辑测试**
-
-SQL 逻辑测试放在 `tests/logictest` 目录下。
-
-语句规范在 sqlite sqllogictest 的基础上进行拓展，可以分成以下几类：
-
-- `statement ok` ：SQL 语句正确，且成功执行。
-- `statement error <error regex>` ：SQL 语句输出期望的错误。
-- `statement query <desired_query_schema_type> <options> <labels>` ：SQL语句成功执行并输出预期结果。
-
-```sql
-statement query B label(mysql,http)
-select count(1) > 1 from information_schema.columns;
-
-----  mysql
-1
-
-----  http
-true
-```
-
-上面的例子展示了如何对 mysql 和 http 分别设计对应的输出结果。其中 `B` 表示结果为布尔类型，`label` 用来标记协议。
-
-SQL 逻辑测试同样支持测试集生成 `python3 gen_suites.py` 。
-
 ### 运行
 
-> 由于 stateless/stateful 测试和 sqllogictest 测试均由 Python 编写，在运行前请确保你已经安装全部的依赖。
+> 由于 stateful 测试和 sqllogictest 测试均由 Python 编写，在运行前请确保你已经安装全部的依赖。
 
 这几类测试都有对应的 `make` 命令，并支持集群模式测试：
 
-- `stateless` 测试：`make stateless-test` & `make stateless-cluster-test` 。
-- `stateful` 测试：`make stateful-test` & `make stateful-cluster-test` 。（一般在 CI 中运行，本地需要正确配置 MINIO 环境）。
 - `sqllogictest` 测试：`make sqllogic-test` & `make sqllogic-cluster-test` 。
+- `stateful` 测试：`make stateful-test` & `make stateful-cluster-test` 。（一般在 CI 中运行，本地需要正确配置 MINIO 环境）。
 
 ### 排查
-
-**stateless/stateful 测试**
-
-目前 stateless/stateful 测试能够提供文件级的报错和 diff ，但无法确定报错是由哪一条语句产生。
-
-```
-02_0057_function_nullif:                                                [ FAIL ] - result differs with:
---- /projects/datafuselabs/databend/tests/suites/0_stateless/02_function/02_0057_function_nullif.result
-+++ /projects/datafuselabs/databend/tests/suites/0_stateless/02_function/02_0057_function_nullif.stdout
-@@ -3,7 +3,7 @@
- 1
- 1
- NULL
--a
-+b
- b
- a
- NULL
-
-Having 1 errors! 207 tests passed.                     0 tests skipped.
-The failure tests:
-    /projects/datafuselabs/databend/tests/suites/0_stateless/02_function/02_0057_function_nullif.sql
-```
 
 **sqllogictest 测试**
 
@@ -306,7 +284,32 @@ Parsed Statement
 make: *** [Makefile:82: sqllogic-test] Error 1
 ```
 
+**stateful 测试**
+
+目前 stateful 测试能够提供文件级的报错和 diff ，但无法确定报错是由哪一条语句产生。
+
+> 这里展示的是过去 stateless 引发的报错，stateful 与之类似。
+
+```
+02_0057_function_nullif:                                                [ FAIL ] - result differs with:
+--- /projects/datafuselabs/databend/tests/suites/0_stateless/02_function/02_0057_function_nullif.result
++++ /projects/datafuselabs/databend/tests/suites/0_stateless/02_function/02_0057_function_nullif.stdout
+@@ -3,7 +3,7 @@
+ 1
+ 1
+ NULL
+-a
++b
+ b
+ a
+ NULL
+
+Having 1 errors! 207 tests passed.                     0 tests skipped.
+The failure tests:
+    /projects/datafuselabs/databend/tests/suites/0_stateless/02_function/02_0057_function_nullif.sql
+```
+
 **提示**
 
-- stateless/stateful 超时类错误（Timeout!）的默认时间限制为 10 分钟。为方便排查，可以将 `databend-test` 文件中的 `timeout` 改短。
 - 移除 `databend-query-standalone-embedded-meta.sh` 等脚本中的 `nohup` 有助于在测试时同时输出日志到终端，可能同样有助于排查。
+- stateful 超时类错误（Timeout!）的默认时间限制为 10 分钟。为方便排查，可以将 `databend-test` 文件中的 `timeout` 改短。
