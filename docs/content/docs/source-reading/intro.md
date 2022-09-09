@@ -68,12 +68,12 @@ MetaService 主要用于存储读取持久化的元数据信息，比如 Catalog
 
 |包名|作用|
 |----|----|
-|metasrv|MetaService 服务，作为独立进程部署，可部署多个组成集群，底层使用 Raft 做分布式共识，Query 以 Grpc 和 MetaService 交互。|
-|common/meta/types|定义了各类需要保存在 MetaService 的结构体，由于这些结构体最终需要持久化，所以涉及到数据序列化的问题，当前使用 Protobuf 格式来进行序列化和反序列化操作，这些类型相关的 Rust 结构体与 Protobuf 的相互序列化规则代码定义在 common/proto-conv 子目录中。|
-|common/meta/sled-store|当前 MetaService 使用 sled 来保存持久化数据，这个子目录封装了 sled 相关的操作接口。|
-|common/meta/raft-store|openraft 用户层需要实现 raft store 的存储接口用于保存数据，这个子目录就是 MetaService 实现的 openraft 的存储层，底层依赖于 sled 存储，同时这里还实现了 openraft 用户层需要自定义的状态机。|
-|common/meta/api|对 query 暴露的基于 KVApi 实现的用户层 api 接口。|
-|common/meta/grpc|基于 grpc 封装的 client，MetaService 的客户端使用这里封装好的 client 与 MetaService 进行通信交互。|
+|meta/service|MetaService 服务，作为独立进程部署，可部署多个组成集群，底层使用 Raft 做分布式共识，Query 以 Grpc 和 MetaService 交互。|
+|meta/types|定义了各类需要保存在 MetaService 的结构体，由于这些结构体最终需要持久化，所以涉及到数据序列化的问题，当前使用 Protobuf 格式来进行序列化和反序列化操作，这些类型相关的 Rust 结构体与 Protobuf 的相互序列化规则代码定义在 meta/proto-conv 子目录中。|
+|meta/sled-store|当前 MetaService 使用 sled 来保存持久化数据，这个子目录封装了 sled 相关的操作接口。|
+|meta/raft-store|openraft 用户层需要实现 raft store 的存储接口用于保存数据，这个子目录就是 MetaService 实现的 openraft 的存储层，底层依赖于 sled 存储，同时这里还实现了 openraft 用户层需要自定义的状态机。|
+|meta/api|对 query 暴露的基于 KVApi 实现的用户层 api 接口。|
+|meta/grpc|基于 grpc 封装的 client，MetaService 的客户端使用这里封装好的 client 与 MetaService 进行通信交互。|
 |raft|<https://github.com/datafuselabs/openraft>，从 async-raft 项目中衍生改进的全异步 Raft 库。|
 
 ### Query Layer
@@ -87,26 +87,25 @@ query 涉及的模块有：
 
 |包名|作用|
 |----|----|
-|query|Query 服务，整个函数的入口在 bin/databend-query.rs 其中包含一些子模块，这里介绍下比较重要的子模块
+|query/service|Query 服务，整个函数的入口在 bin/databend-query.rs 其中包含一些子模块，这里介绍下比较重要的子模块
 |     | api ：对外暴露给外部的 HTTP/RPC 接口 |
 |     | catalogs：catalogs 管理，目前支持默认的 catalog（存储在 metaservice）以及 hive catalog （存储在 hive meta store) |
-|     | Clusters：query 集群信息 |
-|     | Config：query 的配置相关 |
+|     | clusters：query 集群信息 |
 |     | databases：query 支持的 database engine 相关 |
 |     | evaluator：表达式计算工具类 |
-|     | Interpreters：SQL 执行器，SQL 构建出 Plan 后，通过对应执行器去做物理执行 |
+|     | interpreters：SQL 执行器，SQL 构建出 Plan 后，通过对应执行器去做物理执行 |
 |     | pipelines：实现了物理算子的调度框架 |
-|     | Servers：对外暴露的服务，有 clickhouse/mysql/http 等 |
-|     | Sessions：session 管理相关 |
-|     | Sql：包含新的 planner 设计，新的 binder 逻辑，新的 optimizers 设计 |
-|     | Storages：表引擎相关，最常用为 fuse engine |
+|     | servers：对外暴露的服务，有 clickhouse/mysql/http 等 |
+|     | sessions：session 管理相关 |
+|     | sql：包含新的 planner 设计，新的 binder 逻辑，新的 optimizers 设计 |
 |     | table_functions：表函数相关，如 numbers |
-|common/ast|基于 nom_rule 实现的新版 sql parser|
-|common/datavalues|各类 Column 的定义，表示数据在内存上的布局， 后续会逐步迁移到 common/expressions|
-|common/datablocks|Datablock 表示 Vec<Column> 集合，里面封装了一些常用方法,  后续会逐步迁移到 common/expressions|
-|common/functions|标量函数以及聚合函数等实现注册|
+|query/ast|基于 nom_rule 实现的新版 sql parser|
+|query/datavalues|各类 Column 的定义，表示数据在内存上的布局， 后续会逐步迁移到 query/expressions|
+|query/datablocks|Datablock 表示 `Vec<Column>` 集合，里面封装了一些常用方法,  后续会逐步迁移到 query/expressions|
+|query/functions|标量函数以及聚合函数等实现注册，后续会替换为 query/functions-v2|
+|query/formats|负责数据对外各类格式的 序列化反序列化，如 CSV/TSV/Json 格式等|
+|query/storages | 表引擎相关，最常用为 fuse engine |
 |common/hashtable|实现了一个线性探测的 hashtable，主要用于 group by 聚合函数以及 join 等场景|
-|common/formats|负责数据对外各类格式的 序列化反序列化，如 CSV/TSV/Json 格式等|
 |opensrv|<https://github.com/datafuselabs/opensrv>|
 
 ### Storage Layer

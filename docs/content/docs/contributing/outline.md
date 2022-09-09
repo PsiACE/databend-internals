@@ -46,6 +46,7 @@ giscus = true
 **已上线**
 
 - Databend 源码阅读： 开篇
+- Databend 源码阅读： Query Server 启动、Session 管理及请求处理
 
 **规划中**
 
