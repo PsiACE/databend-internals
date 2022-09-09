@@ -113,14 +113,15 @@ Databend 目前共有接近 800 条单元测试，对重点函数做到了应测
 
 每个功能都是由若干函数/过程组成的，功能测试正是为评估功能的正确性而设立。功能测试会以 standalone 和 cluster 两种模式进行，以确保 Databend 的分布式执行功能，。
 
-Databend 的功能测试主要由 `stateless` 测试和 `stateful` 测试两个部分组成。其中 `stateless` 测试不需要加载数据集，而 `stateful` 测试会要求装载数据集。这两类测试都可以在 `tests/suit` 目录下找到。
+当前 Databend 的功能测试主要由 `sqllogictest` 测试和 `stateful` 测试两个部分组成，这两类测试都可以在 `tests/suit` 目录下找到。
 
-Databend 功能测试目前采用 Clickhouse 的方法，将测试所需执行的 SQL 集放入一个文件，预期结果集放入另一个文件。在测试时会调用 SQL 集生成对应的测试结果集，并与预期结果集进行对比。
+`sqllogictest` 即 SQL 逻辑测试，是为了解决之前的 stateless 的一些旧有问题而专门设计实现的测试方案。[RFC | New SQL Logic Test Framework](https://databend.rs/doc/contributing/rfcs/new_sql_logic_test_framework) 中介绍了其基本背景和方案概要。
+
+Databend `stateful` 功能测试目前采用 Clickhouse 的方法，将测试所需执行的 SQL 集放入一个文件，预期结果集放入另一个文件。在测试时会调用 SQL 集生成对应的测试结果集，并与预期结果集进行对比。
 
 ## 进一步探索
 
 上面简要介绍了 Databend 日常开发中涉及的质量保障内容，但质量保障体系仍然处于持续演进的过程中，这里列出了一些值得关注的内容：
 
-- SQL 逻辑测试框架（sqllogictest），目前的 stateless/stateful 测试没有扩展到其他协议，并且无法区分具体的执行语句，也不支持错误处理、语句扩展等能力。目前[已建立 RFC 并计划在 `tests/logictest` 完成实施](https://github.com/datafuselabs/databend/pull/5048)。
-- SQLancer，一款针对数据库管理系统DBMS的自动化安全测试工具。Databend 计划使用这一工具探测潜在的逻辑错误，目前[作为 OSPP 2022 项目接受学生报名](https://summer-ospp.ac.cn/#/org/prodetail/226460211)。
+- SQLancer，一款针对数据库管理系统DBMS的自动化安全测试工具。Databend 计划使用这一工具探测潜在的逻辑错误，目前[作为 OSPP 2022 项目](https://summer-ospp.ac.cn/#/org/prodetail/226460211) ，由 [@hanyisong](https://github.com/hanyisong) 同学负责开发，可以关注 [SQLancer supports databend](https://github.com/datafuse-extras/sqlancer/pull/1) 。
 - [Domain-aware Fuzzing](https://github.com/datafuselabs/databend/issues/1549)，Databend 有一个针对 SQL Parser 的简单模糊测试，但只是生成一些随机字符串。一个比较值得探索的方式是像 sqlsmith 那样的方案，生成更有意义和具有针对性的测试用例。
