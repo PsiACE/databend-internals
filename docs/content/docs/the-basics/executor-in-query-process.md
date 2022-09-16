@@ -104,7 +104,7 @@ OLAP 系统需要处理的查询通常涉及大量的数据，采用列式存储
 
 ## 关于 Databend 查询执行的一些问答
 
-> 以下内容整理自 [@fkuner](https://github.com/fkuner) 和 [@zhang2014]((https://github.com/zhang2014) 的一次对话。
+> 以下内容整理自 [@fkuner](https://github.com/fkuner) 和 [@zhang2014](https://github.com/zhang2014) 的一次对话。
 
 1. Databend 中如何保证 numa-local ？
 
