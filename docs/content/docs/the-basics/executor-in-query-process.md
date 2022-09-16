@@ -19,12 +19,13 @@ giscus = true
 
 ![Query Steps](https://psiace.github.io/databend-internals/the-basics/executor-in-query-process/01-query-steps.png)
 
-如上图所示，查询往往需要经历下述四个阶段：
+如上图所示，查询往往需要经历下述几个阶段：
 
-1. 将 SQL 语法解析，形成抽象语法树。
-2. 通过 catalog 对语法树进行 binder ，得到一系列计划。这些计划同样呈现出树状结构。
-3. 计划，又分为逻辑计划和物理计划，经由优化器进行优化。
-4. 根据优化后的计划，利用 pipeline 引擎构建执行器。
+1. 解析 SQL 语法，形成 AST（抽象语法树）。
+2. 通过 Binder 对其进行语义分析，并且生成一个初始的 Logical Plan（逻辑计划）。
+3. 得到初始的 Logical Plan 后，优化器会对其进行改写和优化，最终生成一个可执行的 Physical Plan 。
+4. 通过 Optimizer 生成 Physical Plan 后，将其翻译成可执行的 Pipeline 。
+5. Pipeline 则会交由 Processor 执行框架进行计算。
 
 ## 从 Volcano Model 开始
 
