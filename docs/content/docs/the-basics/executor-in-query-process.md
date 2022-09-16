@@ -19,12 +19,13 @@ giscus = true
 
 ![Query Steps](https://psiace.github.io/databend-internals/the-basics/executor-in-query-process/01-query-steps.png)
 
-如上图所示，查询往往需要经历下述四个阶段：
+如上图所示，查询往往需要经历下述几个阶段：
 
-1. 将 SQL 语法解析，形成抽象语法树。
-2. 通过 catalog 对语法树进行 binder ，得到一系列计划。这些计划同样呈现出树状结构。
-3. 计划，又分为逻辑计划和物理计划，经由优化器进行优化。
-4. 根据优化后的计划，利用 pipeline 引擎构建执行器。
+1. 解析 SQL 语法，形成 AST（抽象语法树）。
+2. 通过 Binder 对其进行语义分析，并且生成一个初始的 Logical Plan（逻辑计划）。
+3. 得到初始的 Logical Plan 后，优化器会对其进行改写和优化，最终生成一个可执行的 Physical Plan 。
+4. 通过 Optimizer 生成 Physical Plan 后，将其翻译成可执行的 Pipeline 。
+5. Pipeline 则会交由 Processor 执行框架进行计算。
 
 ## 从 Volcano Model 开始
 
@@ -100,3 +101,23 @@ OLAP 系统需要处理的查询通常涉及大量的数据，采用列式存储
 
 - 利用 Rust 语言标准库，`std::simd` 提供关于 SIMD 指令的抽象封装，可以编写易于理解的代码。
 - 自动向量化，通过优化代码逻辑，削减循环中的分支预测，充分利用编译器的能力。
+
+## 关于 Databend 查询执行的一些问答
+
+> 以下内容整理自 [@fkuner](https://github.com/fkuner) 和 [@zhang2014]((https://github.com/zhang2014) 的一次对话。
+
+1. Databend 中如何保证 numa-local ？
+
+    答：numa-local 在 aggregator processor 中是 core 独享的。pipelines size 和 executor worker size 1:1 对应也是为了numa local 。在调度时，尽量不会切换线程。一个任务从头调度到尾，将新产生的支线任务放入全局调度。
+
+2. Pipeline 如果需要等待 IO 是如何调度的？
+
+    答：Databend 通过感知数据状态来调度 Pipeline，如果数据没有准备好不会调度。至于 IO ，会被调度到 global io runtime 中，通过 Rust  Async 阻塞等待。
+
+3. 任务、Pipeline 和 Processor 的对应关系是怎样的？
+
+    答：论文中的模型是：一个任务处理一个 Pipline ，而一个 Pipeline 可以由多个 Processor 组成。而 Databend 可以在 Processor 级别做任务窃取，任务切割到 Processor 级别可切分的情况下，调度是更灵活的。虽然是在调度器中调度Processor，但这个 Processor 在运行状态中具体对应到的就是一个 Data Block 。类似论文中 Pipeline 的 Job 切分。
+
+4. Databend 中对 numa-local 倾向性的调度处理是如何做的？
+
+    答：理想状态下执行线程应该互不干扰，但考虑到任务可能存在倾斜。当其中某个线程提前完成任务时，为了加速整个执行流程可能需要该线程窃取剩下的任务。在调度时，执行器会存在一个 local context ，不会在线程间存在任何共享。
