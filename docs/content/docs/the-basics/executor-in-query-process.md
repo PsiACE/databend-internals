@@ -2,7 +2,7 @@
 title = "查询执行"
 description = "查询在数据库系统中的调度与执行方式同样会深刻影响到数据库的性能表现。本文简要梳理了查询流程中与执行相关的内容，希望能够帮助大家更好理解查询引擎的工作原理。"
 draft = false
-weight = 250
+weight = 240
 sort_by = "weight"
 template = "docs/page.html"
 
