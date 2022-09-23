@@ -2,7 +2,7 @@
 title = "存储"
 description = "在这篇文章中，概述了存储的一些基本内容并简要回答「数据库如何进行存储」，为大家了解存储系统提供一个基本的视角。"
 draft = false
-weight = 250
+weight = 220
 sort_by = "weight"
 template = "docs/page.html"
 
