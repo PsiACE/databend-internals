@@ -61,6 +61,7 @@ giscus = true
 
 ### 版本路线图
 
+- [Release proposal: Nightly v0.9](https://github.com/datafuselabs/databend/issues/7052)
 - [Release proposal: Nightly v0.8](https://github.com/datafuselabs/databend/issues/4591)
 - [Release proposal: Nightly v0.7](https://github.com/datafuselabs/databend/issues/3428)
 - [Release proposal: Nightly v0.6](https://github.com/datafuselabs/databend/issues/2525)
