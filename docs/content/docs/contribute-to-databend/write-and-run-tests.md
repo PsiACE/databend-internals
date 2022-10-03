@@ -313,3 +313,191 @@ The failure tests:
 
 - 移除 `databend-query-standalone-embedded-meta.sh` 等脚本中的 `nohup` 有助于在测试时同时输出日志到终端，可能同样有助于排查。
 - stateful 超时类错误（Timeout!）的默认时间限制为 10 分钟。为方便排查，可以将 `databend-test` 文件中的 `timeout` 改短。
+
+## SQLacner for Databend 测试
+
+### 一、运行
+
+1、启动databend-query并创建用户
+
+```bash
+./databend/bin/databend-query &
+mysql -uroot -h127.0.0.1 -P3307 -e "CREATE USER 'sqlancer' IDENTIFIED BY 'sqlancer'; GRANT ALL ON *.* TO sqlancer;"
+```
+
+2、打包sqlancer
+
+```bash
+git clone https://github.com/sqlancer/sqlancer.git
+cd sqlancer
+mvn package -DskipTests
+```
+
+3、运行sqlancer
+
+```bash
+#方式一，运行test单元
+DATABEND_AVAILABLE=true mvn -Dtest=TestDatabend test
+#方式二，运行jar包，可指定参数
+cd target
+java -jar sqlancer-*.jar --num-threads 4 --random-string-generation ALPHANUMERIC databend --oracle WHERE
+#运行成功每5s输出一条信息
+[2022/10/01 19:33:12] Executed 1037 queries (207 queries/s; 0.80/s dbs, successful statements: 100%). Threads shut down: 0.
+[2022/10/01 19:33:17] Executed 2133 queries (219 queries/s; 0.00/s dbs, successful statements: 100%). Threads shut down: 0.
+[2022/10/01 19:33:22] Executed 3248 queries (223 queries/s; 0.00/s dbs, successful statements: 100%). Threads shut down: 0.
+[2022/10/01 19:33:27] Executed 4351 queries (220 queries/s; 0.00/s dbs, successful statements: 100%). Threads shut down: 0.
+```
+
+4、列举以下常用options（主可选项定义在MainOptions类，另外一个定义在DatabendOptions类）
+
+-h：查看帮助
+
+--num-threads：线程数
+
+--timeout-seconds：运行时间，单位秒，默认-1无限执行
+
+--num-tries：指定多少次异常后停止测试，默认100
+
+--database-prefix：数据库的前缀名
+
+--random-string-generation：随机字符串模式
+
+--host：主机，默认localhost
+
+--port：端口，默认3307
+
+--username：用户名，默认sqlancer
+
+--password：密码，默认sqlancer
+
+databend：指定的DBMS
+
+--oracle：测试的方式
+
+Non-optimizing Reference Engine Construction (NoREC)
+
+- NoREC
+
+Ternary Logic Partitioning (TLP)
+
+- QUERY_PARTITIONING
+- WHERE
+- GROUP_BY
+- HAVING
+- DISTINCT
+- AGGREGATE
+
+### 二、排查
+
+当sqlancer停止测试后，会先清除原来的日志文件（注意备份），然后将所有错误写入到新的日志文件中 `./sqlancer/logs/databend/*.log` 其中 `*-cur.log` 为某个db执行的sql记录。
+
+#### 1、TLP检测出logic bug
+
+若TLP检测出logic bug，日志文件会包含以下信息（错误的 query sql与重现db的sql）：其中cardinality不一致说明发生了logic bug。
+
+```
+--java.lang.AssertionError: the size of the result sets mismatch (3 and 6)!
+-- Time: 2022/08/29 16:57:50
+-- Database: databend1
+-- Database version: 8.0.26-v0.8.12-nightly-74d0287-simd(rust-1.64.0-nightly-2022-08-27T03:09:50.519081067Z)
+-- seed value: 1
+DROP DATABASE IF EXISTS databend1;
+CREATE DATABASE databend1;
+USE databend1;
+CREATE TABLE t0(c0BOOLEAN BOOLEAN NULL DEFAULT(true));
+CREATE TABLE t1(c0FLOAT DOUBLE NULL DEFAULT(0.8522535562515259), c1VARCHAR VARCHAR NULL);
+INSERT INTO t1(c0float) VALUES (0.48751503229141235);
+INSERT INTO t1(c0float, c1varchar) VALUES (0.8522535562515259, NULL);
+INSERT INTO t1(c1varchar) VALUES ('2'), ('78');
+INSERT INTO t0(c0boolean) VALUES (false), (false), (true);
+INSERT INTO t1(c0float) VALUES (0.8522535562515259), (0.48751503229141235);
+INSERT INTO t1(c0float, c1varchar) VALUES (0.48751503229141235, '7555834'), (0.7298239469528198, '8');
+-- SELECT t0.c0boolean FROM t0;
+-- cardinality: 3
+-- SELECT t0.c0boolean FROM t0 WHERE (NULL BETWEEN NULL AND NULL) UNION ALL SELECT t0.c0boolean FROM t0 WHERE (NOT (NULL BETWEEN NULL AND NULL)) UNION ALL SELECT t0.c0boolean FROM t0 WHERE (((NULL BETWEEN NULL AND NULL)) IS NULL);
+-- cardinality: 6
+```
+
+TLP发现的bug例如：[sqlancer: expression expansion error · Issue #7360 · datafuselabs/databend (github.com)](https://github.com/datafuselabs/databend/issues/7360)
+
+#### 2、NoREC检测出logic bug
+
+若NoREC检测出logic bug，日志文件会包含以下信息（错误的query sql与重现db的sql）：
+
+第一条 query sql 返回的是结果的row数，第二条 query sql 返回的是count的和，若两数不一致则出现logic bug。
+
+```
+java.lang.AssertionError: SELECT t1.c0float, t1.c1varchar, t0.c0boolean FROM t1 RIGHT  JOIN t0 ON true WHERE (NOT -1257754687); -- 3
+SELECT SUM(count) FROM (SELECT (((NOT -1257754687) IS NOT NULL AND (NOT -1257754687)) ::BIGINT)as count FROM t1 RIGHT JOIN t0 ON true) as res -- 0
+-- Time: 2022/09/24 09:27:50
+-- Database: databend1
+-- Database version: 8.0.26-v0.8.46-nightly-f524701-simd(rust-1.66.0-nightly-2022-09-23T16:20:13.611527635Z)
+-- seed value: 1
+DROP DATABASE IF EXISTS databend1;
+CREATE DATABASE databend1;
+USE databend1;
+CREATE TABLE t0(c0BOOLEAN BOOLEAN NULL DEFAULT(true));
+CREATE TABLE t1(c0FLOAT DOUBLE NULL DEFAULT(0.8522535562515259), c1VARCHAR VARCHAR NULL);
+INSERT INTO t1(c0float) VALUES (0.48751503229141235);
+```
+
+NoREC发现的bug例如：[bug: select error · Issue #7863 · datafuselabs/databend (github.com)](https://github.com/datafuselabs/databend/issues/7863)
+
+#### 3、NoREC与TLP检测出其他Bug
+
+NoREC与TLP测试期间还会检测出使得databend错乱的bug：
+
+如果报错信息有 `Cause by` 且报错信息很复杂则极有可能是bug，也可能是sqlancer生成的sql语法错误。
+
+情况比较多，例如：
+
+- [Can't construct type from Float32(Float32) and Int64(Int64) · Discussion #7162 · datafuselabs/databend (github.com)](https://github.com/datafuselabs/databend/discussions/7162)
+- 这种bug较难发现，因为它极有可能是语法错误：[bug: return error after adding form and join · Issue #8000 · datafuselabs/databend (github.com)](https://github.com/datafuselabs/databend/issues/8000)
+- 根据执行的速度，判断可能存在的问题：[long SQL makes parser work really slow. · Issue #7225 · datafuselabs/databend (github.com)](https://github.com/datafuselabs/databend/issues/7225)
+- [bug: const types and nullable types are orthogonal · Issue #7241 · datafuselabs/databend (github.com)](https://github.com/datafuselabs/databend/issues/7241)
+- [bug: ERROR 2013 (HY000): Lost connection to server during query · Issue #7949 · datafuselabs/databend (github.com)](https://github.com/datafuselabs/databend/issues/7949)
+- [Bug in numerical_coercion of in operator · Issue #7203 · datafuselabs/databend (github.com)](https://github.com/datafuselabs/databend/issues/7203)
+
+#### 4、据不完全统计目前测出的Bug
+
+[Can't construct type from Float32(Float32) and Int64(Int64) · Discussion #7162 · datafuselabs/databend (github.com)](https://github.com/datafuselabs/databend/discussions/7162)
+
+[long SQL makes parser work really slow. · Issue #7225 · datafuselabs/databend (github.com)](https://github.com/datafuselabs/databend/issues/7225)
+
+[bug: const types and nullable types are orthogonal · Issue #7241 · datafuselabs/databend (github.com)](https://github.com/datafuselabs/databend/issues/7241)
+
+[Bug in numerical_coercion of in operator · Issue #7203 · datafuselabs/databend (github.com)](https://github.com/datafuselabs/databend/issues/7203)
+
+[sqlancer: expression expansion error · Issue #7360 · datafuselabs/databend (github.com)](https://github.com/datafuselabs/databend/issues/7360)
+
+[bug: Code: 4000, displayText = block pruning failure, task 1050895 panicked. · Issue #7366 · datafuselabs/databend (github.com)](https://github.com/datafuselabs/databend/issues/7366)
+
+[bug: where clause error · Issue #7457 · datafuselabs/databend (github.com)](https://github.com/datafuselabs/databend/issues/7457)
+
+[bug: expression evaluation error · Issue #7460 · datafuselabs/databend (github.com)](https://github.com/datafuselabs/databend/issues/7460)
+
+[bug: Code: 4000, displayText = unexpected end of file (failed to fill whole buffer) (while in processor thread 15). · Issue #7461 · datafuselabs/databend (github.com)](https://github.com/datafuselabs/databend/issues/7461)
+
+[bug: expression evaluation error · Issue #7460 · datafuselabs/databend (github.com)](https://github.com/datafuselabs/databend/issues/7460)
+
+[bug: the content of the result sets mismatch · Issue #7463 · datafuselabs/databend (github.com)](https://github.com/datafuselabs/databend/issues/7463)
+
+[bug: Code: 4000, displayText = block pruning failure, task 4274595 panicked. · Issue #7464 · datafuselabs/databend (github.com)](https://github.com/datafuselabs/databend/issues/7464)
+
+[bug: Code: 1058, displayText = downcast column error · Issue #7483 · datafuselabs/databend (github.com)](https://github.com/datafuselabs/databend/issues/7483)
+
+[bug: Hash table capacity overflow · Issue #7495 · datafuselabs/databend (github.com)](https://github.com/datafuselabs/databend/issues/7495)
+
+[bug: cannot convert NULL to a non-nullable type · Issue #7498 · datafuselabs/databend (github.com)](https://github.com/datafuselabs/databend/issues/7498)
+
+[bug: expression explain error · Issue #7543 · datafuselabs/databend (github.com)](https://github.com/datafuselabs/databend/issues/7543)
+
+[bug: select view error · Issue #7573 · datafuselabs/databend (github.com)](https://github.com/datafuselabs/databend/issues/7573)
+
+[bug: select error · Issue #7863 · datafuselabs/databend (github.com)](https://github.com/datafuselabs/databend/issues/7863)
+
+[bug: where clause explain error · Issue #7864 · datafuselabs/databend (github.com)](https://github.com/datafuselabs/databend/issues/7864)
+
+[bug: ERROR 2013 (HY000): Lost connection to server during query · Issue #7949 · datafuselabs/databend (github.com)](https://github.com/datafuselabs/databend/issues/7949)
+
+[bug: return error after adding form and join · Issue #8000 · datafuselabs/databend (github.com)](https://github.com/datafuselabs/databend/issues/8000)
