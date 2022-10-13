@@ -33,36 +33,36 @@ giscus = true
 
 ### 如何迁移
 
-旧的函数位于 `common/functions/src/scalars` ，它们需要被迁移到 `common/functions-v2/src/scalars/` 。
+旧的函数位于 `query/functions/src/scalars` ，它们需要被迁移到 `query/functions-v2/src/scalars/` 。
 
 通常情况下，旧函数实现中的核心逻辑是可以复用的，只需要进行少量重写使其符合新的实现方案。
 
-类似地，旧的测试位于 `common/functions/tests/it/scalars/` ，也应该迁移到 `common/functions-v2/tests/it/scalars/` 。
+类似地，旧的测试位于 `query/functions/tests/it/scalars/` ，也应该迁移到 `query/functions-v2/tests/it/scalars/` 。
 
 新测试将会使用 `goldenfile` 进行编写，所以可以轻松生成测试用例而无需大量繁重的手写工作。
 
 ### 示例
 
-`OCTET_LENGTH` 将会按字节数返回字符串的长度。
+`LENGTH` 将会按字节数返回字符串的长度。
 
-仅仅使用 6 行，就可以在 `common/functions-v2/src/scalars/strings.rs` 中实现 `OCTET_LENGTH` 函数。
+仅仅使用 6 行，就可以在 `query/functions-v2/src/scalars/strings.rs` 中实现 `LENGTH` 函数。
 
 ```rust
 registry.register_1_arg::<StringType, NumberType<u64>, _, _>(
-    "octet_length",
+    "length",
     FunctionProperty::default(),
     |_| None,
     |val| val.len() as u64,
 );
 ```
 
-由于 `LENGTH` 是 `OCTET_LENGTH` 的同义函数，只需为其添加一个函数别名即可，仅用一行。
+由于 `OCTET_LENGTH` 是 `LENGTH` 的同义函数，只需为其添加一个函数别名即可，仅用一行。
 
 ```rust
-registry.register_aliases("octet_length", &["length"]);
+registry.register_aliases("length", &["octet_length"]);
 ```
 
-接下来，需要写一些测试，来确保函数实现的正确性。编辑 `common/functions-v2/tests/it/scalars/string.rs`。
+接下来，需要写一些测试，来确保函数实现的正确性。编辑 `query/functions-v2/tests/it/scalars/string.rs`。
 
 ```rust
 fn test_octet_length(file: &mut impl Write) {
@@ -93,10 +93,10 @@ fn test_string() {
 通过命令行，可以直接生成完整的测试用例，并附加到对应的 `goldenflie` 中：
 
 ```bash
-REGENERATE_GOLDENFILES=1 cargo test -p common-functions-v2 --test it
+REGENERATE_GOLDENFILES=1 cargo test -p query-functions-v2 --test it
 ```
 
-请使用 `git diff` 检查一下生成的测试是否符合预期，如果一切顺利，`OCTET_LENGTH` 函数的迁移工作就完成了。
+请使用 `git diff` 检查一下生成的测试是否符合预期，如果一切顺利，`LENGTH` 函数的迁移工作就完成了。
 
 ## 函数进阶使用
 
@@ -106,12 +106,13 @@ function 中暴露了多套注册方法, 根据函数接受的参数个数不同
 
 另外, 根据不同的功能需求, 我们提供了不同Level的注册API
 
-|                                     | Auto Vectorization | Access Output Column Builder | Auto Null Passthrough | Auto Downcast | Throw Runtime Error | Varidic | Tuple |
-| ----------------------------------- | ------------------ | ---------------------------- | --------------------- | ------------- | ------------------- | ------- | ------- |
-| register_n_arg                      | ✔️                 | ❌                           | ✔️                    | ✔️            | ❌                  | ❌      | ❌      |
-| register_passthrough_nullable_n_arg | ❌                 | ✔️                           | ✔️                    | ✔️            | ✔️                  | ❌      | ❌      |
-| register_n_arg_core                 | ❌                 | ✔️                           | ❌                    | ✔️            | ✔️                  | ❌      | ❌      |
-| register_function_factory           | ❌                 | ✔️                           | ❌                    | ❌            | ✔️                  | ✔️      | ✔️      |
+|                                     | Auto Vectorization | Access Output Column Builder | Auto Null Passthrough | Auto Combine Null | Auto Downcast | Throw Runtime Error | Varidic | Tuple |
+| ----------------------------------- | -- | -- | -- | -- | -- | -- | -- | -- |
+| register_n_arg                      | ✔️ | ❌ | ✔️ | ❌ | ✔️ | ❌ | ❌ | ❌ |
+| register_passthrough_nullable_n_arg | ❌ | ✔️ | ✔️ | ❌ | ✔️ | ✔️ | ❌ | ❌ |
+| register_combine_nullable_n_arg     | ❌ | ✔️ | ✔️ | ✔️ | ✔️ | ✔️ | ❌ | ❌ |
+| register_n_arg_core                 | ❌ | ✔️ | ❌ | ❌ | ✔️ | ✔️ | ❌ | ❌ |
+| register_function_factory           | ❌ | ✔️ | ❌ | ❌ | ❌ | ✔️ | ✔️ | ✔️ |
 
 -  Domain解析:
 
