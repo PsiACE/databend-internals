@@ -1,13 +1,13 @@
 +++
 title = "轻松了解 Databend 构建"
-description = "Databend"
+description = "Databend 除了支持本机构建外，还可以使用 build tool 来进行跨平台构建。"
 draft = false
 weight = 620
 sort_by = "weight"
 template = "docs/page.html"
 
 [extra]
-lead = "工欲善其事，必先利其器。在开启 Databend 贡献之旅前，一起来配置适合自己的开发环境吧。"
+lead = "Databend 除了支持本机构建外，还可以使用 build tool 来进行跨平台构建。"
 toc = true
 top = false
 giscus = true
