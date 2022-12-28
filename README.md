@@ -30,7 +30,7 @@ zola serve
 
 本项目的文本和代码均使用下述协议进行双重许可：
 
-- Creative Commons Attribution 4.0 International ([LICENSE-CC-BY](./LICENSE-CC_BY) 或 https://creativecommons.org/licenses/by/4.0)
+- Creative Commons Attribution 4.0 International ([LICENSE-CC-BY](./LICENSE-CC-BY) 或 https://creativecommons.org/licenses/by/4.0)
 - Apache License, Version 2.0 ([LICENSE-APACHE](./LICENSE-APACHE) 或 http://apache.org/licenses/LICENSE-2.0)
 
 任何人均可根据任一或二者的条款，自由重用本项目中的任何材料。
