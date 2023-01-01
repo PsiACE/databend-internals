@@ -14,6 +14,8 @@ minibend 同时也是 *Databend Internals*，或者说 *Databend 内幕大揭秘
 
 ## 致谢
 
+- [datafuselabs/databend](https://github.com/datafuselabs/databend)，强大的云数仓。专为弹性和高效设计。自由且开源。即刻体验云服务：<https://app.databend.com> 。
 - [*How Query Engines Work*](https://leanpub.com/how-query-engines-work) ，Andy 的大作，也是这一系列的重要参考和基础。
+- [apache/arrow-datafusion](https://github.com/apache/arrow-datafusion)，可扩展的查询规划、优化和执行框架，用 Rust 编写。
 - [Veeupup/naive-query-engine](https://github.com/Veeupup/naive-query-engine), Veeupup 的查询引擎实现。
 - [timvw/simple-query-engine](https://github.com/timvw/simple-query-engine), Tim Van Wassenhove 的查询引擎实现。
