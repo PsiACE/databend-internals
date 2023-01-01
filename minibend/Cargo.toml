@@ -11,7 +11,7 @@ simd = ["arrow2/simd"]
 
 [dependencies]
 arrow2 = { version = "0.15.0", features = ["io_parquet"] }
-async-stream = "0.3"
+async-fn-stream = "0.2"
 futures = "0.3"
 thiserror = "1.0"
 

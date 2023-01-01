@@ -58,6 +58,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "async-fn-stream"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1d5f39746cfb8c7686cc5da3be489d066b2dee606e6e0daec64e59657f016be7"
+dependencies = [
+ "futures",
+ "pin-project-lite",
+]
+
+[[package]]
 name = "async-stream"
 version = "0.3.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -375,7 +385,7 @@ name = "minibend"
 version = "0.1.0"
 dependencies = [
  "arrow2",
- "async-stream",
+ "async-fn-stream",
  "futures",
  "thiserror",
  "tokio",
