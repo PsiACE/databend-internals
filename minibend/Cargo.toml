@@ -5,4 +5,15 @@ edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
+[features]
+default = []
+simd = ["arrow2/simd"]
+
 [dependencies]
+arrow2 = { version = "0.15.0", features = ["io_parquet"] }
+async-stream = "0.3"
+futures = "0.3"
+thiserror = "1.0"
+
+[dev-dependencies]
+tokio = { version = "1.23", features = ["full"] }
