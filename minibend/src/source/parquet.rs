@@ -5,7 +5,7 @@ use arrow2::array::Array;
 use arrow2::chunk::Chunk;
 use arrow2::datatypes::Schema;
 use arrow2::io::parquet::read::*;
-use async_stream::stream;
+use async_fn_stream::fn_stream;
 
 use crate::datablock::DataBlockStream;
 use crate::error::Result;
@@ -57,9 +57,9 @@ impl DataSource for ParquetTable {
         });
 
         // need to consider only relevant columns
-        let output = stream! {
+        let output = fn_stream(|emitter| async move {
             for maybe_chunk in reader {
-                let chunk = maybe_chunk?;
+                let chunk = maybe_chunk.unwrap();
                 let result_chunk = match indexes {
                     Some(ref indexes) => {
                         let arrays = chunk.arrays();
@@ -72,9 +72,11 @@ impl DataSource for ParquetTable {
                     },
                     None => chunk,
                 };
-                yield Ok(result_chunk);
+                // yield elements from stream via `emitter`
+                emitter.emit(Ok(result_chunk)).await;
             }
-        };
+        });
+
         Box::pin(output) as DataBlockStream
     }
 }
