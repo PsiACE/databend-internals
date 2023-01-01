@@ -26,6 +26,21 @@ cd docs
 zola serve
 ```
 
+## 代码构建
+
+本项目代码位于 [minibend](./minibend/) 目录下，由 Rust 编程语言开发。
+
+欲要在本地构建此项目所含代码，请预先安装 *Rust 工具链* ，这里推荐使用 <https://rustup.rs/> 。
+
+```bash
+# 构建代码
+cargo build
+# 使用 Clippy 工具审计
+cargo clippy -- -D warnings
+# 使用 rustfmt 格式化
+cargo fmt
+```
+
 ## 许可协议
 
 本项目的文本和代码均使用下述协议进行双重许可：
