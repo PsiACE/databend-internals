@@ -106,7 +106,13 @@ Databend 中同样包含读取 Parquet 文件作为数据源的代码。关于�
 
 ## 代码时间
 
-WIP
+![minibend-002_17](https://psiace.github.io/databend-internals/minibend/002-datasource/minibend-002_17.png)
+![minibend-002_18](https://psiace.github.io/databend-internals/minibend/002-datasource/minibend-002_18.png)
+![minibend-002_19](https://psiace.github.io/databend-internals/minibend/002-datasource/minibend-002_19.png)
+![minibend-002_20](https://psiace.github.io/databend-internals/minibend/002-datasource/minibend-002_20.png)
+![minibend-002_21](https://psiace.github.io/databend-internals/minibend/002-datasource/minibend-002_21.png)
+![minibend-002_22](https://psiace.github.io/databend-internals/minibend/002-datasource/minibend-002_22.png)
+![minibend-002_23](https://psiace.github.io/databend-internals/minibend/002-datasource/minibend-002_23.png)
 
 ## 前进四：回顾与展望
 
