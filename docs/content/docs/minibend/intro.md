@@ -9,6 +9,7 @@ template = "docs/page.html"
 [extra]
 toc = true
 top = false
+giscus = true
 +++
 
 minibend ，一个从零开始、使用 Rust 构建的查询引擎。这里是 minibend 系列技术主题分享的第一期，来自 [@PsiACE](https://github.com/psiace) 。

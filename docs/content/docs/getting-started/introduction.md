@@ -9,6 +9,7 @@ template = "docs/page.html"
 [extra]
 toc = true
 top = false
+giscus = true
 +++
 
 *Databend* 是一个使用 Rust 研发、开源、完全面向云架构的新式数仓。

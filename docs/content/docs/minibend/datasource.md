@@ -9,6 +9,7 @@ template = "docs/page.html"
 [extra]
 toc = true
 top = false
+giscus = true
 +++
 
 本篇是 minibend 系列的第二期，将会介绍 **Data Source** 部分的设计与实现，当然，由于是刚开始涉及到编程的部分，也会提到包括 **类型系统** 和 **错误处理** 之类的一些额外内容。
