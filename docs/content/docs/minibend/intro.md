@@ -17,7 +17,9 @@ minibend ，一个从零开始、使用 Rust 构建的查询引擎。这里是 m
 ![minibend](https://psiace.github.io/databend-internals/minibend/001-basic-intro/minibend-001-basic-intro_01.png)
 
 > 前排指路视频和 PPT 地址
+>
 > 视频（哔哩哔哩）：<https://www.bilibili.com/video/BV1Ne4y1x7Cn>
+>
 > PPT：<https://psiace.github.io/databend-internals/minibend/ppt/minibend-001-basic-intro.pdf>
 
 ## minibend: what, why, how
@@ -65,6 +67,7 @@ minibend 同时也是 *Databend Internals*，或者说 *Databend 内幕大揭秘
 首先，minibend 会提供视频、文章和代码三种材料。文章和代码将会同步到 *Databend 内幕大揭秘* 的 Repo 中，而视频则会发布到 Databend 的 B 站官方帐号下。欢迎大家持续关注。
 
 > Databend 内幕大揭秘：<https://psiace.github.io/databend-internals/>
+>
 > Databend（哔哩哔哩）：<https://space.bilibili.com/275673537>
 
 更新频率大概是每个月一到两期。内容上会包含必要的相关知识导读、设计和实现相关的说明、并进行回顾和展望。当然，也会不定期精选一部分论文摘要供大家进一步研讨和学习。

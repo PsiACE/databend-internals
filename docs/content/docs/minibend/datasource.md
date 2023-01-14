@@ -14,6 +14,12 @@ giscus = true
 
 本篇是 minibend 系列的第二期，将会介绍 **Data Source** 部分的设计与实现，当然，由于是刚开始涉及到编程的部分，也会提到包括 **类型系统** 和 **错误处理** 之类的一些额外内容。
 
+> 前排指路视频和 PPT 地址
+>
+> 视频（哔哩哔哩）：<https://www.bilibili.com/video/BV1A84y1Y7Ff/>
+>
+> PPT：<https://psiace.github.io/databend-internals/minibend/ppt/minibend-002-datasource.pdf>
+
 ## 类型系统和 Arrow
 
 这里仅仅是进行一个初步的介绍，类型系统相关的实现请期待下一期内容。
@@ -107,13 +113,7 @@ Databend 中同样包含读取 Parquet 文件作为数据源的代码。关于�
 
 ## 代码时间
 
-![minibend-002_17](https://psiace.github.io/databend-internals/minibend/002-datasource/minibend-002_17.png)
-![minibend-002_18](https://psiace.github.io/databend-internals/minibend/002-datasource/minibend-002_18.png)
-![minibend-002_19](https://psiace.github.io/databend-internals/minibend/002-datasource/minibend-002_19.png)
-![minibend-002_20](https://psiace.github.io/databend-internals/minibend/002-datasource/minibend-002_20.png)
-![minibend-002_21](https://psiace.github.io/databend-internals/minibend/002-datasource/minibend-002_21.png)
-![minibend-002_22](https://psiace.github.io/databend-internals/minibend/002-datasource/minibend-002_22.png)
-![minibend-002_23](https://psiace.github.io/databend-internals/minibend/002-datasource/minibend-002_23.png)
+请查阅视频和 PPT 中的对应部分，或者查看 PR [#40 | minibend: impl parquet data source](https://github.com/PsiACE/databend-internals/pull/40) 中的代码。
 
 ## 前进四：回顾与展望
 
