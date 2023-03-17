@@ -93,11 +93,11 @@ impl PipelineExecutor {
 
 ### 执行
 
-#### （1）首先获得一份条件变量 `workers_condvar` 的拷贝并用它来创建一个 `ExecutorWorkerContext`，它存有 query_id，worker_num：worker 编号，task：当前要执行的任务，workers_condvar。
+**（1）首先获得一份条件变量 `workers_condvar` 的拷贝并用它来创建一个 `ExecutorWorkerContext`，它存有 query_id，worker_num：worker 编号，task：当前要执行的任务，workers_condvar。**
 
-#### （2）当 `global_tasks_queue` 没有结束时，就会一直循环，如果 `context` 中没有 task，则会调用 `steal_task_to_context` 来获取任务，如果没有获取到则阻塞等待被唤醒。
+**（2）当 `global_tasks_queue` 没有结束时，就会一直循环，如果 `context` 中没有 task，则会调用 `steal_task_to_context` 来获取任务，如果没有获取到则阻塞等待被唤醒。**
 
-#### （3）当获取到任务时，会首先调用 `execute_task` 来执行任务，对于 `ExecutorTask::Sync` 类型的任务来说，会调用 `execute_sync_task` 进而调用 `Processor` 的 `process` 函数，然后返回 `processor.id()` 用来后续推动 pipeline 的执行；而当 task 的类型为 `ExecutorTask::AsyncCompleted` 时，表示一个异步任务执行完了，这时我们返回 `task.id` 用来后续推动 pipeline 的执行。
+**（3）当获取到任务时，会首先调用 `execute_task` 来执行任务，对于 `ExecutorTask::Sync` 类型的任务来说，会调用 `execute_sync_task` 进而调用 `Processor` 的 `process` 函数，然后返回 `processor.id()` 用来后续推动 pipeline 的执行；而当 task 的类型为 `ExecutorTask::AsyncCompleted` 时，表示一个异步任务执行完了，这时我们返回 `task.id` 用来后续推动 pipeline 的执行。**
 
 ```rust
 // src/query/service/src/pipelines/executor/executor_worker_context.rs
@@ -115,7 +115,7 @@ impl ExecutorWorkerContext {
 }
 ```
 
-#### （4）在调用 `execute_task` 后我们得到了一个 `executed_pid`，这时候我们需要拿这个 `executor_pid` 来做一些 schedule 工作，继续推动 pipeline 的执行，首先调用 `schedule_queue`。
+**（4）在调用 `execute_task` 后我们得到了一个 `executed_pid`，这时候我们需要拿这个 `executor_pid` 来做一些 schedule 工作，继续推动 pipeline 的执行，首先调用 `schedule_queue`。**
 
 ```rust
 // src/query/service/src/pipelines/executor/executor_graph.rs
@@ -206,7 +206,7 @@ schedule_queue 的工作过程：
 6. 如果 `need_schedule_nodes` 或 `need_schedule_edges` 不为空则开始下一次 schedule。
 7. schedule 结束，将 `schedule_queue` 返回。
 
-#### （5）调用 `schedule_queue.schedule` 处理 schedule_queue 中的 tasks
+**（5）调用 `schedule_queue.schedule` 处理 schedule_queue 中的 tasks**
 
 ```rust
 // src/query/service/src/pipelines/executor/executor_graph.rs
