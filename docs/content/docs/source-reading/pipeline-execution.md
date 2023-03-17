@@ -1167,3 +1167,4 @@ impl BlockOperator {
 }
 ```
 
+至此，一条 SQL 的 pipeline 就执行完毕了。
