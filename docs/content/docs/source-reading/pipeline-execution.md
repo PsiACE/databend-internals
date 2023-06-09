@@ -2,7 +2,7 @@
 title = "Databend 源码阅读： pipeline 的执行"
 description = "“Databend 源码阅读”系列文章的第三篇，以一条 SQL 的 pipeline 为例，帮助大家了解 databend 中 pipeline 的执行过程"
 draft = false
-weight = 410
+weight = 430
 sort_by = "weight"
 template = "docs/page.html"
 
