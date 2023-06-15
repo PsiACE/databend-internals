@@ -1,6 +1,6 @@
 #![allow(dead_code)]
 
-mod catalog;
-mod datablock;
-mod datasource;
-mod error;
+pub mod catalog;
+pub mod datablock;
+pub mod datasource;
+pub mod error;
