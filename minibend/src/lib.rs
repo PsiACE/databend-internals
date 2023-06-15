@@ -1,5 +1,6 @@
-#[allow(dead_code)]
+#![allow(dead_code)]
+
 mod catalog;
 mod datablock;
+mod datasource;
 mod error;
-mod source;

@@ -9,7 +9,7 @@ use async_fn_stream::fn_stream;
 
 use crate::datablock::DataBlockStream;
 use crate::error::Result;
-use crate::source::DataSource;
+use crate::datasource::DataSource;
 
 use super::TableRef;
 
