@@ -1,8 +1,8 @@
 use std::pin::Pin;
 
 use arrow2::array::Array;
-use arrow2::datatypes::{Field, Schema};
 use arrow2::chunk::Chunk;
+use arrow2::datatypes::{Field, Schema};
 use futures::{Stream, StreamExt};
 
 use crate::error::Result;

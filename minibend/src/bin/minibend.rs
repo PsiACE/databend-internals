@@ -1,6 +1,6 @@
+use minibend::catalog::Catalog;
 use minibend::datablock::pretty_print;
 use minibend::error::*;
-use minibend::catalog::Catalog;
 
 #[tokio::main]
 async fn main() -> Result<()> {
