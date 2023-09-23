@@ -59,6 +59,13 @@ pub struct UpdateListMutable {
     // 为target_node的input_port添加一个trigger
     updated_triggers: Vec<Arc<UnsafeCell<UpdateTrigger>>>,
 }
+
+// 用于判断调度前驱node还是后驱node
+pub enum DirectedEdge {
+    Source(EdgeIndex),
+    Target(EdgeIndex),
+}
+
 // trigger的作用就是用来后面调度模型推进pipeline向下
 // 执行调度任务使用的
 pub struct UpdateTrigger {
