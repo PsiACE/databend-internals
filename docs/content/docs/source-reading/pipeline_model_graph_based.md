@@ -100,7 +100,7 @@ pub struct SharedStatus {
 
 初始化调度是将我们的 graph 的所有出度为 0 的 Node 作为第一次任务调度节点,对应我们的例子就是 Node4,Node5 每一次调度都是抽取出 graph 当中的同步任务和异步任务,下图是 pipeline 的调度模型，用于抽取出当前 graph 当中可执行的同步 processor 和异步 processor，调度模型的输入是最上面的 graph,而输出则是 sync_processor_queue 和 async_processor_queue,无论是在初始化时还是在后面继续执行的过程都是利用的下面的调度模型来进行调度.调度模型的执行终点是 need_schedule_nodes 和 need_schedule_edges 均为空
 
-![](https://psiace.github.io/databend-internals/source-reading/pipeline_model_graph/5-parallel-pipeline-model.jpg)
+![](https://psiace.github.io/databend-internals/source-reading/pipeline_model_graph/5-pipeline-model.jpg)
 
 ## 三.执行模型
 
