@@ -1,6 +1,6 @@
 +++
-title = "Databend 源码阅读： 图解pipeline调度模型"
-description = "“Databend 源码阅读”系列文章的第四篇，本文我们不深入看太多源代码,而是从pipeline调度上出发,为大家深入解读Databend基于work-steal和状态机的并发调度模型"
+title = "Databend 源码阅读： 图解 pipeline 调度模型"
+description = "“Databend 源码阅读”系列文章的第四篇，本文我们不深入看太多源代码，而是从pipeline调度上出发，为大家深入解读 Databend 基于 work-steal 和状态机的并发调度模型"
 draft = false
 weight = 430
 sort_by = "weight"
@@ -16,7 +16,7 @@ giscus = true
 作者：[JackTan25](https://github.com/JackTan25) | Databend Contributor
 
 ## 一.基于图的初始化
-![](imgs/1.pipeline%E5%9F%BA%E6%9C%AC%E7%BB%93%E6%9E%84.png)
+![](https://psiace.github.io/databend-internals/source-reading/pipeline_model_graph/01-pipeline-arch.png)
 ```text
     上图便是databend的一条pipeline结构,通常对于每一个PipeItem,这里只会有一个input_port和output_port,一个Pipe当中的PipeItem的数量则通常代表着并行度.每一个PipeItem里面对应着一个算子(不过在有些情况下并不一定一个pipeItem就只有一对input_port和output_port,所以上图画的更加广泛一些),算子的推进由调度模型来触发
 ```
@@ -24,8 +24,8 @@ giscus = true
 ```text
     databend采取的是采取的是StableGraph这个结构,我们最开始是得到了下面第一张图这样的Pipeline,我们最后生成的是下面第二张图的graph.
 ```
-![](imgs/2.pipeline-graph%E6%9E%84%E5%BB%BA(1).jpg)
-![](imgs/3.pipeline-graph%E6%9E%84%E5%BB%BA(2).jpg)
+![](https://psiace.github.io/databend-internals/source-reading/pipeline_model_graph/02-pipeline-graph-build-01.jpg)
+![](https://psiace.github.io/databend-internals/source-reading/pipeline_model_graph/03-pipeline-graph-build-02.jpg)
 ```text
     上面第二张图的的连接只是一个物理上的单纯图的连接,但是node内部pipe_item对应的port没有对接起来.我们还需要关心的是具体如何把对应的port给连接起来的.在构建图的时候每一个PipeItem包装为一个node,包装的过程是以Pipe为顺序的.这样我们就为上面每一个PipeItem都加上了一个Node编号,后面我们需要按照为对应的input_port和output_port去加上edge,我们的连接是一个平行的连接.
 ```
@@ -80,7 +80,7 @@ pub struct UpdateTrigger {
 }
 // 上面的例子最后我们得到的graph初始化后应该是下面这样
 ```
-![](imgs/4.pipeline-graph%E6%9E%84%E5%BB%BA(3).jpg)
+![](https://psiace.github.io/databend-internals/source-reading/pipeline_model_graph/04-pipeline-graph-build-03.jpg)
 ```rust
 // 而对于input_port和output_port的数据的传递,则是两者之间共享一个SharedData
 pub struct SharedStatus {
@@ -95,7 +95,7 @@ pub struct SharedStatus {
 ```text
     初始化调度是将我们的graph的所有出度为0的Node作为第一次任务调度节点,对应我们的例子就是Node4,Node5每一次调度都是抽取出graph当中的同步任务和异步任务,下图是pipeline的调度模型，用于抽取出当前graph当中可执行的同步processor和异步processor，调度模型的输入是最上面的graph,而输出则是sync_processor_queue和async_processor_queue,无论是在初始化时还是在后面继续执行的过程都是利用的下面的调度模型来进行调度.调度模型的执行终点是need_schedule_nodes和need_schedule_edges均为空
 ```
-![](imgs/5.%E8%B0%83%E5%BA%A6%E6%A8%A1%E5%9E%8B.jpg)
+![](https://psiace.github.io/databend-internals/source-reading/pipeline_model_graph/05-pipeline-model.jpg))
 
 ## 三.执行模型
 执行模型对应相关结构如下:
@@ -152,7 +152,7 @@ struct WorkerCondvar {
 }
 ```
 执行模型的流程图如下:
-![](imgs/6.%E5%B9%B6%E5%8F%91%E6%89%A7%E8%A1%8C%E6%A8%A1%E5%9E%8B.jpg)
+![](https://psiace.github.io/databend-internals/source-reading/pipeline_model_graph/6-parallel-pipeline-model.jpg))
 ## 四. 限时机制
 ```text
     限时机制其实是比较简单的,其主要的作用就是限制sql的pipeline执行的时间在规定时间内完成,
