@@ -71,7 +71,7 @@ Slack：<https://link.databend.rs/join-slack>
 
 **前置环境**
 
-在「[Databend 贡献之路 | 如何设置 Databend 开发环境](https://psiace.github.io/databend-internals/docs/contribute-to-databend/development-environment/)」一文中，已经详细介绍过如何配置 Databend 开发环境。
+在「[Databend 贡献之路 | 如何设置 Databend 开发环境](https://databend-internals.psiace.me/docs/contribute-to-databend/development-environment/)」一文中，已经详细介绍过如何配置 Databend 开发环境。
 
 需要注意的是，考虑到不同系统和发行版之间的差异，你可能需要自行安装 `gcc`，`python` 和 `openssl` 等相关基础程序。 
 
@@ -144,7 +144,7 @@ cargo audit
 
 **测试**
 
-在「[Databend 贡献之路 | 如何为 Databend 添加新的测试](https://psiace.github.io/databend-internals/docs/contribute-to-databend/write-and-run-tests/)」中，已经对测试做了详细的描述。
+在「[Databend 贡献之路 | 如何为 Databend 添加新的测试](https://databend-internals.psiace.me/docs/contribute-to-databend/write-and-run-tests/)」中，已经对测试做了详细的描述。
 
 通常情况下，使用 `make test` 一次性执行 `单元测试` 和 `功能测试` 就可以。
 

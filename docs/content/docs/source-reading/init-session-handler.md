@@ -63,7 +63,7 @@ pub type Singleton<T> = Arc<dyn SingletonImpl<T>>;
 
 接下来会根据网络协议初始化 handlers，并把它们注册到 `shutdown_handler` 的 services 中，任何实现 `Server` trait 的类型都可以被添加到 services 中。
 
-![query server](https://psiace.github.io/databend-internals/source-reading/init-session-handler/01-query-server.png)
+![query server](https://databend-internals.psiace.me/source-reading/init-session-handler/01-query-server.png)
 
 ```rust
 #[async_trait::async_trait]
@@ -162,7 +162,7 @@ pub trait Server: Send {
 - `query_ctx` ：每一条查询语句会有一个 query_ctx，用来存储当前查询的一些上下文信息 。
 - `query_ctx_shared` ：查询语句中的子查询共享的上下文信息 。
 
-![session](https://psiace.github.io/databend-internals/source-reading/init-session-handler/02-session.png)
+![session](https://databend-internals.psiace.me/source-reading/init-session-handler/02-session.png)
 
 下面逐一来分析。
 

@@ -71,7 +71,7 @@ go tool pprof -http=0.0.0.0:8088 ~/pprof/pprof.samples.cpu.001.pb.gz
 
 访问 `http://0.0.0.0:8088/ui/flamegraph` 即可得到火焰图。
 
-![pprof flamegraph](https://psiace.github.io/databend-internals/contribute-to-databend/how-to-profile/01-pprof-flamegraph.png)
+![pprof flamegraph](https://databend-internals.psiace.me/contribute-to-databend/how-to-profile/01-pprof-flamegraph.png)
 
 ### 注意事项
 
@@ -154,7 +154,7 @@ jeprof \
 
 同样选用 debug 模式下编译的 databend-query 作为 target，端口为 8080，结果如图所示：
 
-![jeprof call graph](https://psiace.github.io/databend-internals/contribute-to-databend/how-to-profile/02-jeprof-mem.png)
+![jeprof call graph](https://databend-internals.psiace.me/contribute-to-databend/how-to-profile/02-jeprof-mem.png)
 
 ### 注意事项
 

@@ -17,7 +17,7 @@ giscus = true
 
 首先一起来回顾一下查询的基本流程。
 
-![Query Steps](https://psiace.github.io/databend-internals/the-basics/executor-in-query-process/01-query-steps.png)
+![Query Steps](https://databend-internals.psiace.me/the-basics/executor-in-query-process/01-query-steps.png)
 
 如上图所示，查询往往需要经历下述几个阶段：
 
@@ -31,7 +31,7 @@ giscus = true
 
 1990 年发表的 [_Volcano, an Extensible and Parallel Query Evaluation System_](https://dl.acm.org/doi/10.1109/69.273032) 中提出 Volcano Model 并为人熟知。
 
-![Volcano](https://psiace.github.io/databend-internals/the-basics/executor-in-query-process/02-volcano.png)
+![Volcano](https://databend-internals.psiace.me/the-basics/executor-in-query-process/02-volcano.png)
 
 Volcano 是一种基于行的流式迭代模型，简单而又优美。拉取数据的控制命令从最上层的算符依次传递到执行树的最下层，与数据的流动方向正好相反。
 
@@ -55,7 +55,7 @@ Volcano 是一种基于行的流式迭代模型，简单而又优美。拉取数
 
 Databend 的执行器部分主要借鉴了 [_Morsel-Driven Parallelism: A NUMA-Aware Query Evaluation Framework for the Many-Core Age_](https://dl.acm.org/doi/10.1145/2588555.2610507) 这篇论文。
 
-![Morsel-Driven Parallelism](https://psiace.github.io/databend-internals/the-basics/executor-in-query-process/03-morsel-driven.png)
+![Morsel-Driven Parallelism](https://databend-internals.psiace.me/the-basics/executor-in-query-process/03-morsel-driven.png)
 
 ### 面向多核架构
 
@@ -77,7 +77,7 @@ Morsel-Driven Parallelism 的研究不仅仅关注执行框架的改进，还涵
 
 向量化执行自 MonetDB/X100（Vectorwise）开始流行，[_MonetDB/X100: Hyper-Pipelining Query Execution_](https://www.cidrdb.org/cidr2005/papers/P19.pdf) 这篇论文也成为了必读之作。而在 2010 年之后的 OLAP 系统，基本上都是按列式存储进行数据组织的。
 
-![Column Based](https://psiace.github.io/databend-internals/the-basics/executor-in-query-process/04-column-based-vectorwise.png)
+![Column Based](https://databend-internals.psiace.me/the-basics/executor-in-query-process/04-column-based-vectorwise.png)
 
 <p><center><small><i>左图可以看作列式存储的一个样本，同一列的数据在内存中形成一个连续的结构。</i></small></center></p>
 

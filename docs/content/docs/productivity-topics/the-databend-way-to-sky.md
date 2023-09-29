@@ -13,7 +13,7 @@ top = false
 giscus = true
 +++
 
-![](https://psiace.github.io/databend-internals/productivity-topics/sky-computing/databend-sky-computing-01.png)
+![](https://databend-internals.psiace.me/productivity-topics/sky-computing/databend-sky-computing-01.png)
 
 ## 背景
 
@@ -21,13 +21,13 @@ giscus = true
 
 > 根据 CNCF 对云原生的定义：云原生技术使组织能够在公共、私有和混合云这类现代、动态的环境中构建和运行可扩展的应用程序。典型示例包括：容器、服务网格、微服务、不变基础设施和声明式 API 。
 
-![](https://psiace.github.io/databend-internals/productivity-topics/sky-computing/databend-sky-computing-02.jpg)
+![](https://databend-internals.psiace.me/productivity-topics/sky-computing/databend-sky-computing-02.jpg)
 
 然而，无论是公有云还是私有云、无论是云计算还是云服务，在天空中都已经存在太多不同类型的“云”。每个“云”都拥有自己独特的 API 和生态系统，并且彼此之间缺乏互操作性，能够兼容的地方也是寥寥无几。云已经成为事实上的孤岛。这个孤岛不仅仅是指公有云和私有云之间的隔阂，还包括了不同公有云之间、不同私有云之间、以及公有云和私有云之间的隔阂。这种孤岛现象不仅给用户带来了很多麻烦，也限制了云计算的发展。
 
 2021 年 RISELab 发表了题为 [The Sky Above The Clouds](https://arxiv.org/abs/2205.07147) 的论文，讨论关于天空计算的未来。天空计算将云原生的思想进一步扩展，从而囊括公有云、私有云和边缘设备。其目标是实现一种统一的 API 和生态体系，使得不同云之间可以无缝地协作和交互。这样一来，用户就可以在不同的云之间自由地迁移应用程序和数据，而不必担心兼容性和迁移成本的问题。同时，天空计算还可以提供更高效、更安全、更可靠的计算服务，从而满足用户对于云计算的不断增长的需求。总体上讲，天空计算致力于允许应用跨多个云厂商运行，实现多云之间的互操作性。
 
-![](https://psiace.github.io/databend-internals/productivity-topics/sky-computing/databend-sky-computing-03.png)
+![](https://databend-internals.psiace.me/productivity-topics/sky-computing/databend-sky-computing-03.png)
 
 *(上图引自论文，展示不同类型的多云与天空的区别)*
 
@@ -37,7 +37,7 @@ giscus = true
 
 Databend 能够满足用户在不同的云之间自由地访问数据并进行查询，而不必担心兼容性和迁移成本的问题。同时，Databend 还可以提供更高效、更安全、更可靠的计算服务，从而满足用户对于云计算的不断增长的需求。从这个角度来看，Databend 已经初步形成了一套天空计算的解决方案。那么，对 Databend 而言，跨云的关键到底落在哪里呢？
 
-![](https://psiace.github.io/databend-internals/productivity-topics/sky-computing/databend-sky-computing-04.png)
+![](https://databend-internals.psiace.me/productivity-topics/sky-computing/databend-sky-computing-04.png)
 
 *(上图所示为 Databend Cloud 架构示意图)*
 
@@ -45,7 +45,7 @@ Databend 采用存算分离的架构，并完全面向云对象存储进行设�
 
 Query 节点和 Meta 节点本身都是轻量化的服务，并且对于部署环境没有严格的依赖。但数据的存储和访问管理就不一样，我们需要考虑不同云服务之间的 API 兼容性、以及如何与云服务本身的安全机制交互从而提供更安全的访问控制机制。对于 Databend 而言，跨云，或者说实现天空计算的关键，就落在数据的管理与访问之上。
 
-![](https://psiace.github.io/databend-internals/productivity-topics/sky-computing/databend-sky-computing-05.png)
+![](https://databend-internals.psiace.me/productivity-topics/sky-computing/databend-sky-computing-05.png)
 
 *（OpenDAL 可以将数据访问问题从 M\*N 转化为 M+N）*
 
@@ -65,7 +65,7 @@ bucket = "databend"
 当然，仅支持 S3 兼容的对象存储服务还不够。Databend 通过 OpenDAL 实现了 Google Cloud Storage、Azure Blob、Aliyun OSS、Huawei OBS 和 HDFS 等服务的原生存储后端支持。
 这意味着 Databend 可以充分利用各种供应商提供的 API，为用户带来更优秀的体验。例如，Aliyun OSS 的原生支持使得 Databend 可以通过 Aliyun RAM 对用户进行认证和授权，无需设置静态密钥，从而大大提高安全性并降低运维负担。
 
-![](https://psiace.github.io/databend-internals/productivity-topics/sky-computing/databend-sky-computing-06.png)
+![](https://databend-internals.psiace.me/productivity-topics/sky-computing/databend-sky-computing-06.png)
 
 *(上图选自阿里云官网，访问控制场景与能力)*
 
@@ -169,7 +169,7 @@ COPY INTO @s2 FROM (SELECT name, age, id FROM test_table LIMIT 100) FILE_FORMAT 
 
 为了更好地满足多云环境下的数据库查询需求，Databend 设计并实现了一套 RESTful API 来支持数据共享。
 
-![](https://psiace.github.io/databend-internals/productivity-topics/sky-computing/databend-sky-computing-07.png)
+![](https://databend-internals.psiace.me/productivity-topics/sky-computing/databend-sky-computing-07.png)
 
 *（上图所示为数据共享的工作流）*
 

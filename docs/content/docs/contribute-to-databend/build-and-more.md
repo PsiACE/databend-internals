@@ -19,7 +19,7 @@ giscus = true
 
 Databend 在 `Makefile` 中封装了大量常见命令。采用 make 构建只会开启默认特性，并且会一次性构建 `databend-meta`、`databend-query` 以及 `databend-metactl` 。
 
-按 [前文](https://psiace.github.io/databend-internals/docs/contribute-to-databend/development-environment/) 设置好开发环境后。
+按 [前文](https://databend-internals.psiace.me/docs/contribute-to-databend/development-environment/) 设置好开发环境后。
 
 - 执行 `make build` 即可轻松构建 debug 版本。
 - `make build-release` 则会构建 release 版本，并会采用 objcopy 减少二进制体积。

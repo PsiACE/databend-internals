@@ -14,13 +14,13 @@ giscus = true
 
 minibend ，一个从零开始、使用 Rust 构建的查询引擎。这里是 minibend 系列技术主题分享的第一期，来自 [@PsiACE](https://github.com/psiace) 。
 
-![minibend](https://psiace.github.io/databend-internals/minibend/001-basic-intro/minibend-001-basic-intro_01.png)
+![minibend](https://databend-internals.psiace.me/minibend/001-basic-intro/minibend-001-basic-intro_01.png)
 
 > 前排指路视频和 PPT 地址
 >
 > 视频（哔哩哔哩）：<https://www.bilibili.com/video/BV1Ne4y1x7Cn>
 >
-> PPT：<https://psiace.github.io/databend-internals/minibend/ppt/minibend-001-basic-intro.pdf>
+> PPT：<https://databend-internals.psiace.me/minibend/ppt/minibend-001-basic-intro.pdf>
 
 ## minibend: what, why, how
 
@@ -66,7 +66,7 @@ minibend 同时也是 *Databend Internals*，或者说 *Databend 内幕大揭秘
 
 首先，minibend 会提供视频、文章和代码三种材料。文章和代码将会同步到 *Databend 内幕大揭秘* 的 Repo 中，而视频则会发布到 Databend 的 B 站官方帐号下。欢迎大家持续关注。
 
-> Databend 内幕大揭秘：<https://psiace.github.io/databend-internals/>
+> Databend 内幕大揭秘：<https://databend-internals.psiace.me/>
 >
 > Databend（哔哩哔哩）：<https://space.bilibili.com/275673537>
 
@@ -84,7 +84,7 @@ minibend 同时也是 *Databend Internals*，或者说 *Databend 内幕大揭秘
 
 但是“存在哪”呢？
 
-![storage Level](https://psiace.github.io/databend-internals/the-basics/storage/01-storage-level.png)
+![storage Level](https://databend-internals.psiace.me/the-basics/storage/01-storage-level.png)
 
 过去的一些存储方案更加关注上图所示的存储体系结构，将需要在线处理的数据存放在闪存和硬盘中，用于备份的数据放入光盘和磁带。
 
@@ -98,7 +98,7 @@ Databend 早期的实现是包含一套分布式文件系统的，但到现在�
 
 引入索引的好处在于加快数据查询的速度，而缺点则在于构建和维护索引同样需要付出代价。
 
-![b tree disk](https://psiace.github.io/databend-internals/minibend/001-basic-intro/01-b-tree-disk.png)
+![b tree disk](https://databend-internals.psiace.me/minibend/001-basic-intro/01-b-tree-disk.png)
 
 不同的索引可以针对不同的场景提供优化，B Tree 能够加速范围查询，而等值查询就可以使用 Hash 索引，BitMap（或者说更常用的 Bloom 索引）可以方便判断数据是否存在。
 
@@ -108,7 +108,7 @@ Databend 的索引无需人为创建，由部署的实例自行维护。同时�
 
 尽管有各种各样的查询引擎，但具体到查询执行的环节大同小异，这里以 Databend 为例，简单讲一下过程。
 
-![Query Steps](https://psiace.github.io/databend-internals/the-basics/executor-in-query-process/01-query-steps.png)
+![Query Steps](https://databend-internals.psiace.me/the-basics/executor-in-query-process/01-query-steps.png)
 
 1. 解析 SQL 语法，形成 AST（抽象语法树）。
 2. 通过 Binder 对其进行语义分析，并且生成一个初始的 Logical Plan（逻辑计划）。
@@ -130,7 +130,7 @@ Databend 的索引无需人为创建，由部署的实例自行维护。同时�
 
 下面的图片展现的是一种典型的查询优化，对 JOIN 进行重排。
 
-![JOIN Reorder](https://psiace.github.io/databend-internals/minibend/001-basic-intro/02-join-reorder.png)
+![JOIN Reorder](https://databend-internals.psiace.me/minibend/001-basic-intro/02-join-reorder.png)
 
 目前有两种主要的查询优化方案，一种是基于关系代数和算法的等价优化方案，一种是基于评估成本的优化方案。根据命名，不难看出优化的灵感来源和这两种方案在优化上的取舍。
 
@@ -147,7 +147,7 @@ Databend 引入了基于规则的 [Cascades 优化器](https://15721.courses.cs.
 
 大规模并行处理是大数据计算引擎的一个重要特性，可以提供高吞吐、低时延的计算能力。那么，当我们在讨论大规模并行处理时，究竟在讨论什么？
 
-![mpp](https://psiace.github.io/databend-internals/minibend/001-basic-intro/minibend-001-basic-intro_12.png)
+![mpp](https://databend-internals.psiace.me/minibend/001-basic-intro/minibend-001-basic-intro_12.png)
 
 大规模并行处理（MPP，Massively Parallel Processing）意味着可以由多个计算节点（处理器）协同处理程序的不同部分，而每个计算节点都可能具备独立的系统资源（磁盘、内存、操作系统）。
 
@@ -157,7 +157,7 @@ Databend 引入了基于规则的 [Cascades 优化器](https://15721.courses.cs.
 
 ### 分布式
 
-![分布式](https://psiace.github.io/databend-internals/minibend/001-basic-intro/minibend-001-basic-intro_13.png)
+![分布式](https://databend-internals.psiace.me/minibend/001-basic-intro/minibend-001-basic-intro_13.png)
 
 从某种视角上看，分布式系统与 MPP 系统有着惊人的相似。比如：通过网络连接、对外作为整体提供服务、计算节点拥有资源等。但是这两种架构仍然会有一些不同。
 
@@ -171,7 +171,7 @@ Databend 引入了基于规则的 [Cascades 优化器](https://15721.courses.cs.
 
 ### The Rust Programming Language
 
-![rust](https://psiace.github.io/databend-internals/minibend/001-basic-intro/minibend-001-basic-intro_15.png)
+![rust](https://databend-internals.psiace.me/minibend/001-basic-intro/minibend-001-basic-intro_15.png)
 
 Rust 官方宣传语是：Rust 是一门赋予每个人构建可靠且高效软件能力的语言，现在距离它第一个版本发布也已经过去10年。
 
@@ -380,7 +380,7 @@ Rust 不完全指南里，从函数、类型、模式匹配、控制流、内存
 
 ### 阅读材料
 
-![books](https://psiace.github.io/databend-internals/minibend/001-basic-intro/minibend-001-basic-intro_22.png)
+![books](https://databend-internals.psiace.me/minibend/001-basic-intro/minibend-001-basic-intro_22.png)
 
 本期课程推荐两本书给大家：
 

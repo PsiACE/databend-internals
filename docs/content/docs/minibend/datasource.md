@@ -18,7 +18,7 @@ giscus = true
 >
 > 视频（哔哩哔哩）：<https://www.bilibili.com/video/BV1A84y1Y7Ff/>
 >
-> PPT：<https://psiace.github.io/databend-internals/minibend/ppt/minibend-002-datasource.pdf>
+> PPT：<https://databend-internals.psiace.me/minibend/ppt/minibend-002-datasource.pdf>
 
 ## 类型系统和 Arrow
 
@@ -36,7 +36,7 @@ giscus = true
 
 解决了数据类型的问题，那么就该考虑数据存储时候的模型。行式存储和列式存储都属于流行的方案，当然，这往往取决于要面对什么样的查询任务。另外还有混合行式和列式存储的方案，但这并不在今天讨论的范畴之中。
 
-![Column Based](https://psiace.github.io/databend-internals/the-basics/executor-in-query-process/04-column-based-vectorwise.png)
+![Column Based](https://databend-internals.psiace.me/the-basics/executor-in-query-process/04-column-based-vectorwise.png)
 
 <p><center><small><i>左图可以看作列式存储的一个样本，同一列的数据在内存中形成一个连续的结构。<br/>而行式存储则如右图所示，同一行的数据在内存中是连续的。</i></small></center></p>
 

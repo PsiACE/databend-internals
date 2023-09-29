@@ -13,7 +13,7 @@ top = false
 giscus = true
 +++
 
-> 在「[产品力：Databend 的质量保障](https://psiace.github.io/databend-internals/docs/productivity-topics/quality-assurance-in-databend/)」一文中，已经介绍到组成 Databend 测试的两个重要部分 —— 单元测试和功能测试。如有遗忘，不妨回顾一下。
+> 在「[产品力：Databend 的质量保障](https://databend-internals.psiace.me/docs/productivity-topics/quality-assurance-in-databend/)」一文中，已经介绍到组成 Databend 测试的两个重要部分 —— 单元测试和功能测试。如有遗忘，不妨回顾一下。
 
 ## 单元测试
 

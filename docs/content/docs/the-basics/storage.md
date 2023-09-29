@@ -19,7 +19,7 @@ giscus = true
 
 综合存储介质的性能和成本，大致可以得到一个如下图所示的层次结构：
 
-![Storage Level](https://psiace.github.io/databend-internals/the-basics/storage/01-storage-level.png)
+![Storage Level](https://databend-internals.psiace.me/the-basics/storage/01-storage-level.png)
 
 **常见存储介质**
 

@@ -36,4 +36,4 @@ giscus = true
 
 ## 协作
 
-「Databend 内幕大揭秘」的内容完全开源，有意向参与协作和贡献的，请参考「[贡献相关](https://psiace.github.io/databend-internals/docs/contributing/)」一节的内容。
+「Databend 内幕大揭秘」的内容完全开源，有意向参与协作和贡献的，请参考「[贡献相关](https://databend-internals.psiace.me/docs/contributing/)」一节的内容。

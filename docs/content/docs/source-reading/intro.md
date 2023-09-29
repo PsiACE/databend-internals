@@ -32,7 +32,7 @@ Databend 在 issue 中还引入了“Good First issue”的 label 来引导社�
 
 我们早期的成员大多是 ClickHouse、tidb 、tokudb 等知名数据库的贡献者，从技术栈来说更熟悉的是 C++ 和 Go。虎哥（[@bohutang](https://github.com/bohutang)）在疫情期间也使用 Go 实现了一个小的数据库原型 [vectorsql](https://github.com/vectorengine/vectorsql)，有同学表示 vectorsql 的架构非常优雅，值得学习借鉴。
 
-![vectorsql](https://psiace.github.io/databend-internals/source-reading/intro/01-vectorsql.png)
+![vectorsql](https://databend-internals.psiace.me/source-reading/intro/01-vectorsql.png)
 
 语言本没有孰劣之分，要从面向的场景来聊聊。目前大多的 DMBS 使用的是 C++/Java，新型的 NewSQL 更多使用的是 Go。在以往的开发经验来看，C/C++ 已经是高性能的代名词，开发者更容易写出高运行效率的代码，但 C++ 的开发效率实在不忍直视，工具链不是很完善，开发者很难一次性写出内存安全，并发安全的代码。而 Go 可能是另外一个极端，大道至简，工具链完善，开发效率非常高，不足之处在于泛型的进度太慢了，在 DB 系统上内存不能很灵活的控制，且难于达到前者的运行性能，尤其使用 SIMD 指令还需要和汇编代码交互等。我们需要的是兼具 开发效率（内存安全，并发安全，工具链完善）& 运行效率 的语言，当时看来，Rust 可能是我们唯一的选择了，历经尝试后，我们也发现，Rust 不仅能满足我们的需求，而且很酷！
 
@@ -52,7 +52,7 @@ Databend 在 issue 中还引入了“Good First issue”的 label 来引导社�
 
 画虎画皮难画骨，我们先从 Databend 的“骨”聊起。
 
-![databend arch](https://psiace.github.io/databend-internals/source-reading/intro/02-databend-arch.png)
+![databend arch](https://databend-internals.psiace.me/source-reading/intro/02-databend-arch.png)
 
 虽然我们是使用 Rust 从零开始实现的，但不是完全闭门造轮子，一些优秀的开源组件或者生态也有在其中集成。如：我们兼容了 Ansi-SQL 标准，提供了 MySQL/ClickHouse 等主流协议的支持，拥抱了万物互联的 Arrow 生态，存储格式基于大数据主流的 Parquet 格式等。我们不仅会积极地回馈了贡献给上游，如 Arrow2/Tokio 等开源库，一些通用的组件我们也抽成独立的项目开源在Github（openraft, opendal, opencache, opensrv 等）。
 
@@ -80,7 +80,7 @@ MetaService 主要用于存储读取持久化的元数据信息，比如 Catalog
 
 Query 节点主要用于计算，多个 query 节点可以组成 MPP 集群，理论上性能会随着 query 节点数水平扩展。SQL 在 query 中会经历以下几个转换过程：
 
-![query](https://psiace.github.io/databend-internals/source-reading/intro/03-query.png)
+![query](https://databend-internals.psiace.me/source-reading/intro/03-query.png)
 
 从 SQL 字符串经过 Parser 解析成 AST 语法树，然后经过 Binder 绑定 catalog 等信息转成逻辑计划，再经过一系列优化器处理转成物理计划，最后遍历物理计划构建对应的执行逻辑。
 query 涉及的模块有：

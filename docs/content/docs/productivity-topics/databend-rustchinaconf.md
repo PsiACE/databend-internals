@@ -19,7 +19,7 @@ giscus = true
 
 ### 什么是 Databend
 
-![what's databend](https://psiace.github.io/databend-internals/productivity-topics/Databend-RustConfChina2022/Databend-RustConfChina2022_05.png)
+![what's databend](https://databend-internals.psiace.me/productivity-topics/Databend-RustConfChina2022/Databend-RustConfChina2022_05.png)
 
 官方的说法是：Databend 是一个使用 Rust 研发、开源、完全面向云架构的新式数仓。
 
@@ -32,7 +32,7 @@ giscus = true
 
 作为新式数仓，Databend 有哪些基本特性呢？
 
-![databend features](https://psiace.github.io/databend-internals/productivity-topics/Databend-RustConfChina2022/Databend-RustConfChina2022_06.png)
+![databend features](https://databend-internals.psiace.me/productivity-topics/Databend-RustConfChina2022/Databend-RustConfChina2022_06.png)
 
 - 首先是弹性：得益于存算分离的架构与设计，Databend 完全可以做到按需、按量弹性扩展。
 - 而向量化执行引擎、单指令流多数据流（SIMD）、大规模并行处理（MPP），共同为 Databend 的性能保驾护航。
@@ -46,7 +46,7 @@ giscus = true
 
 ### 总览
 
-![databend arch](https://psiace.github.io/databend-internals/productivity-topics/Databend-RustConfChina2022/Databend-RustConfChina2022_08.png)
+![databend arch](https://databend-internals.psiace.me/productivity-topics/Databend-RustConfChina2022/Databend-RustConfChina2022_08.png)
 
 右边是 Databend 的一个架构图。
 
@@ -58,7 +58,7 @@ Databend 可以分成 Meta、Computing 和 Storage 三层，也就是元数据�
 
 ### 架构与设计 - Meta
 
-![databend arch - meta](https://psiace.github.io/databend-internals/productivity-topics/Databend-RustConfChina2022/Databend-RustConfChina2022_09.png)
+![databend arch - meta](https://databend-internals.psiace.me/productivity-topics/Databend-RustConfChina2022/Databend-RustConfChina2022_09.png)
 
 Meta 是一个多租户、高可用的分布式 key-value 存储服务，具备事务能力。
 
@@ -68,7 +68,7 @@ Meta 是一个多租户、高可用的分布式 key-value 存储服务，具备�
 
 ### 架构与设计 - Computing
 
-![databend arch - computing](https://psiace.github.io/databend-internals/productivity-topics/Databend-RustConfChina2022/Databend-RustConfChina2022_10.png)
+![databend arch - computing](https://databend-internals.psiace.me/productivity-topics/Databend-RustConfChina2022/Databend-RustConfChina2022_10.png)
 
 计算层可以由多个集群组成，不同集群可以承担不同的工作负载。每个集群又可以由多个计算节点（node）组成。
 
@@ -80,7 +80,7 @@ Meta 是一个多租户、高可用的分布式 key-value 存储服务，具备�
 
 ### 架构与设计 - Storage
 
-![databend arch - storage](https://psiace.github.io/databend-internals/productivity-topics/Databend-RustConfChina2022/Databend-RustConfChina2022_11.png)
+![databend arch - storage](https://databend-internals.psiace.me/productivity-topics/Databend-RustConfChina2022/Databend-RustConfChina2022_11.png)
 
 Databend 使用 Parquet 格式储存数据，为了加快查找（Partition Pruning），Databend 为每个 Parquet 提供了自己的索引：min_max，bloom 。这一部分工作是放在存储层完成的。
 
@@ -100,7 +100,7 @@ Databend 使用 Parquet 格式储存数据，为了加快查找（Partition Prun
 
 那么，在新的 parser 和 planner 中，Databend 引入了语义检查的环节，在查询编译过程中就可以拦截大部分错误。
 
-![databend - query check](https://psiace.github.io/databend-internals/productivity-topics/Databend-RustConfChina2022/Databend-RustConfChina2022_13.png)
+![databend - query check](https://databend-internals.psiace.me/productivity-topics/Databend-RustConfChina2022/Databend-RustConfChina2022_13.png)
 
 右图展示的正是两类语义错误，一类是使用了不存在的 Column ，一类是 Column 具有歧义。
 
@@ -110,7 +110,7 @@ Databend 使用 Parquet 格式储存数据，为了加快查找（Partition Prun
 
 在引入新 Planner 之后，计算层的架构得到进一步的划分，当一个查询请求进来以后，会经过以下处理：
 
-![databend - planner](https://psiace.github.io/databend-internals/productivity-topics/Databend-RustConfChina2022/Databend-RustConfChina2022_14.png)
+![databend - planner](https://databend-internals.psiace.me/productivity-topics/Databend-RustConfChina2022/Databend-RustConfChina2022_14.png)
 
 - 基于 nom 定制的解析器会负责生成抽象语法树，值得一提的是，在新 parser 中支持新语句也非常方便。
 - Binder 会对语法树进行语义分析，并且生成一个初始的 Logical Plan（逻辑计划）。
@@ -127,7 +127,7 @@ Databend 使用 Parquet 格式储存数据，为了加快查找（Partition Prun
 
 Databend 最近正在研发一套全新的表达式框架，其中包含一套形式化的类型系统，算是使用 Rust 自定义类型系统的最佳范例。
 
-![databend - typed type](https://psiace.github.io/databend-internals/productivity-topics/Databend-RustConfChina2022/Databend-RustConfChina2022_15.png)
+![databend - typed type](https://databend-internals.psiace.me/productivity-topics/Databend-RustConfChina2022/Databend-RustConfChina2022_15.png)
 
 通过引入形式化方法，可以提高设计的可靠性和健壮性。对应到新表达式框架中：
 
@@ -163,7 +163,7 @@ Databend 选择 Rust ，其实有很多原因：极客精神、健壮性等。
 
 参见：[周刊（第7期）：一个C系程序员的Rust初体验 - codedump的网络日志](https://www.codedump.info/post/20220227-weekly-7/)
 
-![databend - fast iter](https://psiace.github.io/databend-internals/productivity-topics/Databend-RustConfChina2022/Databend-RustConfChina2022_17.png)
+![databend - fast iter](https://databend-internals.psiace.me/productivity-topics/Databend-RustConfChina2022/Databend-RustConfChina2022_17.png)
 
 这里给大家分享一下 Databend 的快速迭代方法论。
 
@@ -177,7 +177,7 @@ Databend 选择 Rust ，其实有很多原因：极客精神、健壮性等。
 
 ### 测试风格
 
-![databend - test style](https://psiace.github.io/databend-internals/productivity-topics/Databend-RustConfChina2022/Databend-RustConfChina2022_18.png)
+![databend - test style](https://databend-internals.psiace.me/productivity-topics/Databend-RustConfChina2022/Databend-RustConfChina2022_18.png)
 
 Databend 的单元测试组织形式有别于一般的 Rust 项目，像上图左侧展示的这样，针对性地禁用了 src 目录下的 doctest 和 test 。
 
@@ -193,7 +193,7 @@ Databend 的单元测试组织形式有别于一般的 Rust 项目，像上图�
 
 - [Delete Cargo Integration Tests](https://matklad.github.io/2021/02/27/delete-cargo-integration-tests.html)
 - [Databend 社区如何做测试 [ 虎哥的博客 ] (bohutang.me)](https://bohutang.me/2021/09/14/databend-cloud-warehouse-how-to-test/)
-- [如何为 Databend 添加新的测试 | Databend 内幕大揭秘](https://psiace.github.io/databend-internals/docs/contribute-to-databend/write-and-run-tests/)
+- [如何为 Databend 添加新的测试 | Databend 内幕大揭秘](https://databend-internals.psiace.me/docs/contribute-to-databend/write-and-run-tests/)
 
 ### 代码演进
 
@@ -201,7 +201,7 @@ Databend 的单元测试组织形式有别于一般的 Rust 项目，像上图�
 
 **eg.1**
 
-![databend - code refactor 1](https://psiace.github.io/databend-internals/productivity-topics/Databend-RustConfChina2022/Databend-RustConfChina2022_19.png)
+![databend - code refactor 1](https://databend-internals.psiace.me/productivity-topics/Databend-RustConfChina2022/Databend-RustConfChina2022_19.png)
 
 第一个例子是大家编写异步代码时常用的 async trait ，用起来很方便，就像左上角的例子，但是有一些小缺点：
 
@@ -218,7 +218,7 @@ Databend 的单元测试组织形式有别于一般的 Rust 项目，像上图�
 
 **eg.2**
 
-![databend - code refactor 2](https://psiace.github.io/databend-internals/productivity-topics/Databend-RustConfChina2022/Databend-RustConfChina2022_20.png)
+![databend - code refactor 2](https://databend-internals.psiace.me/productivity-topics/Databend-RustConfChina2022/Databend-RustConfChina2022_20.png)
 
 第二个例子是关于分发的，分发其实就是要确定调用接口时是调用哪个实例和它具体的类型。分发的方式不同，其成本也不同。
 
@@ -237,7 +237,7 @@ Databend 的单元测试组织形式有别于一般的 Rust 项目，像上图�
 
 **eg.1**
 
-![databend - bug 1](https://psiace.github.io/databend-internals/productivity-topics/Databend-RustConfChina2022/Databend-RustConfChina2022_21.png)
+![databend - bug 1](https://databend-internals.psiace.me/productivity-topics/Databend-RustConfChina2022/Databend-RustConfChina2022_21.png)
 
 之前，上图中的代码片段没有加环境变量判断，导致程序会默认开启日志发送服务。
 
@@ -245,7 +245,7 @@ Databend 的单元测试组织形式有别于一般的 Rust 项目，像上图�
 
 **eg.2**
 
-![databend - bug 2](https://psiace.github.io/databend-internals/productivity-topics/Databend-RustConfChina2022/Databend-RustConfChina2022_22.png)
+![databend - bug 2](https://databend-internals.psiace.me/productivity-topics/Databend-RustConfChina2022/Databend-RustConfChina2022_22.png)
 
 左图这个代码片段其实 tracing 的文档中已经给了提示。
 
@@ -286,7 +286,7 @@ Databend 的成长离不开 Rust 社区和开源共同体，Databend 社区也�
 
 ### 课程
 
-![databend - course](https://psiace.github.io/databend-internals/productivity-topics/Databend-RustConfChina2022/Databend-RustConfChina2022_25.png)
+![databend - course](https://databend-internals.psiace.me/productivity-topics/Databend-RustConfChina2022/Databend-RustConfChina2022_25.png)
 
 自 21 年 8 月起，Databend 和 Rust 中文社区、知数堂，
 启动了面向 Rust 和数据库开发人员的公开课计划，前后一共输出 34 期课程。
@@ -310,7 +310,7 @@ Databend 是一款云数仓，不仅仅是云原生数仓，更是云上数仓�
 
 ### 一站式数据分析云平台
 
-![databend - cloud](https://psiace.github.io/databend-internals/productivity-topics/Databend-RustConfChina2022/Databend-RustConfChina2022_28.png)
+![databend - cloud](https://databend-internals.psiace.me/productivity-topics/Databend-RustConfChina2022/Databend-RustConfChina2022_28.png)
 
 Databend Cloud 是 Databend 打造的一款易用、低成本、高性能的新一代大数据分析平台，让用户更加专注数据价值的挖掘。
 

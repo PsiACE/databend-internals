@@ -286,20 +286,20 @@ pattern ='.*[.]csv' file_format=(type='CSV' field_delimiter='\t' record_delimite
 
 **Graphs**
 
-![graphs](https://psiace.github.io/databend-internals/contribute-to-databend/how-to-benchmark/01-graph.png)
+![graphs](https://databend-internals.psiace.me/contribute-to-databend/how-to-benchmark/01-graph.png)
 
 - 以折线图的形式展示性能变化，并支持通过拖动图表下方的选择器调整展示的时间区间。
 - 横轴为日期，纵轴为执行用时，鼠标悬浮到上方即可查看当次执行的信息。
 
 **Compare**
 
-![compare](https://psiace.github.io/databend-internals/contribute-to-databend/how-to-benchmark/02-compare.png)
+![compare](https://databend-internals.psiace.me/contribute-to-databend/how-to-benchmark/02-compare.png)
 
 - 支持任选两天对比执行用时的变化，以百分比形式展示。
 
 **Status**
 
-![status](https://psiace.github.io/databend-internals/contribute-to-databend/how-to-benchmark/03-status.png)
+![status](https://databend-internals.psiace.me/contribute-to-databend/how-to-benchmark/03-status.png)
 
 - 关注当前最新性能测试结果中各指标的情况，以柱型图展示。
 - 横轴为不同类型，纵轴为执行用时。

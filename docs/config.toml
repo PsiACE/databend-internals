@@ -1,5 +1,5 @@
 # The URL the site will be built for
-base_url = "https://psiace.github.io/databend-internals"
+base_url = "https://databend-internals.psiace.me"
 title = "Databend 内幕大揭秘"
 description = "与 Databend 一同探秘数据库系统"
 
