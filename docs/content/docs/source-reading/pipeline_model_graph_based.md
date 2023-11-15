@@ -1,8 +1,8 @@
 +++
 title = "Databend 源码阅读： 图解 pipeline 调度模型"
-description = "“Databend 源码阅读”系列文章的第四篇，本文我们不深入看太多源代码，而是从pipeline调度上出发，为大家深入解读 Databend 基于 work-steal 和状态机的并发调度模型"
+description = "“Databend 源码阅读”系列文章的第五篇，本文我们不深入看太多源代码，而是从pipeline调度上出发，为大家深入解读 Databend 基于 work-steal 和状态机的并发调度模型"
 draft = false
-weight = 430
+weight = 450
 sort_by = "weight"
 template = "docs/page.html"
 
