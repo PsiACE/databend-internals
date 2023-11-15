@@ -12,7 +12,7 @@ top = false
 giscus = true
 +++
 
-作者：[sundy-li](https://github.com/sundy-li) | Datafuse Labs 成员，折腾过 Clickhouse
+作者：[sundy-li](https://github.com/sundy-li) | Databend Labs 成员，折腾过 Clickhouse
 
 ## 前言
 

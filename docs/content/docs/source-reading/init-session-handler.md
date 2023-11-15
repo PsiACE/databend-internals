@@ -12,7 +12,7 @@ top = false
 giscus = true
 +++
 
-作者：[AriesDevil](https://github.com/AriesDevil) | Datafuse Labs 成员，数据库研发工程师
+作者：[AriesDevil](https://github.com/AriesDevil) | Databend Labs 成员，数据库研发工程师
 
 ## Query 启动入口
 
