@@ -13,7 +13,7 @@ giscus = true
 
 +++
 
-作者：[zhyass](https://github.com/zhyass) | Datafuse Labs 成员，数据库研发工程师
+作者：[zhyass](https://github.com/zhyass) | Databend Labs 成员，数据库研发工程师
 
 ## 引言
 

@@ -302,7 +302,7 @@ Databend 的成长离不开 Rust 社区和开源共同体，Databend 社区也�
 
 - [2022-25: 开源当以上游优先 (xuanwo.io)](https://xuanwo.io/reports/2022-25/)
 
-一个典型的例子是 arrow2 ，Databend 的核心依赖，我们应该是最早一批使用 arrow2 的项目。在 arrow2 的贡献者中有 9 位是 datafuse labs 成员，其中有三位是 top 15 贡献者。
+一个典型的例子是 arrow2 ，Databend 的核心依赖，我们应该是最早一批使用 arrow2 的项目。在 arrow2 的贡献者中有 9 位是 Databend Labs 成员，其中有三位是 top 15 贡献者。
 
 ## Databend Cloud
 
