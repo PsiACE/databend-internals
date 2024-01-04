@@ -42,7 +42,7 @@ struct Node {
     state: std::sync::Mutex<State>,
 
     updated_list: Arc<UpdateList>,
-    // 一下是pipeItem的内容
+    // 以下是pipeItem的内容
     inputs_port: Vec<Arc<InputPort>>,
     outputs_port: Vec<Arc<OutputPort>>,
     processor: ProcessorPtr,
@@ -98,7 +98,7 @@ pub struct SharedStatus {
 
 ## 二.基于 work-steal 与状态机的并发调度模型
 
-初始化调度是将我们的 graph 的所有出度为 0 的 Node 作为第一次任务调度节点,对应我们的例子就是 Node4,Node5 每一次调度都是抽取出 graph 当中的同步任务和异步任务,下图是 pipeline 的调度模型，用于抽取出当前 graph 当中可执行的同步 processor 和异步 processor，调度模型的输入是最上面的 graph,而输出则是 sync_processor_queue 和 async_processor_queue,无论是在初始化时还是在后面继续执行的过程都是利用的下面的调度模型来进行调度.调度模型的执行终点是 need_schedule_nodes 和 need_schedule_edges 均为空
+初始化调度是将我们的 graph 的所有出度为 0 的 Node 作为第一次任务调度节点,对应我们的例子就是 Node4,Node5。 每一次调度都是抽取出 graph 当中的同步任务和异步任务,下图是 pipeline 的调度模型，用于抽取出当前 graph 当中可执行的同步 processor 和异步 processor，调度模型的输入是最上面的 graph,而输出则是 sync_processor_queue 和 async_processor_queue,无论是在初始化时还是在后面继续执行的过程都是利用的下面的调度模型来进行调度。 调度模型的执行终点是 need_schedule_nodes 和 need_schedule_edges 均为空。
 
 ![](https://databend-internals.psiace.me/source-reading/pipeline_model_graph/5-pipeline-model.jpg)
 
@@ -167,4 +167,4 @@ struct WorkerCondvar {
 限时机制其实是比较简单的,其主要的作用就是限制 sql 的 pipeline 执行的时间在规定时间内完成,
 如果超时则自动终止.这个机制底层实现就是用了一个异步任务来跟踪,一旦超时就通知整个执行模型结束,这里对应的就是执行模型流程图里面的 finish。
 
-以上便是 databend 的机遇状态机和 work-steal 机制的并发调度模型实现.
+以上便是 databend 的基于状态机和 work-steal 机制的并发调度模型实现.
