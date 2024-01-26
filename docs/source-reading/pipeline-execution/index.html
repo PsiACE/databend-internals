@@ -1,0 +1,1676 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="x-ua-compatible" content="ie=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+  <link rel="preload" as="font" href="https://databend-internals.psiace.me/fonts/vendor/jost/jost-v4-latin-regular.woff2" type="font/woff2" crossorigin>
+  <link rel="preload" as="font" href="https://databend-internals.psiace.me/fonts/vendor/jost/jost-v4-latin-700.woff2"  type="font/woff2" crossorigin>
+
+
+<link rel="stylesheet" href="https://databend-internals.psiace.me/main.css">
+
+
+
+  
+  
+    
+  
+
+  
+  
+    
+    
+  
+  
+  
+    
+  
+  
+  
+  
+    
+  
+  
+  
+
+
+  <meta name="robots" content="index, follow">
+  <meta name="googlebot" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1">
+  <meta name="bingbot" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1">
+
+
+	
+
+
+	
+
+<title>Databend 源码阅读： pipeline 的执行 | Databend 内幕大揭秘</title>
+<meta name="description" content="“Databend 源码阅读”系列文章的第三篇，以一条 SQL 的 pipeline 为例，帮助大家了解 databend 中 pipeline 的执行过程">
+<link rel="canonical" href="https://databend-internals.psiace.me/docs/source-reading/pipeline-execution/">
+
+
+
+
+
+
+
+
+
+
+<script type="application/ld+json">
+  {
+    "@context": "http://schema.org",
+    "@type": "BreadcrumbList",
+    
+      
+      
+        
+        
+        
+        
+        
+        
+        
+        
+          {
+            "@type": "ListItem",
+            "position":  1 ,
+            "name": "Home",
+            "item": "https://databend-internals.psiace.me/"
+          },
+          
+          
+          {
+            "@type": "ListItem",
+            "position":  2 ,
+            "name": "Docs",
+            "item": "https://databend-internals.psiace.me/docs/"
+          },
+        
+      
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+          
+          
+          {
+            "@type": "ListItem",
+            "position":  3 ,
+            "name": "Source Reading",
+            "item": "https://databend-internals.psiace.me/docs/source-reading/"
+          },
+        
+      
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+          
+          
+          {
+            "@type": "ListItem",
+            "position":  4 ,
+            "name": "Pipeline Execution",
+            "item": "https://databend-internals.psiace.me/docs/source-reading/pipeline-execution/"
+          },
+        
+      
+    
+  }
+</script>
+
+
+
+
+
+
+  <meta name="theme-color" content="#fff">
+  <link rel="apple-touch-icon" sizes="180x180" href="https://databend-internals.psiace.me/apple-touch-icon.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="https://databend-internals.psiace.me/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="https://databend-internals.psiace.me/favicon-16x16.png">
+  
+    <link rel="manifest" href="https://databend-internals.psiace.me/site.webmanifest" crossorigin>
+  
+
+
+  
+
+</head>
+
+
+
+<body class="docs single">
+  
+
+
+
+<div class="header-bar fixed-top"></div>
+<header class="navbar fixed-top navbar-expand-md navbar-light">
+	<div class="container">
+		<input class="menu-btn order-0" type="checkbox" id="menu-btn">
+		<label class="menu-icon d-md-none" for="menu-btn"><span class="navicon"></span></label>
+		<a class="navbar-brand order-1 order-md-0 me-auto" href="https://databend-internals.psiace.me">Databend 内幕大揭秘</a>
+		<button id="mode" class="btn btn-link order-2 order-md-4" type="button" aria-label="Toggle mode">
+			<span class="toggle-dark"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-moon"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg></span>
+			<span class="toggle-light"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-sun"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg></span>
+		</button>
+		<ul class="navbar-nav fork-me order-3 order-md-5">
+			
+				
+					<li class="nav-item">
+						<a class="nav-link" href="https://twitter.com/repsiace"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-twitter"><path d="M23 3a10.9 10.9 0 0 1-3.14 1.53 4.48 4.48 0 0 0-7.86 3v1A10.66 10.66 0 0 1 3 4s-4 9 5 13a11.64 11.64 0 0 1-7 2c9 5 20 0 20-11.5a4.5 4.5 0 0 0-.08-.83A7.72 7.72 0 0 0 23 3z"></path></svg><span class="ms-2 visually-hidden">Twitter</span></a>
+					</li>
+				
+					<li class="nav-item">
+						<a class="nav-link" href="https://github.com/psiace/databend-internals"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-github"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"></path></svg><span class="ms-2 visually-hidden">GitHub</span></a>
+					</li>
+				
+			
+		</ul>
+		<div class="collapse navbar-collapse order-4 order-md-1">
+			<ul class="navbar-nav main-nav me-auto order-5 order-md-2">
+				
+					
+				
+				
+				
+					
+						<li class="nav-item docs active">
+							<a class="nav-link" href="https://databend-internals.psiace.me/docs/getting-started/introduction/">在线阅读</a>
+						</li>
+					
+				
+			</ul>
+			<div class="break order-6 d-md-none"></div>
+			
+		</div>
+	</div>
+</header>
+
+
+
+  
+<div class="wrap container" role="document">
+  <div class="content">
+    <div class="row flex-xl-nowrap">
+      
+<div class="col-lg-5 col-xl-4 docs-sidebar">
+	<nav class="docs-links" aria-label="Main navigation">
+			
+			
+			
+			
+					
+					
+					
+							<h3>入门指南</h3>
+							<ul class="list-unstyled">
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/getting-started/introduction/">简介</a></li>
+							
+					</ul>
+					
+					
+					
+					
+							<h3>基础导览</h3>
+							<ul class="list-unstyled">
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/the-basics/storage/">存储</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/the-basics/about-index/">索引</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/the-basics/executor-in-query-process/">查询执行</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/the-basics/query-optimization/">查询优化</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/the-basics/mpp/">大规模并行处理</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/the-basics/distributed/">分布式</a></li>
+							
+					</ul>
+					
+					
+					
+					
+							<h3>特性探索</h3>
+							<ul class="list-unstyled">
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/productivity-topics/databend-rustchinaconf/">使用 Rust 构建云原生数仓 Databend</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/productivity-topics/quality-assurance-in-databend/">Databend 的质量保障</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/productivity-topics/the-databend-way-to-sky/">多云转晴：Databend 的天空计算之路</a></li>
+							
+					</ul>
+					
+					
+					
+					
+							<h3>源码解读</h3>
+							<ul class="list-unstyled">
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/source-reading/intro/">Databend 源码阅读： 开篇</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/source-reading/init-session-handler/">Databend 源码阅读： Query Server 启动、Session 管理及请求处理</a></li>
+							                           
+									<li><a class="docs-link active" href="https://databend-internals.psiace.me/docs/source-reading/pipeline-execution/">Databend 源码阅读： pipeline 的执行</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/source-reading/config/">Databend 源码阅读：配置管理</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/source-reading/pipeline-model-graph-based/">Databend 源码阅读： 图解 pipeline 调度模型</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/source-reading/storage-basics-read-partitions/">Databend 源码阅读： Storage 概要和 Read Partitions</a></li>
+							
+					</ul>
+					
+					
+					
+					
+							<h3>minibend</h3>
+							<ul class="list-unstyled">
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/minibend/intro/">第一弹 - minibend 简介</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/minibend/datasource/">第二弹 - Data Source</a></li>
+							
+					</ul>
+					
+					
+					
+					
+							<h3>开源贡献</h3>
+							<ul class="list-unstyled">
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/contribute-to-databend/development-environment/">如何设置 Databend 开发环境</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/contribute-to-databend/build-and-more/">轻松了解 Databend 构建</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/contribute-to-databend/build-with-pgo/">使用 PGO 优化 Databend 二进制构建</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/contribute-to-databend/write-and-run-tests/">如何为 Databend 添加新的测试</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/contribute-to-databend/how-to-contribute/">如何参与 Databend 开源协作</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/contribute-to-databend/tracing-in-databend/">Databend 全链路追踪</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/contribute-to-databend/how-to-benchmark/">如何对 Databend 进行基准测试</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/contribute-to-databend/how-to-profile/">Databend 性能剖析方法与工具</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/contribute-to-databend/how-to-write-functions/">如何为 Databend 添加新的函数</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/contribute-to-databend/how-to-write-system-table/">如何为 Databend 添加新的系统表</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/contribute-to-databend/release/">Databend 版本发布</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/contribute-to-databend/routine-maintenance/">Databend 的日常维护是怎么进行的</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/contribute-to-databend/faq/">常见问题解答</a></li>
+							
+					</ul>
+					
+					
+					
+					
+							<h3>专题研讨</h3>
+							<ul class="list-unstyled">
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/advanced-workshops/paper-list/">推荐阅读的论文清单</a></li>
+							
+					</ul>
+					
+					
+					
+					
+							<h3>贡献相关</h3>
+							<ul class="list-unstyled">
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/contributing/outline/">大纲速览</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/contributing/code-of-conduct/">行为准则</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/contributing/how-to-contributing/">如何协作</a></li>
+							
+					</ul>
+					
+					
+			
+	</nav>
+</div>
+
+      
+  
+  <nav class="docs-toc d-none d-xl-block col-xl-3" aria-label="Secondary navigation">
+  	<div class="page-links">
+  			<h3>On this page</h3>
+  			<nav id="TableOfContents">
+  					<ul>
+  							
+  							<li><a href="https://databend-internals.psiace.me/docs/source-reading/pipeline-execution/#yi-tiao-sql-de-pipeline">一条 SQL 的 pipeline</a></li>
+  							
+  							
+  							<li><a href="https://databend-internals.psiace.me/docs/source-reading/pipeline-execution/#execute-single-thread">execute_single_thread</a></li>
+  							
+  									<ul>
+  											
+  											<li><a href="https://databend-internals.psiace.me/docs/source-reading/pipeline-execution/#chu-shi-hua-xian-cheng">初始化线程</a></li>
+  											
+  											<li><a href="https://databend-internals.psiace.me/docs/source-reading/pipeline-execution/#zhi-xing">执行</a></li>
+  											
+  									</ul>
+  							
+  							
+  							<li><a href="https://databend-internals.psiace.me/docs/source-reading/pipeline-execution/#syncsourcer">SyncSourcer</a></li>
+  							
+  									<ul>
+  											
+  											<li><a href="https://databend-internals.psiace.me/docs/source-reading/pipeline-execution/#process">process</a></li>
+  											
+  											<li><a href="https://databend-internals.psiace.me/docs/source-reading/pipeline-execution/#event">event</a></li>
+  											
+  									</ul>
+  							
+  							
+  							<li><a href="https://databend-internals.psiace.me/docs/source-reading/pipeline-execution/#deserializedatatransform">DeserializeDataTransform</a></li>
+  							
+  									<ul>
+  											
+  											<li><a href="https://databend-internals.psiace.me/docs/source-reading/pipeline-execution/#event-1">event</a></li>
+  											
+  											<li><a href="https://databend-internals.psiace.me/docs/source-reading/pipeline-execution/#process-1">process</a></li>
+  											
+  									</ul>
+  							
+  							
+  							<li><a href="https://databend-internals.psiace.me/docs/source-reading/pipeline-execution/#accumulatingtransformer">AccumulatingTransformer</a></li>
+  							
+  									<ul>
+  											
+  											<li><a href="https://databend-internals.psiace.me/docs/source-reading/pipeline-execution/#event-2">event</a></li>
+  											
+  											<li><a href="https://databend-internals.psiace.me/docs/source-reading/pipeline-execution/#process-2">process</a></li>
+  											
+  											<li><a href="https://databend-internals.psiace.me/docs/source-reading/pipeline-execution/#transform">transform</a></li>
+  											
+  											<li><a href="https://databend-internals.psiace.me/docs/source-reading/pipeline-execution/#build-keys-state">build_keys_state</a></li>
+  											
+  											<li><a href="https://databend-internals.psiace.me/docs/source-reading/pipeline-execution/#on-finish">on_finish</a></li>
+  											
+  									</ul>
+  							
+  							
+  							<li><a href="https://databend-internals.psiace.me/docs/source-reading/pipeline-execution/#transformgroupbyspillwriter">TransformGroupBySpillWriter</a></li>
+  							
+  									<ul>
+  											
+  											<li><a href="https://databend-internals.psiace.me/docs/source-reading/pipeline-execution/#event-3">event</a></li>
+  											
+  											<li><a href="https://databend-internals.psiace.me/docs/source-reading/pipeline-execution/#process-3">process</a></li>
+  											
+  											<li><a href="https://databend-internals.psiace.me/docs/source-reading/pipeline-execution/#async-process">async_process</a></li>
+  											
+  									</ul>
+  							
+  							
+  							<li><a href="https://databend-internals.psiace.me/docs/source-reading/pipeline-execution/#transformpartitionbucket">TransformPartitionBucket</a></li>
+  							
+  									<ul>
+  											
+  											<li><a href="https://databend-internals.psiace.me/docs/source-reading/pipeline-execution/#initialize-all-inputs">initialize_all_inputs</a></li>
+  											
+  											<li><a href="https://databend-internals.psiace.me/docs/source-reading/pipeline-execution/#event-4">event</a></li>
+  											
+  											<li><a href="https://databend-internals.psiace.me/docs/source-reading/pipeline-execution/#process-4">Process</a></li>
+  											
+  									</ul>
+  							
+  							
+  							<li><a href="https://databend-internals.psiace.me/docs/source-reading/pipeline-execution/#transformspillreader">TransformSpillReader</a></li>
+  							
+  							
+  							<li><a href="https://databend-internals.psiace.me/docs/source-reading/pipeline-execution/#blockmetatransformer">BlockMetaTransformer</a></li>
+  							
+  									<ul>
+  											
+  											<li><a href="https://databend-internals.psiace.me/docs/source-reading/pipeline-execution/#process-5">process</a></li>
+  											
+  									</ul>
+  							
+  							
+  							<li><a href="https://databend-internals.psiace.me/docs/source-reading/pipeline-execution/#compoundblockoperator">CompoundBlockOperator</a></li>
+  							
+  							
+  					</ul>
+  			</nav>
+  	</div>
+  </nav>
+  
+
+      <main class="docs-content col-lg-11 col-xl-9">
+        <h1>Databend 源码阅读： pipeline 的执行</h1>
+        
+        <p>作者：<a href="https://github.com/dousir9">Dousir9</a> | Databend Contributor</p>
+<h2 id="yi-tiao-sql-de-pipeline">一条 SQL 的 pipeline</h2>
+<p>本篇文章将以一条 SQL <code>select t.id from t group by t.id</code> 为例，分析 Pipeline 的执行，表结构及该 SQL 的 pipeline 如下所示，我们将从底部的 <code>SyncReadParquetDataSource</code> 向上进行分析。</p>
+<pre data-lang="sql" style="background-color:#2b303b;color:#c0c5ce;" class="language-sql "><code class="language-sql" data-lang="sql"><span>mysql&gt; </span><span style="color:#b48ead;">desc</span><span> t;
+</span><span>+</span><span style="color:#65737e;">-------+------+------+---------+-------+
+</span><span>| Field | Type | </span><span style="color:#d08770;">Null</span><span> | </span><span style="color:#b48ead;">Default</span><span> | Extra |
+</span><span>+</span><span style="color:#65737e;">-------+------+------+---------+-------+
+</span><span>| id    | </span><span style="color:#b48ead;">INT</span><span>  | NO   | </span><span style="color:#d08770;">0</span><span>       |       |
+</span><span>| val   | </span><span style="color:#b48ead;">INT</span><span>  | NO   | </span><span style="color:#d08770;">0</span><span>       |       |
+</span><span>+</span><span style="color:#65737e;">-------+------+------+---------+-------+
+</span><span>
+</span><span>mysql&gt; explain pipeline </span><span style="color:#b48ead;">select </span><span style="color:#d08770;">t</span><span>.</span><span style="color:#d08770;">id </span><span style="color:#b48ead;">from</span><span> t </span><span style="color:#b48ead;">group by </span><span style="color:#d08770;">t</span><span>.</span><span style="color:#d08770;">id</span><span>;
+</span><span>+</span><span style="color:#65737e;">--------------------------------------------------------+
+</span><span>| explain                                                |
+</span><span>+</span><span style="color:#65737e;">--------------------------------------------------------+
+</span><span>| CompoundBlockOperator(Project) × </span><span style="color:#d08770;">1</span><span> processor           |
+</span><span>|   TransformFinalGroupBy × </span><span style="color:#d08770;">1</span><span> processor                  |
+</span><span>|     TransformSpillReader × </span><span style="color:#d08770;">1</span><span> processor                 |
+</span><span>|       TransformPartitionBucket × </span><span style="color:#d08770;">1</span><span> processor           |
+</span><span>|         TransformGroupBySpillWriter × </span><span style="color:#d08770;">1</span><span> processor      |
+</span><span>|           TransformPartialGroupBy × </span><span style="color:#d08770;">1</span><span> processor        |
+</span><span>|             DeserializeDataTransform × </span><span style="color:#d08770;">1</span><span> processor     |
+</span><span>|               SyncReadParquetDataSource × </span><span style="color:#d08770;">1</span><span> processor  |
+</span><span>+</span><span style="color:#65737e;">--------------------------------------------------------+
+</span></code></pre>
+<h2 id="execute-single-thread">execute_single_thread</h2>
+<p>首先我们需要明白 <code>PipelineExecutor</code> 是怎么运作的</p>
+<pre data-lang="rust" style="background-color:#2b303b;color:#c0c5ce;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="color:#65737e;">// src/query/service/src/pipelines/executor/pipeline_executor.rs
+</span><span style="color:#b48ead;">impl </span><span>PipelineExecutor {
+</span><span>    </span><span style="color:#65737e;">// ...
+</span><span>
+</span><span>    </span><span style="color:#65737e;">/// # Safety
+</span><span>    </span><span style="color:#65737e;">///
+</span><span>    </span><span style="color:#65737e;">/// Method is thread unsafe and require thread safe call
+</span><span>    </span><span style="color:#b48ead;">pub unsafe fn </span><span style="color:#8fa1b3;">execute_single_thread</span><span>(&amp;</span><span style="color:#bf616a;">self</span><span>, </span><span style="color:#bf616a;">thread_num</span><span>: </span><span style="color:#b48ead;">usize</span><span>) -&gt; Result&lt;()&gt; {
+</span><span>        </span><span style="color:#b48ead;">let</span><span> workers_condvar = </span><span style="color:#bf616a;">self</span><span>.workers_condvar.</span><span style="color:#96b5b4;">clone</span><span>();
+</span><span>        </span><span style="color:#b48ead;">let mut</span><span> context = ExecutorWorkerContext::create(
+</span><span>            thread_num,
+</span><span>            workers_condvar,
+</span><span>            </span><span style="color:#bf616a;">self</span><span>.settings.query_id.</span><span style="color:#96b5b4;">clone</span><span>(),
+</span><span>        );
+</span><span>
+</span><span>        </span><span style="color:#b48ead;">while </span><span>!</span><span style="color:#bf616a;">self</span><span>.global_tasks_queue.</span><span style="color:#96b5b4;">is_finished</span><span>() {
+</span><span>            </span><span style="color:#65737e;">// When there are not enough tasks, the thread will be blocked, so we need loop check.
+</span><span>            </span><span style="color:#b48ead;">while </span><span>!</span><span style="color:#bf616a;">self</span><span>.global_tasks_queue.</span><span style="color:#96b5b4;">is_finished</span><span>() &amp;&amp; !context.</span><span style="color:#96b5b4;">has_task</span><span>() {
+</span><span>                </span><span style="color:#bf616a;">self</span><span>.global_tasks_queue.</span><span style="color:#96b5b4;">steal_task_to_context</span><span>(&amp;</span><span style="color:#b48ead;">mut</span><span> context);
+</span><span>            }
+</span><span>
+</span><span>            </span><span style="color:#b48ead;">while </span><span>!</span><span style="color:#bf616a;">self</span><span>.global_tasks_queue.</span><span style="color:#96b5b4;">is_finished</span><span>() &amp;&amp; context.</span><span style="color:#96b5b4;">has_task</span><span>() {
+</span><span>                </span><span style="color:#b48ead;">if let </span><span>Some(executed_pid) = context.</span><span style="color:#96b5b4;">execute_task</span><span>()? {
+</span><span>                    </span><span style="color:#65737e;">// Not scheduled graph if pipeline is finished.
+</span><span>                    </span><span style="color:#b48ead;">if </span><span>!</span><span style="color:#bf616a;">self</span><span>.global_tasks_queue.</span><span style="color:#96b5b4;">is_finished</span><span>() {
+</span><span>                        </span><span style="color:#65737e;">// We immediately schedule the processor again.
+</span><span>                        </span><span style="color:#b48ead;">let</span><span> schedule_queue = </span><span style="color:#bf616a;">self</span><span>.graph.</span><span style="color:#96b5b4;">schedule_queue</span><span>(executed_pid)?;
+</span><span>                        schedule_queue.</span><span style="color:#96b5b4;">schedule</span><span>(&amp;</span><span style="color:#bf616a;">self</span><span>.global_tasks_queue, &amp;</span><span style="color:#b48ead;">mut</span><span> context, </span><span style="color:#bf616a;">self</span><span>);
+</span><span>                    }
+</span><span>                }
+</span><span>            }
+</span><span>        }
+</span><span>
+</span><span>        Ok(())
+</span><span>    }
+</span><span>    </span><span style="color:#65737e;">// ...
+</span><span>}
+</span></code></pre>
+<h3 id="chu-shi-hua-xian-cheng">初始化线程</h3>
+<p>在调用 <code>from_pipelines</code> 构建 <code>PipelineExecutor</code> 时，我们会遍历每个 <code>Pipeline</code> 的 <code>get_max_threads</code> 来获得当前这个 <code>PipelineExecutor</code> 所需的线程数 <code>threads_num</code>。然后在 <code>execute_threads</code> 函数中，我们会创建 <code>threads_num</code> 个线程，每个线程都有当前这个 <code>PipelineExecutor</code> 的一份拷贝，随后每个线程会调用 <code>execute_single_thread</code> 开始执行任务。 </p>
+<h3 id="zhi-xing">执行</h3>
+<p><strong>（1）首先获得一份条件变量 <code>workers_condvar</code> 的拷贝并用它来创建一个 <code>ExecutorWorkerContext</code>，它存有 query_id，worker_num：worker 编号，task：当前要执行的任务，workers_condvar。</strong></p>
+<p><strong>（2）当 <code>global_tasks_queue</code> 没有结束时，就会一直循环，如果 <code>context</code> 中没有 task，则会调用 <code>steal_task_to_context</code> 来获取任务，如果没有获取到则阻塞等待被唤醒。</strong></p>
+<p><strong>（3）当获取到任务时，会首先调用 <code>execute_task</code> 来执行任务，对于 <code>ExecutorTask::Sync</code> 类型的任务来说，会调用 <code>execute_sync_task</code> 进而调用 <code>Processor</code> 的 <code>process</code> 函数，然后返回 <code>processor.id()</code> 用来后续推动 pipeline 的执行；而当 task 的类型为 <code>ExecutorTask::AsyncCompleted</code> 时，表示一个异步任务执行完了，这时我们返回 <code>task.id</code> 用来后续推动 pipeline 的执行。</strong></p>
+<pre data-lang="rust" style="background-color:#2b303b;color:#c0c5ce;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="color:#65737e;">// src/query/service/src/pipelines/executor/executor_worker_context.rs
+</span><span style="color:#b48ead;">impl </span><span>ExecutorWorkerContext {
+</span><span>    </span><span style="color:#b48ead;">pub unsafe fn </span><span style="color:#8fa1b3;">execute_task</span><span>(&amp;</span><span style="color:#b48ead;">mut </span><span style="color:#bf616a;">self</span><span>) -&gt; Result&lt;Option&lt;NodeIndex&gt;&gt; {
+</span><span>        </span><span style="color:#b48ead;">match </span><span>std::mem::replace(&amp;</span><span style="color:#b48ead;">mut </span><span style="color:#bf616a;">self</span><span>.task, ExecutorTask::None) {
+</span><span>            ExecutorTask::None =&gt; Err(ErrorCode::Internal(&quot;</span><span style="color:#a3be8c;">Execute none task.</span><span>&quot;)),
+</span><span>            ExecutorTask::Sync(processor) =&gt; </span><span style="color:#bf616a;">self</span><span>.</span><span style="color:#96b5b4;">execute_sync_task</span><span>(processor),
+</span><span>            ExecutorTask::AsyncCompleted(task) =&gt; </span><span style="color:#b48ead;">match</span><span> task.res {
+</span><span>                Ok(_) =&gt; Ok(Some(task.id)),
+</span><span>                Err(cause) =&gt; Err(cause),
+</span><span>            },
+</span><span>        }
+</span><span>    }
+</span><span>}
+</span></code></pre>
+<p><strong>（4）在调用 <code>execute_task</code> 后我们得到了一个 <code>executed_pid</code>，这时候我们需要拿这个 <code>executor_pid</code> 来做一些 schedule 工作，继续推动 pipeline 的执行，首先调用 <code>schedule_queue</code>。</strong></p>
+<pre data-lang="rust" style="background-color:#2b303b;color:#c0c5ce;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="color:#65737e;">// src/query/service/src/pipelines/executor/executor_graph.rs
+</span><span style="color:#b48ead;">impl </span><span>ExecutingGraph {
+</span><span>    </span><span style="color:#65737e;">// ...
+</span><span>
+</span><span>    </span><span style="color:#65737e;">/// # Safety
+</span><span>    </span><span style="color:#65737e;">///
+</span><span>    </span><span style="color:#65737e;">/// Method is thread unsafe and require thread safe call
+</span><span>    </span><span style="color:#b48ead;">pub unsafe fn </span><span style="color:#8fa1b3;">schedule_queue</span><span>(
+</span><span>        </span><span style="color:#bf616a;">locker</span><span>: &amp;StateLockGuard,
+</span><span>        </span><span style="color:#bf616a;">index</span><span>: NodeIndex,
+</span><span>        </span><span style="color:#bf616a;">schedule_queue</span><span>: &amp;</span><span style="color:#b48ead;">mut</span><span> ScheduleQueue,
+</span><span>    ) -&gt; Result&lt;()&gt; {
+</span><span>        </span><span style="color:#b48ead;">let mut</span><span> need_schedule_nodes = VecDeque::new();
+</span><span>        </span><span style="color:#b48ead;">let mut</span><span> need_schedule_edges = VecDeque::new();
+</span><span>
+</span><span>        need_schedule_nodes.</span><span style="color:#96b5b4;">push_back</span><span>(index);
+</span><span>        </span><span style="color:#b48ead;">while </span><span>!need_schedule_nodes.</span><span style="color:#96b5b4;">is_empty</span><span>() || !need_schedule_edges.</span><span style="color:#96b5b4;">is_empty</span><span>() {
+</span><span>            </span><span style="color:#65737e;">// To avoid lock too many times, we will try to cache lock.
+</span><span>            </span><span style="color:#b48ead;">let mut</span><span> state_guard_cache = None;
+</span><span>
+</span><span>            </span><span style="color:#b48ead;">if</span><span> need_schedule_nodes.</span><span style="color:#96b5b4;">is_empty</span><span>() {
+</span><span>                </span><span style="color:#b48ead;">let</span><span> edge = need_schedule_edges.</span><span style="color:#96b5b4;">pop_front</span><span>().</span><span style="color:#96b5b4;">unwrap</span><span>();
+</span><span>                </span><span style="color:#b48ead;">let</span><span> target_index = DirectedEdge::get_target(&amp;edge, &amp;locker.graph)?;
+</span><span>
+</span><span>                </span><span style="color:#b48ead;">let</span><span> node = &amp;locker.graph[target_index];
+</span><span>                </span><span style="color:#b48ead;">let</span><span> node_state = node.state.</span><span style="color:#96b5b4;">lock</span><span>().</span><span style="color:#96b5b4;">unwrap</span><span>();
+</span><span>
+</span><span>                </span><span style="color:#b48ead;">if </span><span>matches!(*node_state, State::Idle) {
+</span><span>                    state_guard_cache = Some(node_state);
+</span><span>                    need_schedule_nodes.</span><span style="color:#96b5b4;">push_back</span><span>(target_index);
+</span><span>                }
+</span><span>            }
+</span><span>
+</span><span>            </span><span style="color:#b48ead;">if let </span><span>Some(schedule_index) = need_schedule_nodes.</span><span style="color:#96b5b4;">pop_front</span><span>() {
+</span><span>                </span><span style="color:#b48ead;">let</span><span> node = &amp;locker.graph[schedule_index];
+</span><span>
+</span><span>                </span><span style="color:#b48ead;">if</span><span> state_guard_cache.</span><span style="color:#96b5b4;">is_none</span><span>() {
+</span><span>                    state_guard_cache = Some(node.state.</span><span style="color:#96b5b4;">lock</span><span>().</span><span style="color:#96b5b4;">unwrap</span><span>());
+</span><span>                }
+</span><span>                </span><span style="color:#b48ead;">let</span><span> event = node.processor.</span><span style="color:#96b5b4;">event</span><span>()?;
+</span><span>                </span><span style="color:#b48ead;">if </span><span>tracing::enabled!(tracing::Level::</span><span style="color:#d08770;">TRACE</span><span>) {
+</span><span>                    tracing::trace!(
+</span><span>                        &quot;</span><span style="color:#a3be8c;">node id: {:?}, name: {:?}, event: {:?}</span><span>&quot;,
+</span><span>                        node.processor.</span><span style="color:#96b5b4;">id</span><span>(),
+</span><span>                        node.processor.</span><span style="color:#96b5b4;">name</span><span>(),
+</span><span>                        event
+</span><span>                    );
+</span><span>                }
+</span><span>                </span><span style="color:#b48ead;">let</span><span> processor_state = </span><span style="color:#b48ead;">match</span><span> event {
+</span><span>                    Event::Finished =&gt; State::Finished,
+</span><span>                    Event::NeedData | Event::NeedConsume =&gt; State::Idle,
+</span><span>                    Event::Sync =&gt; {
+</span><span>                        schedule_queue.</span><span style="color:#96b5b4;">push_sync</span><span>(node.processor.</span><span style="color:#96b5b4;">clone</span><span>());
+</span><span>                        State::Processing
+</span><span>                    }
+</span><span>                    Event::Async =&gt; {
+</span><span>                        schedule_queue.</span><span style="color:#96b5b4;">push_async</span><span>(node.processor.</span><span style="color:#96b5b4;">clone</span><span>());
+</span><span>                        State::Processing
+</span><span>                    }
+</span><span>                };
+</span><span>
+</span><span>                node.</span><span style="color:#96b5b4;">trigger</span><span>(&amp;</span><span style="color:#b48ead;">mut</span><span> need_schedule_edges);
+</span><span>                *state_guard_cache.</span><span style="color:#96b5b4;">unwrap</span><span>() = processor_state;
+</span><span>            }
+</span><span>        }
+</span><span>
+</span><span>        Ok(())
+</span><span>    }
+</span><span>}
+</span></code></pre>
+<p>在介绍 <code>schedule_queue</code> 函数之前有几个概念，<code>trait Processor</code> 有 <code>event</code>，<code>process</code>，<code>async_process</code> 这些函数，<code>event</code> 的作用是根据当前这个 Processor 的信息，来推动这个 Processor：包括改变 Processor 中的变量，改变 input port 和 output port，<code>event</code> 会返回一个 <code>Event</code> 状态来指示下一步的工作：</p>
+<ul>
+<li><code>Event::Finished</code>：表示 Processor 的工作结束了，将 Processor 的状态设置为 <code>State::Finished</code></li>
+<li><code>Event::NeedData | Event::NeedConsume</code>：表示 Processor 的 input 需要数据或者 output 的数据需要被消费，将 Processor 的状态设置为 <code>tate::Idle</code>，表示需要进行 schedule。</li>
+<li><code>Event::Sync</code>：表示 Processor 需要调用 <code>process</code> 进行处理，将 Processor push 到 <code>schedule_queue</code> 的 <code>sync_queue</code> 中，并将 Processor 状态设置为 <code>State::Processing</code>。</li>
+<li><code>Event::Async</code>：表示 Processor 需要调用 <code>async_process</code> 进行处理，将 Processor push 到 <code>schedule_queue</code> 的 <code>async_queue</code> 中，并将 Processor 状态设置为 <code>State::Processing</code>。</li>
+</ul>
+<p>schedule_queue 的工作过程：</p>
+<ol>
+<li>首先初始化两个 VecDeque： <code>need_schedule_nodes: VecDeque&lt;NodeIndex&gt;</code> 和 <code>need_schedule_edges: VecDeque&lt;DirectedEdge&gt;</code> 分别用来存放需要进行 schedule 的 NodeIndex 和 DirectedEdge，然后将 <code>executor_pid</code> push <code>need_schedule_nodes</code> 中。</li>
+<li>只要这两个 VecDeque 任意一个不为空，我们就需要不断地进行 schedule。</li>
+<li>每次 schedule 时，首先我们会判断 <code>need_schedule_nodes</code> 是否为空，如果它为空，那 <code>need_schedule_edges</code> 一定不为空，此时我们从 <code>need_schedule_edges</code> 中 pop 出一条 <code>DirectedEdge</code> edge，然后获得这条 edge 的 target node（注意这个 target node 不是 edge 的指向，<code>DirectedEdge</code> 有两种类型：<code>Source</code> 和 <code>Target</code>，当 Processor 的 input 改变时，会在 trigger 的 update_list 中 push 一条 <code>DirectedEdge::Target(self_.index)</code>，而如果是 Processor 的 output 改变，则 push 一条 <code>DirectedEdge::Source(self_.index)</code>），如果 target node 的状态为 <code>State::Idle</code>，表示它在上一次调用 <code>event</code> 时返回的 Event 状态为 <code>Event::NeedData</code> 或 <code>Event::NeedConsume</code>，即它上次 <code>event</code> 时 input 需要数据或 output 数据需要被消费，而它现在的状态可能是 input 的数据已经来了或者 output 的数据被消费了，因此我们需要将其 push 到 <code>need_schedule_nodes</code> 中来再次调用 <code>event</code> 看看是否可以推动这个 Processor。</li>
+<li>然后我们尝试从 <code>need_schedule_nodes</code> pop 出一个 NodeIndex，并从 <code>ExecutingGraph</code> 中得到这个 Node，然后调用它的 Processor 的 <code>event</code>，然后根据返回的 <code>Event</code> 状态来进行下一步工作（如开头描述）。</li>
+<li>最后调用这个 Node 的 trigger 函数，将 updated_list 中的 <code>DirectedEdge</code> 都 push 到 <code>need_schedule_edges</code> 中。</li>
+<li>如果 <code>need_schedule_nodes</code> 或 <code>need_schedule_edges</code> 不为空则开始下一次 schedule。</li>
+<li>schedule 结束，将 <code>schedule_queue</code> 返回。</li>
+</ol>
+<p><strong>（5）调用 <code>schedule_queue.schedule</code> 处理 schedule_queue 中的 tasks</strong></p>
+<pre data-lang="rust" style="background-color:#2b303b;color:#c0c5ce;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="color:#65737e;">// src/query/service/src/pipelines/executor/executor_graph.rs
+</span><span style="color:#b48ead;">impl </span><span>ScheduleQueue {
+</span><span>    </span><span style="color:#65737e;">// ...
+</span><span>    </span><span style="color:#b48ead;">pub fn </span><span style="color:#8fa1b3;">schedule</span><span>(
+</span><span>        </span><span style="color:#b48ead;">mut </span><span style="color:#bf616a;">self</span><span>,
+</span><span>        </span><span style="color:#bf616a;">global</span><span>: &amp;Arc&lt;ExecutorTasksQueue&gt;,
+</span><span>        </span><span style="color:#bf616a;">context</span><span>: &amp;</span><span style="color:#b48ead;">mut</span><span> ExecutorWorkerContext,
+</span><span>        </span><span style="color:#bf616a;">executor</span><span>: &amp;PipelineExecutor,
+</span><span>    ) {
+</span><span>        debug_assert!(!context.</span><span style="color:#96b5b4;">has_task</span><span>());
+</span><span>
+</span><span>        </span><span style="color:#b48ead;">while let </span><span>Some(processor) = </span><span style="color:#bf616a;">self</span><span>.async_queue.</span><span style="color:#96b5b4;">pop_front</span><span>() {
+</span><span>            </span><span style="color:#b48ead;">Self</span><span>::schedule_async_task(
+</span><span>                processor,
+</span><span>                context.query_id.</span><span style="color:#96b5b4;">clone</span><span>(),
+</span><span>                executor,
+</span><span>                context.</span><span style="color:#96b5b4;">get_worker_num</span><span>(),
+</span><span>                context.</span><span style="color:#96b5b4;">get_workers_condvar</span><span>().</span><span style="color:#96b5b4;">clone</span><span>(),
+</span><span>                global.</span><span style="color:#96b5b4;">clone</span><span>(),
+</span><span>            )
+</span><span>        }
+</span><span>
+</span><span>        </span><span style="color:#b48ead;">if </span><span>!</span><span style="color:#bf616a;">self</span><span>.sync_queue.</span><span style="color:#96b5b4;">is_empty</span><span>() {
+</span><span>            </span><span style="color:#bf616a;">self</span><span>.</span><span style="color:#96b5b4;">schedule_sync</span><span>(global, context);
+</span><span>        }
+</span><span>
+</span><span>        </span><span style="color:#b48ead;">if </span><span>!</span><span style="color:#bf616a;">self</span><span>.sync_queue.</span><span style="color:#96b5b4;">is_empty</span><span>() {
+</span><span>            </span><span style="color:#bf616a;">self</span><span>.</span><span style="color:#96b5b4;">schedule_tail</span><span>(global, context);
+</span><span>        }
+</span><span>    }
+</span><span>    </span><span style="color:#65737e;">// ...
+</span><span>}
+</span></code></pre>
+<ol>
+<li>对于 <code>async_queue</code> 中的 Processor，我们将其 push 到 async_runtime 中，当 Processor 调用 <code>async_process</code> 完成异步任务完成后，会将 <code>CompletedAsyncTask</code> push 到 <code>global_tasks_queue</code> 中。</li>
+<li>对于 <code>sync_queue</code> 中的 Processor，我们首先调用 <code>schedule_sync</code> 取出一个 Processor 并把包装为一个 <code>ExecutorTask::Sync(processor)</code> 任务交给当前线程继续执行。然后将剩下的 Processor 都包装为 <code>Processor</code> push 到 <code>global_tasks_queue</code> 中，让其他线程取出 task 并行执行。</li>
+</ol>
+<h2 id="syncsourcer">SyncSourcer</h2>
+<pre data-lang="rust" style="background-color:#2b303b;color:#c0c5ce;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="color:#65737e;">// src/query/pipeline/source/src/sync_source.rs
+</span><span>#[</span><span style="color:#bf616a;">async_trait</span><span>::</span><span style="color:#bf616a;">async_trait</span><span>]
+</span><span style="color:#b48ead;">impl</span><span>&lt;T: </span><span style="color:#b48ead;">&#39;static </span><span>+ SyncSource&gt; Processor </span><span style="color:#b48ead;">for </span><span>SyncSourcer&lt;T&gt; {
+</span><span>    </span><span style="color:#b48ead;">fn </span><span style="color:#8fa1b3;">name</span><span>(&amp;</span><span style="color:#bf616a;">self</span><span>) -&gt; String {
+</span><span>        T::</span><span style="color:#d08770;">NAME</span><span>.</span><span style="color:#96b5b4;">to_string</span><span>()
+</span><span>    }
+</span><span>
+</span><span>    </span><span style="color:#b48ead;">fn </span><span style="color:#8fa1b3;">as_any</span><span>(&amp;</span><span style="color:#b48ead;">mut </span><span style="color:#bf616a;">self</span><span>) -&gt; &amp;</span><span style="color:#b48ead;">mut</span><span> dyn Any {
+</span><span>        </span><span style="color:#bf616a;">self
+</span><span>    }
+</span><span>
+</span><span>    </span><span style="color:#b48ead;">fn </span><span style="color:#8fa1b3;">event</span><span>(&amp;</span><span style="color:#b48ead;">mut </span><span style="color:#bf616a;">self</span><span>) -&gt; Result&lt;Event&gt; {
+</span><span>        </span><span style="color:#b48ead;">if </span><span style="color:#bf616a;">self</span><span>.is_finish {
+</span><span>            </span><span style="color:#bf616a;">self</span><span>.output.</span><span style="color:#96b5b4;">finish</span><span>();
+</span><span>            </span><span style="color:#b48ead;">return </span><span>Ok(Event::Finished);
+</span><span>        }
+</span><span>
+</span><span>        </span><span style="color:#b48ead;">if </span><span style="color:#bf616a;">self</span><span>.output.</span><span style="color:#96b5b4;">is_finished</span><span>() {
+</span><span>            </span><span style="color:#b48ead;">return </span><span>Ok(Event::Finished);
+</span><span>        }
+</span><span>
+</span><span>        </span><span style="color:#b48ead;">if </span><span>!</span><span style="color:#bf616a;">self</span><span>.output.</span><span style="color:#96b5b4;">can_push</span><span>() {
+</span><span>            </span><span style="color:#b48ead;">return </span><span>Ok(Event::NeedConsume);
+</span><span>        }
+</span><span>
+</span><span>        </span><span style="color:#b48ead;">match </span><span style="color:#bf616a;">self</span><span>.generated_data.</span><span style="color:#96b5b4;">take</span><span>() {
+</span><span>            None =&gt; Ok(Event::Sync),
+</span><span>            Some(data_block) =&gt; {
+</span><span>                </span><span style="color:#bf616a;">self</span><span>.output.</span><span style="color:#96b5b4;">push_data</span><span>(Ok(data_block));
+</span><span>                Ok(Event::NeedConsume)
+</span><span>            }
+</span><span>        }
+</span><span>    }
+</span><span>
+</span><span>    </span><span style="color:#b48ead;">fn </span><span style="color:#8fa1b3;">process</span><span>(&amp;</span><span style="color:#b48ead;">mut </span><span style="color:#bf616a;">self</span><span>) -&gt; Result&lt;()&gt; {
+</span><span>        </span><span style="color:#b48ead;">match </span><span style="color:#bf616a;">self</span><span>.inner.</span><span style="color:#96b5b4;">generate</span><span>()? {
+</span><span>            None =&gt; </span><span style="color:#bf616a;">self</span><span>.is_finish = </span><span style="color:#d08770;">true</span><span>,
+</span><span>            Some(data_block) =&gt; {
+</span><span>                </span><span style="color:#b48ead;">let</span><span> progress_values = ProgressValues {
+</span><span>                    rows: data_block.</span><span style="color:#96b5b4;">num_rows</span><span>(),
+</span><span>                    bytes: data_block.</span><span style="color:#96b5b4;">memory_size</span><span>(),
+</span><span>                };
+</span><span>                </span><span style="color:#bf616a;">self</span><span>.scan_progress.</span><span style="color:#96b5b4;">incr</span><span>(&amp;progress_values);
+</span><span>                </span><span style="color:#bf616a;">self</span><span>.generated_data = Some(data_block)
+</span><span>            }
+</span><span>        };
+</span><span>
+</span><span>        Ok(())
+</span><span>    }
+</span><span>}
+</span></code></pre>
+<pre data-lang="rust" style="background-color:#2b303b;color:#c0c5ce;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="color:#65737e;">// src/query/storages/fuse/src/operations/read/parquet_data_source_reader.rs
+</span><span style="color:#b48ead;">impl </span><span>SyncSource </span><span style="color:#b48ead;">for </span><span>ReadParquetDataSource&lt;true&gt; {
+</span><span>    </span><span style="color:#b48ead;">const </span><span style="color:#d08770;">NAME</span><span>: &amp;</span><span style="color:#b48ead;">&#39;static str </span><span>= &quot;</span><span style="color:#a3be8c;">SyncReadParquetDataSource</span><span>&quot;;
+</span><span>
+</span><span>    </span><span style="color:#b48ead;">fn </span><span style="color:#8fa1b3;">generate</span><span>(&amp;</span><span style="color:#b48ead;">mut </span><span style="color:#bf616a;">self</span><span>) -&gt; Result&lt;Option&lt;DataBlock&gt;&gt; {
+</span><span>        </span><span style="color:#b48ead;">match </span><span style="color:#bf616a;">self</span><span>.partitions.</span><span style="color:#96b5b4;">steal_one</span><span>(</span><span style="color:#bf616a;">self</span><span>.id) {
+</span><span>            None =&gt; Ok(None),
+</span><span>            Some(part) =&gt; Ok(Some(DataBlock::empty_with_meta(DataSourceMeta::create(
+</span><span>                vec![part.</span><span style="color:#96b5b4;">clone</span><span>()],
+</span><span>                vec![</span><span style="color:#bf616a;">self</span><span>.block_reader.</span><span style="color:#96b5b4;">sync_read_columns_data_by_merge_io</span><span>(
+</span><span>                    &amp;ReadSettings::from_ctx(&amp;</span><span style="color:#bf616a;">self</span><span>.partitions.ctx)?,
+</span><span>                    part,
+</span><span>                )?],
+</span><span>            )))),
+</span><span>        }
+</span><span>    }
+</span><span>}
+</span></code></pre>
+<h3 id="process">process</h3>
+<p>首先调用 inner （例如 <code>ReadParquetDataSource</code>，它实现了 trait SyncSource) 的 <code>generate</code> 获得一个空的 <code>DataBlock</code>，这个 <code>DataBlock</code> 数据为空，但是 <code>meta</code> 不为空，存有 <code>part</code> 和 <code>data</code>。将这个 <code>data_block</code> 赋值给 <code>self.generated_data</code>，</p>
+<h3 id="event">event</h3>
+<p>在下一次调用 <code>event</code> 的时候将 <code>self.generated_data</code> 通过 <code>self.output.push_data(Ok(data_block))</code> 发送出去，并返回 <code>Event::NeedConsume</code> 这个状态。如果 <code>!self.output.can_push()</code> 为 true 的话，说明现在有 data_block 在 output 中，返回 <code>Event::NeedConsume</code> 状态。</p>
+<h2 id="deserializedatatransform">DeserializeDataTransform</h2>
+<pre data-lang="rust" style="background-color:#2b303b;color:#c0c5ce;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="color:#65737e;">// src/query/storages/fuse/src/operations/read/parquet_data_source_deserializer.rs
+</span><span>#[</span><span style="color:#bf616a;">async_trait</span><span>::</span><span style="color:#bf616a;">async_trait</span><span>]
+</span><span style="color:#b48ead;">impl </span><span>Processor </span><span style="color:#b48ead;">for </span><span>DeserializeDataTransform {
+</span><span>    </span><span style="color:#b48ead;">fn </span><span style="color:#8fa1b3;">name</span><span>(&amp;</span><span style="color:#bf616a;">self</span><span>) -&gt; String {
+</span><span>        String::from(&quot;</span><span style="color:#a3be8c;">DeserializeDataTransform</span><span>&quot;)
+</span><span>    }
+</span><span>
+</span><span>    </span><span style="color:#b48ead;">fn </span><span style="color:#8fa1b3;">as_any</span><span>(&amp;</span><span style="color:#b48ead;">mut </span><span style="color:#bf616a;">self</span><span>) -&gt; &amp;</span><span style="color:#b48ead;">mut</span><span> dyn Any {
+</span><span>        </span><span style="color:#bf616a;">self
+</span><span>    }
+</span><span>
+</span><span>    </span><span style="color:#b48ead;">fn </span><span style="color:#8fa1b3;">event</span><span>(&amp;</span><span style="color:#b48ead;">mut </span><span style="color:#bf616a;">self</span><span>) -&gt; Result&lt;Event&gt; {
+</span><span>        </span><span style="color:#b48ead;">if </span><span style="color:#bf616a;">self</span><span>.output.</span><span style="color:#96b5b4;">is_finished</span><span>() {
+</span><span>            </span><span style="color:#bf616a;">self</span><span>.input.</span><span style="color:#96b5b4;">finish</span><span>();
+</span><span>            </span><span style="color:#bf616a;">self</span><span>.uncompressed_buffer.</span><span style="color:#96b5b4;">clear</span><span>();
+</span><span>            </span><span style="color:#b48ead;">return </span><span>Ok(Event::Finished);
+</span><span>        }
+</span><span>
+</span><span>        </span><span style="color:#b48ead;">if </span><span>!</span><span style="color:#bf616a;">self</span><span>.output.</span><span style="color:#96b5b4;">can_push</span><span>() {
+</span><span>            </span><span style="color:#bf616a;">self</span><span>.input.</span><span style="color:#96b5b4;">set_not_need_data</span><span>();
+</span><span>            </span><span style="color:#b48ead;">return </span><span>Ok(Event::NeedConsume);
+</span><span>        }
+</span><span>
+</span><span>        </span><span style="color:#b48ead;">if let </span><span>Some(data_block) = </span><span style="color:#bf616a;">self</span><span>.output_data.</span><span style="color:#96b5b4;">take</span><span>() {
+</span><span>            </span><span style="color:#bf616a;">self</span><span>.output.</span><span style="color:#96b5b4;">push_data</span><span>(Ok(data_block));
+</span><span>            </span><span style="color:#b48ead;">return </span><span>Ok(Event::NeedConsume);
+</span><span>        }
+</span><span>
+</span><span>        </span><span style="color:#b48ead;">if </span><span>!</span><span style="color:#bf616a;">self</span><span>.chunks.</span><span style="color:#96b5b4;">is_empty</span><span>() {
+</span><span>            </span><span style="color:#b48ead;">if </span><span>!</span><span style="color:#bf616a;">self</span><span>.input.</span><span style="color:#96b5b4;">has_data</span><span>() {
+</span><span>                </span><span style="color:#bf616a;">self</span><span>.input.</span><span style="color:#96b5b4;">set_need_data</span><span>();
+</span><span>            }
+</span><span>
+</span><span>            </span><span style="color:#b48ead;">return </span><span>Ok(Event::Sync);
+</span><span>        }
+</span><span>
+</span><span>        </span><span style="color:#b48ead;">if </span><span style="color:#bf616a;">self</span><span>.input.</span><span style="color:#96b5b4;">has_data</span><span>() {
+</span><span>            </span><span style="color:#b48ead;">let mut</span><span> data_block = </span><span style="color:#bf616a;">self</span><span>.input.</span><span style="color:#96b5b4;">pull_data</span><span>().</span><span style="color:#96b5b4;">unwrap</span><span>()?;
+</span><span>            </span><span style="color:#b48ead;">if let </span><span>Some(source_meta) = data_block.</span><span style="color:#96b5b4;">take_meta</span><span>() {
+</span><span>                </span><span style="color:#b48ead;">if let </span><span>Some(source_meta) = DataSourceMeta::downcast_from(source_meta) {
+</span><span>                    </span><span style="color:#bf616a;">self</span><span>.parts = source_meta.part;
+</span><span>                    </span><span style="color:#bf616a;">self</span><span>.chunks = source_meta.data;
+</span><span>                    </span><span style="color:#b48ead;">return </span><span>Ok(Event::Sync);
+</span><span>                }
+</span><span>            }
+</span><span>
+</span><span>            unreachable!();
+</span><span>        }
+</span><span>
+</span><span>        </span><span style="color:#b48ead;">if </span><span style="color:#bf616a;">self</span><span>.input.</span><span style="color:#96b5b4;">is_finished</span><span>() {
+</span><span>            </span><span style="color:#bf616a;">self</span><span>.output.</span><span style="color:#96b5b4;">finish</span><span>();
+</span><span>            </span><span style="color:#bf616a;">self</span><span>.uncompressed_buffer.</span><span style="color:#96b5b4;">clear</span><span>();
+</span><span>            </span><span style="color:#b48ead;">return </span><span>Ok(Event::Finished);
+</span><span>        }
+</span><span>
+</span><span>        </span><span style="color:#bf616a;">self</span><span>.input.</span><span style="color:#96b5b4;">set_need_data</span><span>();
+</span><span>        Ok(Event::NeedData)
+</span><span>    }
+</span><span>
+</span><span>    </span><span style="color:#b48ead;">fn </span><span style="color:#8fa1b3;">process</span><span>(&amp;</span><span style="color:#b48ead;">mut </span><span style="color:#bf616a;">self</span><span>) -&gt; Result&lt;()&gt; {
+</span><span>        </span><span style="color:#b48ead;">let</span><span> part = </span><span style="color:#bf616a;">self</span><span>.parts.</span><span style="color:#96b5b4;">pop</span><span>();
+</span><span>        </span><span style="color:#b48ead;">let</span><span> chunks = </span><span style="color:#bf616a;">self</span><span>.chunks.</span><span style="color:#96b5b4;">pop</span><span>();
+</span><span>        </span><span style="color:#b48ead;">if let </span><span>Some((part, read_res)) = part.</span><span style="color:#96b5b4;">zip</span><span>(chunks) {
+</span><span>            </span><span style="color:#b48ead;">let</span><span> start = Instant::now();
+</span><span>
+</span><span>            </span><span style="color:#b48ead;">let</span><span> columns_chunks = read_res.</span><span style="color:#96b5b4;">columns_chunks</span><span>()?;
+</span><span>            </span><span style="color:#b48ead;">let</span><span> part = FusePartInfo::from_part(&amp;part)?;
+</span><span>
+</span><span>            </span><span style="color:#b48ead;">let</span><span> data_block = </span><span style="color:#bf616a;">self</span><span>.block_reader.</span><span style="color:#96b5b4;">deserialize_parquet_chunks_with_buffer</span><span>(
+</span><span>                &amp;part.location,
+</span><span>                part.nums_rows,
+</span><span>                &amp;part.compression,
+</span><span>                &amp;part.columns_meta,
+</span><span>                columns_chunks,
+</span><span>                Some(</span><span style="color:#bf616a;">self</span><span>.uncompressed_buffer.</span><span style="color:#96b5b4;">clone</span><span>()),
+</span><span>            )?;
+</span><span>
+</span><span>            </span><span style="color:#65737e;">// Perf.
+</span><span>            {
+</span><span>                </span><span style="color:#96b5b4;">metrics_inc_remote_io_deserialize_milliseconds</span><span>(start.</span><span style="color:#96b5b4;">elapsed</span><span>().</span><span style="color:#96b5b4;">as_millis</span><span>() as </span><span style="color:#b48ead;">u64</span><span>);
+</span><span>            }
+</span><span>
+</span><span>            </span><span style="color:#b48ead;">let</span><span> progress_values = ProgressValues {
+</span><span>                rows: data_block.</span><span style="color:#96b5b4;">num_rows</span><span>(),
+</span><span>                bytes: data_block.</span><span style="color:#96b5b4;">memory_size</span><span>(),
+</span><span>            };
+</span><span>            </span><span style="color:#bf616a;">self</span><span>.scan_progress.</span><span style="color:#96b5b4;">incr</span><span>(&amp;progress_values);
+</span><span>
+</span><span>            </span><span style="color:#bf616a;">self</span><span>.output_data = Some(data_block);
+</span><span>        }
+</span><span>
+</span><span>        Ok(())
+</span><span>    }
+</span><span>}
+</span></code></pre>
+<h3 id="event-1">event</h3>
+<p>（1）如果 <code>self.output.is_finished()</code> 为 true，则调用 <code>self.input.finish()</code> 并返回 <code>Event::Finished</code>。</p>
+<p>（2）如果 <code>!self.output.can_push()</code> 的话，表示上一次 push 出去的数据还没被消费，对 input 调用 <code>set_not_need_data</code> 表示不需要数据，返回 <code>Event::NeedConsume</code>。</p>
+<p>（3）process 处理好的数据会放到 <code>self.output_data</code> 中，因此如果 
+<code>self.output_data.take()</code> 有数据的话，则调用 <code>self.output.push_data(Ok(data_block))</code> 将它发送出去，并返回 <code>Event::NeedConsume</code>。</p>
+<p>（4）如果 <code>self.input.has_data()</code> 为 true，即 input 有数据，则调用 <code>self.input.pull_data().unwrap()?</code> 将 data_block pull 过来，然后获取其中的 <code>BlockMetaInfo</code> 并将其 downcast 成 <code>DataSourceMeta</code>，然后给 <code>self.parts</code> 和 <code>self.chunks</code> 赋值，返回 <code>Event::Sync</code> 状态。</p>
+<p>（5）在（4）之前如果 <code>!self.chunks.is_empty()</code> 为 true，这时候我们正在处理之前的 data_block，因此要返回 <code>Event::Sync</code> 这个状态。此外因为这时候我们已经把上一个 data_block pull 过来了，input 可能为空，如果 input 没有数据的话，我们需要将 input <code>set_need_data</code>，为下一次 pull 做准备。</p>
+<p>（6）如果 <code>self.input.is_finished()</code> 为 ture，则调用 <code>self.output.finish()</code> 并返回 <code>Event::Finished</code>。</p>
+<p>（7）当前 Processor 既没有结束，也没有数据，因此对 input <code>self.input.set_need_data()</code>，返回 <code>Event::NeedData</code>。</p>
+<h3 id="process-1">process</h3>
+<p>每次调用 process 会处理一块 parquet_chunks，将其反序列化为数据不为空的 DataBlock，然后将其转交给 <code>self.output_data</code> 等待下一次 <code>event</code> 发送出去。</p>
+<h2 id="accumulatingtransformer">AccumulatingTransformer</h2>
+<pre data-lang="rust" style="background-color:#2b303b;color:#c0c5ce;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="color:#65737e;">// src/query/pipeline/transforms/src/processors/transforms/transform_accmulating.rs
+</span><span>#[</span><span style="color:#bf616a;">async_trait</span><span>::</span><span style="color:#bf616a;">async_trait</span><span>]
+</span><span style="color:#b48ead;">impl</span><span>&lt;T: AccumulatingTransform + </span><span style="color:#b48ead;">&#39;static</span><span>&gt; Processor </span><span style="color:#b48ead;">for </span><span>AccumulatingTransformer&lt;T&gt; {
+</span><span>    </span><span style="color:#b48ead;">fn </span><span style="color:#8fa1b3;">name</span><span>(&amp;</span><span style="color:#bf616a;">self</span><span>) -&gt; String {
+</span><span>        String::from(T::</span><span style="color:#d08770;">NAME</span><span>)
+</span><span>    }
+</span><span>
+</span><span>    </span><span style="color:#b48ead;">fn </span><span style="color:#8fa1b3;">as_any</span><span>(&amp;</span><span style="color:#b48ead;">mut </span><span style="color:#bf616a;">self</span><span>) -&gt; &amp;</span><span style="color:#b48ead;">mut</span><span> dyn Any {
+</span><span>        </span><span style="color:#bf616a;">self
+</span><span>    }
+</span><span>
+</span><span>    </span><span style="color:#b48ead;">fn </span><span style="color:#8fa1b3;">event</span><span>(&amp;</span><span style="color:#b48ead;">mut </span><span style="color:#bf616a;">self</span><span>) -&gt; Result&lt;Event&gt; {
+</span><span>        </span><span style="color:#b48ead;">if </span><span style="color:#bf616a;">self</span><span>.output.</span><span style="color:#96b5b4;">is_finished</span><span>() {
+</span><span>            </span><span style="color:#b48ead;">if </span><span>!</span><span style="color:#bf616a;">self</span><span>.called_on_finish {
+</span><span>                </span><span style="color:#b48ead;">return </span><span>Ok(Event::Sync);
+</span><span>            }
+</span><span>
+</span><span>            </span><span style="color:#bf616a;">self</span><span>.input.</span><span style="color:#96b5b4;">finish</span><span>();
+</span><span>            </span><span style="color:#b48ead;">return </span><span>Ok(Event::Finished);
+</span><span>        }
+</span><span>
+</span><span>        </span><span style="color:#b48ead;">if </span><span>!</span><span style="color:#bf616a;">self</span><span>.output.</span><span style="color:#96b5b4;">can_push</span><span>() {
+</span><span>            </span><span style="color:#bf616a;">self</span><span>.input.</span><span style="color:#96b5b4;">set_not_need_data</span><span>();
+</span><span>            </span><span style="color:#b48ead;">return </span><span>Ok(Event::NeedConsume);
+</span><span>        }
+</span><span>
+</span><span>        </span><span style="color:#b48ead;">if let </span><span>Some(data_block) = </span><span style="color:#bf616a;">self</span><span>.output_data.</span><span style="color:#96b5b4;">pop_front</span><span>() {
+</span><span>            </span><span style="color:#bf616a;">self</span><span>.output.</span><span style="color:#96b5b4;">push_data</span><span>(Ok(data_block));
+</span><span>            </span><span style="color:#b48ead;">return </span><span>Ok(Event::NeedConsume);
+</span><span>        }
+</span><span>
+</span><span>        </span><span style="color:#b48ead;">if </span><span style="color:#bf616a;">self</span><span>.input_data.</span><span style="color:#96b5b4;">is_some</span><span>() {
+</span><span>            </span><span style="color:#b48ead;">return </span><span>Ok(Event::Sync);
+</span><span>        }
+</span><span>
+</span><span>        </span><span style="color:#b48ead;">if </span><span style="color:#bf616a;">self</span><span>.input.</span><span style="color:#96b5b4;">has_data</span><span>() {
+</span><span>            </span><span style="color:#bf616a;">self</span><span>.input_data = Some(</span><span style="color:#bf616a;">self</span><span>.input.</span><span style="color:#96b5b4;">pull_data</span><span>().</span><span style="color:#96b5b4;">unwrap</span><span>()?);
+</span><span>            </span><span style="color:#b48ead;">return </span><span>Ok(Event::Sync);
+</span><span>        }
+</span><span>
+</span><span>        </span><span style="color:#b48ead;">if </span><span style="color:#bf616a;">self</span><span>.input.</span><span style="color:#96b5b4;">is_finished</span><span>() {
+</span><span>            </span><span style="color:#b48ead;">return match </span><span>!</span><span style="color:#bf616a;">self</span><span>.called_on_finish {
+</span><span>                </span><span style="color:#d08770;">true </span><span>=&gt; Ok(Event::Sync),
+</span><span>                </span><span style="color:#d08770;">false </span><span>=&gt; {
+</span><span>                    </span><span style="color:#bf616a;">self</span><span>.output.</span><span style="color:#96b5b4;">finish</span><span>();
+</span><span>                    Ok(Event::Finished)
+</span><span>                }
+</span><span>            };
+</span><span>        }
+</span><span>
+</span><span>        </span><span style="color:#bf616a;">self</span><span>.input.</span><span style="color:#96b5b4;">set_need_data</span><span>();
+</span><span>        Ok(Event::NeedData)
+</span><span>    }
+</span><span>
+</span><span>    </span><span style="color:#b48ead;">fn </span><span style="color:#8fa1b3;">process</span><span>(&amp;</span><span style="color:#b48ead;">mut </span><span style="color:#bf616a;">self</span><span>) -&gt; Result&lt;()&gt; {
+</span><span>        </span><span style="color:#b48ead;">if let </span><span>Some(data_block) = </span><span style="color:#bf616a;">self</span><span>.input_data.</span><span style="color:#96b5b4;">take</span><span>() {
+</span><span>            </span><span style="color:#bf616a;">self</span><span>.output_data.</span><span style="color:#96b5b4;">extend</span><span>(</span><span style="color:#bf616a;">self</span><span>.inner.</span><span style="color:#96b5b4;">transform</span><span>(data_block)?);
+</span><span>            </span><span style="color:#b48ead;">return </span><span>Ok(());
+</span><span>        }
+</span><span>
+</span><span>        </span><span style="color:#b48ead;">if </span><span>!</span><span style="color:#bf616a;">self</span><span>.called_on_finish {
+</span><span>            </span><span style="color:#bf616a;">self</span><span>.called_on_finish = </span><span style="color:#d08770;">true</span><span>;
+</span><span>            </span><span style="color:#bf616a;">self</span><span>.output_data.</span><span style="color:#96b5b4;">extend</span><span>(</span><span style="color:#bf616a;">self</span><span>.inner.</span><span style="color:#96b5b4;">on_finish</span><span>(</span><span style="color:#d08770;">true</span><span>)?);
+</span><span>        }
+</span><span>
+</span><span>        Ok(())
+</span><span>    }
+</span><span>}
+</span></code></pre>
+<h3 id="event-2">event</h3>
+<p>整体上与 <code>DeserializeDataTransform</code> 的 <code>event</code> 类似，不同的地方在于：</p>
+<p>（1）self.output_data 的类型为 <code>VecDeque&lt;DataBlock&gt;</code>，而不是 <code>DataBlock</code>，可以发送数据时，从调用 <code>self.output_data.pop_front()</code> 从队头取出一个 <code>DataBlock</code> 并 push 出去。</p>
+<p>（2）在 <code>self.output.is_finished()</code> 或 <code>self.input.is_finished()</code> 为 true 时，首先判断 <code>called_on_finish</code> 是否为 true，如果不为 true 的话，表示还没有调用 inner 的 <code>on_finish</code>，这时候返回 <code>Event::Sync</code> 而不是 <code>Event::Finished</code>。</p>
+<h3 id="process-2">process</h3>
+<p>（1）如果 <code>input_data</code> 中有数据，则获取 <code>input_data</code> 中的 DataBlock 并用它调用 <code>inner</code> （例如 <code>TransformPartialGroupBy</code>，它实现了 trait <code>AccumulatingTransform</code>）的 <code>transform(data_block)?</code> 来获取需要 spill 的 data_blocks，这些 data_block 的 <code>columns</code> 是空的，但是 meta 不为空，meta 的类型为 <code>AggregateMeta::Spilling</code>；如果当前的 hash table 不大，则返回的结果是 <code>vec![]</code>，<code>transform</code> 的分析在下面。</p>
+<p>（2）如果 <code>input_data</code> 中没有数据且 <code>called_on_finish</code> 为 false，则调用 inner 的 <code>on_finish</code> 来获取 DataBlock，同样，这些 DataBlock 的 <code>columns</code> 是空的，但是 meta 不为空，meta 的类型为 <code>AggregateMeta::HashTable</code>，<code>on_finish</code> 的分析在下面。</p>
+<h3 id="transform">transform</h3>
+<pre data-lang="rust" style="background-color:#2b303b;color:#c0c5ce;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="color:#65737e;">// src/query/service/src/pipelines/processors/transforms/aggregator/transform_group_by_partial.rs
+</span><span style="color:#b48ead;">impl</span><span>&lt;Method: HashMethodBounds&gt; AccumulatingTransform </span><span style="color:#b48ead;">for </span><span>TransformPartialGroupBy&lt;Method&gt; {
+</span><span>    </span><span style="color:#b48ead;">const </span><span style="color:#d08770;">NAME</span><span>: &amp;</span><span style="color:#b48ead;">&#39;static str </span><span>= &quot;</span><span style="color:#a3be8c;">TransformPartialGroupBy</span><span>&quot;;
+</span><span>
+</span><span>    </span><span style="color:#b48ead;">fn </span><span style="color:#8fa1b3;">transform</span><span>(&amp;</span><span style="color:#b48ead;">mut </span><span style="color:#bf616a;">self</span><span>, </span><span style="color:#bf616a;">block</span><span>: DataBlock) -&gt; Result&lt;Vec&lt;DataBlock&gt;&gt; {
+</span><span>        </span><span style="color:#b48ead;">let</span><span> block = block.</span><span style="color:#96b5b4;">convert_to_full</span><span>();
+</span><span>        </span><span style="color:#b48ead;">let</span><span> group_columns = </span><span style="color:#bf616a;">self
+</span><span>            .group_columns
+</span><span>            .</span><span style="color:#96b5b4;">iter</span><span>()
+</span><span>            .</span><span style="color:#96b5b4;">map</span><span>(|&amp;</span><span style="color:#bf616a;">index</span><span>| block.</span><span style="color:#96b5b4;">get_by_offset</span><span>(index))
+</span><span>            .collect::&lt;Vec&lt;_&gt;&gt;();
+</span><span>
+</span><span>        </span><span style="color:#b48ead;">let</span><span> group_columns = group_columns
+</span><span>            .</span><span style="color:#96b5b4;">iter</span><span>()
+</span><span>            .</span><span style="color:#96b5b4;">map</span><span>(|</span><span style="color:#bf616a;">c</span><span>| (c.value.</span><span style="color:#96b5b4;">as_column</span><span>().</span><span style="color:#96b5b4;">unwrap</span><span>().</span><span style="color:#96b5b4;">clone</span><span>(), c.data_type.</span><span style="color:#96b5b4;">clone</span><span>()))
+</span><span>            .collect::&lt;Vec&lt;_&gt;&gt;();
+</span><span>
+</span><span>        </span><span style="color:#b48ead;">unsafe </span><span>{
+</span><span>            </span><span style="color:#b48ead;">let</span><span> rows_num = block.</span><span style="color:#96b5b4;">num_rows</span><span>();
+</span><span>            </span><span style="color:#b48ead;">let</span><span> state = </span><span style="color:#bf616a;">self</span><span>.method.</span><span style="color:#96b5b4;">build_keys_state</span><span>(&amp;group_columns, rows_num)?;
+</span><span>
+</span><span>            </span><span style="color:#b48ead;">match </span><span>&amp;</span><span style="color:#b48ead;">mut </span><span style="color:#bf616a;">self</span><span>.hash_table {
+</span><span>                HashTable::MovedOut =&gt; unreachable!(),
+</span><span>                HashTable::HashTable(cell) =&gt; {
+</span><span>                    </span><span style="color:#b48ead;">for</span><span> key in </span><span style="color:#bf616a;">self</span><span>.method.</span><span style="color:#96b5b4;">build_keys_iter</span><span>(&amp;state)? {
+</span><span>                        </span><span style="color:#b48ead;">let </span><span>_ = cell.hashtable.</span><span style="color:#96b5b4;">insert_and_entry</span><span>(key);
+</span><span>                    }
+</span><span>                }
+</span><span>                HashTable::PartitionedHashTable(cell) =&gt; {
+</span><span>                    </span><span style="color:#b48ead;">for</span><span> key in </span><span style="color:#bf616a;">self</span><span>.method.</span><span style="color:#96b5b4;">build_keys_iter</span><span>(&amp;state)? {
+</span><span>                        </span><span style="color:#b48ead;">let </span><span>_ = cell.hashtable.</span><span style="color:#96b5b4;">insert_and_entry</span><span>(key);
+</span><span>                    }
+</span><span>                }
+</span><span>            };
+</span><span>
+</span><span>            #[</span><span style="color:#bf616a;">allow</span><span>(clippy::collapsible_if)]
+</span><span>            </span><span style="color:#b48ead;">if </span><span>Method::</span><span style="color:#d08770;">SUPPORT_PARTITIONED </span><span>{
+</span><span>                </span><span style="color:#b48ead;">if </span><span>matches!(&amp;</span><span style="color:#bf616a;">self</span><span>.hash_table, HashTable::HashTable(cell)
+</span><span>                    </span><span style="color:#b48ead;">if</span><span> cell.</span><span style="color:#96b5b4;">len</span><span>() &gt;= </span><span style="color:#bf616a;">self</span><span>.settings.convert_threshold ||
+</span><span>                        cell.</span><span style="color:#96b5b4;">allocated_bytes</span><span>() &gt;= </span><span style="color:#bf616a;">self</span><span>.settings.spilling_bytes_threshold_per_proc
+</span><span>                ) {
+</span><span>                    </span><span style="color:#b48ead;">if let </span><span>HashTable::HashTable(cell) = std::mem::take(&amp;</span><span style="color:#b48ead;">mut </span><span style="color:#bf616a;">self</span><span>.hash_table) {
+</span><span>                        </span><span style="color:#bf616a;">self</span><span>.hash_table = HashTable::PartitionedHashTable(
+</span><span>                            PartitionedHashMethod::convert_hashtable(&amp;</span><span style="color:#bf616a;">self</span><span>.method, cell)?,
+</span><span>                        );
+</span><span>                    }
+</span><span>                }
+</span><span>
+</span><span>                </span><span style="color:#b48ead;">if </span><span>matches!(&amp;</span><span style="color:#bf616a;">self</span><span>.hash_table, HashTable::PartitionedHashTable(cell) </span><span style="color:#b48ead;">if</span><span> cell.</span><span style="color:#96b5b4;">allocated_bytes</span><span>() &gt; </span><span style="color:#bf616a;">self</span><span>.settings.spilling_bytes_threshold_per_proc)
+</span><span>                {
+</span><span>                    </span><span style="color:#b48ead;">if let </span><span>HashTable::PartitionedHashTable(v) = std::mem::take(&amp;</span><span style="color:#b48ead;">mut </span><span style="color:#bf616a;">self</span><span>.hash_table)
+</span><span>                    {
+</span><span>                        </span><span style="color:#b48ead;">let</span><span> _dropper = v._dropper.</span><span style="color:#96b5b4;">clone</span><span>();
+</span><span>                        </span><span style="color:#b48ead;">let</span><span> cells = PartitionedHashTableDropper::split_cell(v);
+</span><span>                        </span><span style="color:#b48ead;">let mut</span><span> blocks = Vec::with_capacity(cells.</span><span style="color:#96b5b4;">len</span><span>());
+</span><span>                        </span><span style="color:#b48ead;">for </span><span>(bucket, cell) in cells.</span><span style="color:#96b5b4;">into_iter</span><span>().</span><span style="color:#96b5b4;">enumerate</span><span>() {
+</span><span>                            </span><span style="color:#b48ead;">if</span><span> cell.hashtable.</span><span style="color:#96b5b4;">len</span><span>() != </span><span style="color:#d08770;">0 </span><span>{
+</span><span>                                blocks.</span><span style="color:#96b5b4;">push</span><span>(DataBlock::empty_with_meta(
+</span><span>                                    AggregateMeta::&lt;Method, ()&gt;::create_spilling(
+</span><span>                                        bucket as </span><span style="color:#b48ead;">isize</span><span>,
+</span><span>                                        cell,
+</span><span>                                    ),
+</span><span>                                ));
+</span><span>                            }
+</span><span>                        }
+</span><span>
+</span><span>                        </span><span style="color:#b48ead;">let</span><span> method = PartitionedHashMethod::&lt;Method&gt;::create(</span><span style="color:#bf616a;">self</span><span>.method.</span><span style="color:#96b5b4;">clone</span><span>());
+</span><span>                        </span><span style="color:#b48ead;">let</span><span> new_hashtable = method.</span><span style="color:#96b5b4;">create_hash_table</span><span>()?;
+</span><span>                        </span><span style="color:#bf616a;">self</span><span>.hash_table = HashTable::PartitionedHashTable(HashTableCell::create(
+</span><span>                            new_hashtable,
+</span><span>                            _dropper.</span><span style="color:#96b5b4;">unwrap</span><span>(),
+</span><span>                        ));
+</span><span>                        </span><span style="color:#b48ead;">return </span><span>Ok(blocks);
+</span><span>                    }
+</span><span>
+</span><span>                    unreachable!()
+</span><span>                }
+</span><span>            }
+</span><span>        }
+</span><span>
+</span><span>        Ok(vec![])
+</span><span>    }
+</span><span>}
+</span></code></pre>
+<p>（1）首先调用 <code>block.convert_to_full()</code> 将 DataBlock 填充满：对于每个 <code>BlockEntry</code>，如果是 <code>Value::Scalar</code> 类型，则将其重复 <code>self.num_rows</code> 次转变为 <code>Value::Column</code>，如果原本就是 <code>Value::Column</code> 类型的话就简单 clone 一下。</p>
+<p>（2）从 datablock 中获取用于 group by 的列 <code>group_columns: Vec&lt;&amp;BlockEntry&gt;</code>，然后再转变为 <code>Vec&lt;(Column, DataType)&gt;</code>。</p>
+<p>（3）调用 <code>self.method.build_keys_state(&amp;group_columns, rows_num)</code> 将 <code>group_columns</code> group_columns 变为 <code>KeyState</code>：变为 unsigned 类型，</p>
+<p>（4）调用 <code>build_keys_iter</code> 来获取 group by key 的 iter，并将每个 key 插入到 hash table 中。</p>
+<p>（5）如果 hash table 的长度大于 <code>convert_threshold</code> 或者分配的字节数大于 <code>spilling_bytes_threshold_per_proc</code>，则将其装换为 <code>PartitionedHashTable</code>。</p>
+<p>（6）如果一个 <code>PartitionedHashTable</code> 的长度大于 <code>convert_threshold</code> 或者分配的字节数大于 <code>spilling_bytes_threshold_per_proc</code>，这时候需要 spill 到存储上：将当前 hash table 转变为 <code>blocks: Vec&lt;DataBlock&gt;</code>，这些 DataBlock 的 <code>columns</code> 为空，meta 不为空，类型为：<code>AggregateMeta::Spilling</code>，然后创建一个新的 hash table，并将 blocks 返回。</p>
+<p>（7）如果当前 hash table 不是很大，则返回 <code>vec![]</code>。</p>
+<h3 id="build-keys-state">build_keys_state</h3>
+<p><code>src/query/expression/src/kernels/group_by_hash.rs</code></p>
+<p>（1）如果 group_by 只有一个字段的且这个字段是整数类型的话，则将这一列 cast 为 unsigned 类型，包装在 <code>KeysState</code> 中返回。</p>
+<p>（2）否则调用 <code>build_keys_vec</code> 来构建 key，并将 key cast 成整数类型包装在 <code>KeysState</code> 中返回。</p>
+<h3 id="on-finish">on_finish</h3>
+<pre data-lang="rust" style="background-color:#2b303b;color:#c0c5ce;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="color:#65737e;">// src/query/service/src/pipelines/processors/transforms/aggregator/transform_group_by_partial.rs
+</span><span style="color:#b48ead;">impl</span><span>&lt;Method: HashMethodBounds&gt; AccumulatingTransform </span><span style="color:#b48ead;">for </span><span>TransformPartialGroupBy&lt;Method&gt; {
+</span><span>  	</span><span style="color:#65737e;">// ...
+</span><span>    </span><span style="color:#b48ead;">fn </span><span style="color:#8fa1b3;">on_finish</span><span>(&amp;</span><span style="color:#b48ead;">mut </span><span style="color:#bf616a;">self</span><span>, </span><span style="color:#bf616a;">_output</span><span>: </span><span style="color:#b48ead;">bool</span><span>) -&gt; Result&lt;Vec&lt;DataBlock&gt;&gt; {
+</span><span>        Ok(</span><span style="color:#b48ead;">match </span><span>std::mem::take(&amp;</span><span style="color:#b48ead;">mut </span><span style="color:#bf616a;">self</span><span>.hash_table) {
+</span><span>            HashTable::MovedOut =&gt; unreachable!(),
+</span><span>            HashTable::HashTable(cell) =&gt; </span><span style="color:#b48ead;">match</span><span> cell.hashtable.</span><span style="color:#96b5b4;">len</span><span>() == </span><span style="color:#d08770;">0 </span><span>{
+</span><span>                </span><span style="color:#d08770;">true </span><span>=&gt; vec![],
+</span><span>                </span><span style="color:#d08770;">false </span><span>=&gt; vec![DataBlock::empty_with_meta(
+</span><span>                    AggregateMeta::&lt;Method, ()&gt;::create_hashtable(-</span><span style="color:#d08770;">1</span><span>, cell),
+</span><span>                )],
+</span><span>            },
+</span><span>            HashTable::PartitionedHashTable(v) =&gt; {
+</span><span>                </span><span style="color:#b48ead;">let</span><span> cells = PartitionedHashTableDropper::split_cell(v);
+</span><span>                </span><span style="color:#b48ead;">let mut</span><span> blocks = Vec::with_capacity(cells.</span><span style="color:#96b5b4;">len</span><span>());
+</span><span>                </span><span style="color:#b48ead;">for </span><span>(bucket, cell) in cells.</span><span style="color:#96b5b4;">into_iter</span><span>().</span><span style="color:#96b5b4;">enumerate</span><span>() {
+</span><span>                    </span><span style="color:#b48ead;">if</span><span> cell.hashtable.</span><span style="color:#96b5b4;">len</span><span>() != </span><span style="color:#d08770;">0 </span><span>{
+</span><span>                        blocks.</span><span style="color:#96b5b4;">push</span><span>(DataBlock::empty_with_meta(
+</span><span>                            AggregateMeta::&lt;Method, ()&gt;::create_hashtable(bucket as </span><span style="color:#b48ead;">isize</span><span>, cell),
+</span><span>                        ));
+</span><span>                    }
+</span><span>                }
+</span><span>
+</span><span>                blocks
+</span><span>            }
+</span><span>        })
+</span><span>    }
+</span><span>}
+</span></code></pre>
+<p>将 <code>HashTable</code> 或者 <code>PartitionedHashTable</code> 转变为 DataBlock 返回，这些 DataBlock 的 <code>columns</code> 字段为空，meta 字段类型为 <code>AggregateMeta::HashTable</code>。</p>
+<p>如果 hash table 是 <code>HashTable::HashTable</code> 类型，则返回的 bucket id 为 -1，如果是 <code>HashTable::PartitionedHashTable</code>，则先调用 <code>split_cell</code> 将其 split 成 cells，然后再返回，bucket id 为 0 ~ cells.len() - 1。</p>
+<h2 id="transformgroupbyspillwriter">TransformGroupBySpillWriter</h2>
+<pre data-lang="rust" style="background-color:#2b303b;color:#c0c5ce;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="color:#65737e;">// src/query/service/src/pipelines/processors/transforms/aggregator/serde/transform_group_by_spill_writer.rs
+</span><span>#[</span><span style="color:#bf616a;">async_trait</span><span>::</span><span style="color:#bf616a;">async_trait</span><span>]
+</span><span style="color:#b48ead;">impl</span><span>&lt;Method: HashMethodBounds&gt; Processor </span><span style="color:#b48ead;">for </span><span>TransformGroupBySpillWriter&lt;Method&gt; {
+</span><span>    </span><span style="color:#b48ead;">fn </span><span style="color:#8fa1b3;">name</span><span>(&amp;</span><span style="color:#bf616a;">self</span><span>) -&gt; String {
+</span><span>        String::from(&quot;</span><span style="color:#a3be8c;">TransformGroupBySpillWriter</span><span>&quot;)
+</span><span>    }
+</span><span>
+</span><span>    </span><span style="color:#b48ead;">fn </span><span style="color:#8fa1b3;">as_any</span><span>(&amp;</span><span style="color:#b48ead;">mut </span><span style="color:#bf616a;">self</span><span>) -&gt; &amp;</span><span style="color:#b48ead;">mut</span><span> dyn Any {
+</span><span>        </span><span style="color:#bf616a;">self
+</span><span>    }
+</span><span>
+</span><span>    </span><span style="color:#b48ead;">fn </span><span style="color:#8fa1b3;">event</span><span>(&amp;</span><span style="color:#b48ead;">mut </span><span style="color:#bf616a;">self</span><span>) -&gt; Result&lt;Event&gt; {
+</span><span>        </span><span style="color:#b48ead;">if </span><span style="color:#bf616a;">self</span><span>.output.</span><span style="color:#96b5b4;">is_finished</span><span>() {
+</span><span>            </span><span style="color:#bf616a;">self</span><span>.input.</span><span style="color:#96b5b4;">finish</span><span>();
+</span><span>            </span><span style="color:#b48ead;">return </span><span>Ok(Event::Finished);
+</span><span>        }
+</span><span>
+</span><span>        </span><span style="color:#b48ead;">if </span><span>!</span><span style="color:#bf616a;">self</span><span>.output.</span><span style="color:#96b5b4;">can_push</span><span>() {
+</span><span>            </span><span style="color:#bf616a;">self</span><span>.input.</span><span style="color:#96b5b4;">set_not_need_data</span><span>();
+</span><span>            </span><span style="color:#b48ead;">return </span><span>Ok(Event::NeedConsume);
+</span><span>        }
+</span><span>
+</span><span>        </span><span style="color:#b48ead;">if let </span><span>Some(spilled_meta) = </span><span style="color:#bf616a;">self</span><span>.spilled_meta.</span><span style="color:#96b5b4;">take</span><span>() {
+</span><span>            </span><span style="color:#bf616a;">self</span><span>.output
+</span><span>                .</span><span style="color:#96b5b4;">push_data</span><span>(Ok(DataBlock::empty_with_meta(spilled_meta)));
+</span><span>            </span><span style="color:#b48ead;">return </span><span>Ok(Event::NeedConsume);
+</span><span>        }
+</span><span>
+</span><span>        </span><span style="color:#b48ead;">if </span><span style="color:#bf616a;">self</span><span>.writing_data_block.</span><span style="color:#96b5b4;">is_some</span><span>() {
+</span><span>            </span><span style="color:#bf616a;">self</span><span>.input.</span><span style="color:#96b5b4;">set_not_need_data</span><span>();
+</span><span>            </span><span style="color:#b48ead;">return </span><span>Ok(Event::Async);
+</span><span>        }
+</span><span>
+</span><span>        </span><span style="color:#b48ead;">if </span><span style="color:#bf616a;">self</span><span>.spilling_meta.</span><span style="color:#96b5b4;">is_some</span><span>() {
+</span><span>            </span><span style="color:#bf616a;">self</span><span>.input.</span><span style="color:#96b5b4;">set_not_need_data</span><span>();
+</span><span>            </span><span style="color:#b48ead;">return </span><span>Ok(Event::Sync);
+</span><span>        }
+</span><span>
+</span><span>        </span><span style="color:#b48ead;">if </span><span style="color:#bf616a;">self</span><span>.input.</span><span style="color:#96b5b4;">has_data</span><span>() {
+</span><span>            </span><span style="color:#b48ead;">let mut</span><span> data_block = </span><span style="color:#bf616a;">self</span><span>.input.</span><span style="color:#96b5b4;">pull_data</span><span>().</span><span style="color:#96b5b4;">unwrap</span><span>()?;
+</span><span>
+</span><span>            </span><span style="color:#b48ead;">if let </span><span>Some(block_meta) = data_block
+</span><span>                .</span><span style="color:#96b5b4;">get_meta</span><span>()
+</span><span>                .</span><span style="color:#96b5b4;">and_then</span><span>(AggregateMeta::&lt;Method, ()&gt;::downcast_ref_from)
+</span><span>            {
+</span><span>                </span><span style="color:#b48ead;">if </span><span>matches!(block_meta, AggregateMeta::Spilling(_)) {
+</span><span>                    </span><span style="color:#bf616a;">self</span><span>.input.</span><span style="color:#96b5b4;">set_not_need_data</span><span>();
+</span><span>                    </span><span style="color:#b48ead;">let</span><span> block_meta = data_block.</span><span style="color:#96b5b4;">take_meta</span><span>().</span><span style="color:#96b5b4;">unwrap</span><span>();
+</span><span>                    </span><span style="color:#bf616a;">self</span><span>.spilling_meta = AggregateMeta::&lt;Method, ()&gt;::downcast_from(block_meta);
+</span><span>                    </span><span style="color:#b48ead;">return </span><span>Ok(Event::Sync);
+</span><span>                }
+</span><span>            }
+</span><span>
+</span><span>            </span><span style="color:#bf616a;">self</span><span>.output.</span><span style="color:#96b5b4;">push_data</span><span>(Ok(data_block));
+</span><span>            </span><span style="color:#b48ead;">return </span><span>Ok(Event::NeedConsume);
+</span><span>        }
+</span><span>
+</span><span>        </span><span style="color:#b48ead;">if </span><span style="color:#bf616a;">self</span><span>.input.</span><span style="color:#96b5b4;">is_finished</span><span>() {
+</span><span>            </span><span style="color:#bf616a;">self</span><span>.output.</span><span style="color:#96b5b4;">finish</span><span>();
+</span><span>            </span><span style="color:#b48ead;">return </span><span>Ok(Event::Finished);
+</span><span>        }
+</span><span>
+</span><span>        </span><span style="color:#bf616a;">self</span><span>.input.</span><span style="color:#96b5b4;">set_need_data</span><span>();
+</span><span>        Ok(Event::NeedData)
+</span><span>    }
+</span><span>
+</span><span>    </span><span style="color:#b48ead;">fn </span><span style="color:#8fa1b3;">process</span><span>(&amp;</span><span style="color:#b48ead;">mut </span><span style="color:#bf616a;">self</span><span>) -&gt; Result&lt;()&gt; {
+</span><span>        </span><span style="color:#b48ead;">if let </span><span>Some(spilling_meta) = </span><span style="color:#bf616a;">self</span><span>.spilling_meta.</span><span style="color:#96b5b4;">take</span><span>() {
+</span><span>            </span><span style="color:#b48ead;">if let </span><span>AggregateMeta::Spilling(payload) = spilling_meta {
+</span><span>                </span><span style="color:#b48ead;">let</span><span> bucket = payload.bucket;
+</span><span>                </span><span style="color:#b48ead;">let</span><span> data_block = </span><span style="color:#96b5b4;">serialize_group_by</span><span>(&amp;</span><span style="color:#bf616a;">self</span><span>.method, payload)?;
+</span><span>                </span><span style="color:#b48ead;">let</span><span> columns = </span><span style="color:#96b5b4;">get_columns</span><span>(data_block);
+</span><span>
+</span><span>                </span><span style="color:#b48ead;">let mut</span><span> total_size = </span><span style="color:#d08770;">0</span><span>;
+</span><span>                </span><span style="color:#b48ead;">let mut</span><span> columns_data = Vec::with_capacity(columns.</span><span style="color:#96b5b4;">len</span><span>());
+</span><span>                </span><span style="color:#b48ead;">for</span><span> column in columns.</span><span style="color:#96b5b4;">into_iter</span><span>() {
+</span><span>                    </span><span style="color:#b48ead;">let</span><span> column = column.value.</span><span style="color:#96b5b4;">as_column</span><span>().</span><span style="color:#96b5b4;">unwrap</span><span>();
+</span><span>                    </span><span style="color:#b48ead;">let</span><span> column_data = </span><span style="color:#96b5b4;">serialize_column</span><span>(column);
+</span><span>                    total_size += column_data.</span><span style="color:#96b5b4;">len</span><span>();
+</span><span>                    columns_data.</span><span style="color:#96b5b4;">push</span><span>(column_data);
+</span><span>                }
+</span><span>
+</span><span>                </span><span style="color:#bf616a;">self</span><span>.writing_data_block = Some((bucket, total_size, columns_data));
+</span><span>                </span><span style="color:#b48ead;">return </span><span>Ok(());
+</span><span>            }
+</span><span>
+</span><span>            </span><span style="color:#b48ead;">return </span><span>Err(ErrorCode::Internal(&quot;&quot;));
+</span><span>        }
+</span><span>
+</span><span>        Ok(())
+</span><span>    }
+</span><span>
+</span><span>    async </span><span style="color:#b48ead;">fn </span><span style="color:#8fa1b3;">async_process</span><span>(&amp;</span><span style="color:#b48ead;">mut </span><span style="color:#bf616a;">self</span><span>) -&gt; Result&lt;()&gt; {
+</span><span>        </span><span style="color:#b48ead;">if let </span><span>Some((bucket, total_size, data)) = </span><span style="color:#bf616a;">self</span><span>.writing_data_block.</span><span style="color:#96b5b4;">take</span><span>() {
+</span><span>            </span><span style="color:#b48ead;">let</span><span> instant = Instant::now();
+</span><span>            </span><span style="color:#b48ead;">let</span><span> unique_name = GlobalUniqName::unique();
+</span><span>            </span><span style="color:#b48ead;">let</span><span> location = format!(&quot;</span><span style="color:#d08770;">{}</span><span style="color:#a3be8c;">/</span><span style="color:#d08770;">{}</span><span>&quot;, </span><span style="color:#bf616a;">self</span><span>.location_prefix, unique_name);
+</span><span>            </span><span style="color:#b48ead;">let</span><span> object = </span><span style="color:#bf616a;">self</span><span>.operator.</span><span style="color:#96b5b4;">object</span><span>(&amp;location);
+</span><span>
+</span><span>            </span><span style="color:#65737e;">// temp code: waiting https://github.com/datafuselabs/opendal/pull/1431
+</span><span>            </span><span style="color:#b48ead;">let mut</span><span> write_data = Vec::with_capacity(total_size);
+</span><span>            </span><span style="color:#b48ead;">let mut</span><span> columns_layout = Vec::with_capacity(data.</span><span style="color:#96b5b4;">len</span><span>());
+</span><span>
+</span><span>            </span><span style="color:#b48ead;">for</span><span> data in data.</span><span style="color:#96b5b4;">into_iter</span><span>() {
+</span><span>                columns_layout.</span><span style="color:#96b5b4;">push</span><span>(data.</span><span style="color:#96b5b4;">len</span><span>());
+</span><span>                write_data.</span><span style="color:#96b5b4;">extend</span><span>(data);
+</span><span>            }
+</span><span>
+</span><span>            object.</span><span style="color:#96b5b4;">write</span><span>(write_data).await?;
+</span><span>            info!(
+</span><span>                &quot;</span><span style="color:#a3be8c;">Write aggregate spill {} successfully, elapsed: {:?}</span><span>&quot;,
+</span><span>                &amp;location,
+</span><span>                instant.</span><span style="color:#96b5b4;">elapsed</span><span>()
+</span><span>            );
+</span><span>
+</span><span>            </span><span style="color:#bf616a;">self</span><span>.spilled_meta = Some(AggregateMeta::&lt;Method, ()&gt;::create_spilled(
+</span><span>                bucket,
+</span><span>                location,
+</span><span>                columns_layout,
+</span><span>            ));
+</span><span>        }
+</span><span>
+</span><span>        Ok(())
+</span><span>    }
+</span><span>}
+</span><span>
+</span><span style="color:#b48ead;">fn </span><span style="color:#8fa1b3;">get_columns</span><span>(</span><span style="color:#bf616a;">data_block</span><span>: DataBlock) -&gt; Vec&lt;BlockEntry&gt; {
+</span><span>    data_block.</span><span style="color:#96b5b4;">columns</span><span>().</span><span style="color:#96b5b4;">to_vec</span><span>()
+</span><span>}
+</span></code></pre>
+<h3 id="event-3">event</h3>
+<p>与前面几个 <code>event</code> 类似，不同的地方在于：</p>
+<p>（1）当 <code>self.input.has_data()</code> 为 true 时，我们将从 DataBlock 中取出 meta，然后 downcast 成 <code>AggregateMeta</code>，检查其类型：（1）如果发现类型是 <code>AggregateMeta::Spilling</code>，则我们需要将其 spill 到存储上，于是我们将 downcast 后的结果赋值给 <code>self.spilling_meta</code>，等待在 <code>process</code> 中处理，返回 <code>Event::Sync</code>；（2）其他类型则直接调用 <code>self.output.push_data(Ok(data_block))</code> push 出去，然后返回 <code>Event::NeedConsume</code>。</p>
+<p>（2）如果发现 <code>self.spilled_meta</code> 有数据，表示这个数据已经被 spill 了，则将这个 meta 包装成一个空的 DataBlock 并 push 出去，返回 <code>Event::NeedConsume</code>。</p>
+<h3 id="process-3">process</h3>
+<p><code>process</code> 是对 <code>self.spilling_meta</code> 进行处理，将其转变为 <code>self.writing_data_block</code>，随后交给 <code>async_process</code> spill 到存储上：</p>
+<p>（1）首先检查 <code>self.spilling_meta</code> 中是否有数据，并获得 spilling_meta 中的 hash table。</p>
+<p>（2）将 hash table 序列化为 DataBlock，并取出其中的列 <code>columns: Vec&lt;BlockEntry&gt;</code>，然后将每一列序列化为字节 <code>column_data</code> 并 push 到 <code>columns_data</code> 中。</p>
+<p>（3）最后对 <code>self.writing_data_block</code> 进行赋值：<code>self.writing_data_block = Some((bucket, total_size, columns_data));</code>，等待在 <code>async_process</code> 中被 spill 到存储中。</p>
+<h3 id="async-process">async_process</h3>
+<p>将 <code>self.writing_data_block</code> spill 到存储中，然后将 spilled 后数据的 <code>bucket</code>，<code>location</code> 和 <code>columns_layout</code> 信息包装成一个 <code>AggregateMeta::Spilled</code> 类型的 meta 赋值给 <code>self.spilled_meta</code>，等待下一次调用 <code>event</code> 发送出去。 </p>
+<h2 id="transformpartitionbucket">TransformPartitionBucket</h2>
+<p><code>src/query/service/src/pipelines/processors/transforms/aggregator/transform_partition_bucket.rs</code></p>
+<p>首先介绍一下 <code>TransformPartitionBucket</code>，它的 input 可以有多个，但是 output 只有一个，它的作用是将多个 bucket id 相同的 DataBlock 组成一个 <code>AggregateMeta::Partitioned</code> 发送出去。</p>
+<h4 id="initialize-all-inputs">initialize_all_inputs</h4>
+<pre data-lang="rust" style="background-color:#2b303b;color:#c0c5ce;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="color:#b48ead;">impl</span><span>&lt;Method: HashMethodBounds, V: Copy + Send + Sync + </span><span style="color:#b48ead;">&#39;static</span><span>&gt;
+</span><span>    TransformPartitionBucket&lt;Method, V&gt;
+</span><span>{
+</span><span>  	</span><span style="color:#65737e;">// ...
+</span><span>    </span><span style="color:#b48ead;">fn </span><span style="color:#8fa1b3;">initialize_all_inputs</span><span>(&amp;</span><span style="color:#b48ead;">mut </span><span style="color:#bf616a;">self</span><span>) -&gt; Result&lt;</span><span style="color:#b48ead;">bool</span><span>&gt; {
+</span><span>        </span><span style="color:#bf616a;">self</span><span>.initialized_all_inputs = </span><span style="color:#d08770;">true</span><span>;
+</span><span>
+</span><span>        </span><span style="color:#b48ead;">for</span><span> index in </span><span style="color:#d08770;">0</span><span>..</span><span style="color:#bf616a;">self</span><span>.inputs.</span><span style="color:#96b5b4;">len</span><span>() {
+</span><span>            </span><span style="color:#b48ead;">if </span><span style="color:#bf616a;">self</span><span>.inputs[index].port.</span><span style="color:#96b5b4;">is_finished</span><span>() {
+</span><span>                </span><span style="color:#b48ead;">continue</span><span>;
+</span><span>            }
+</span><span>
+</span><span>            </span><span style="color:#65737e;">// We pull the first unsplitted data block
+</span><span>            </span><span style="color:#b48ead;">if </span><span style="color:#bf616a;">self</span><span>.inputs[index].bucket &gt; </span><span style="color:#d08770;">SINGLE_LEVEL_BUCKET_NUM </span><span>{
+</span><span>                </span><span style="color:#b48ead;">continue</span><span>;
+</span><span>            }
+</span><span>
+</span><span>            </span><span style="color:#b48ead;">if </span><span>!</span><span style="color:#bf616a;">self</span><span>.inputs[index].port.</span><span style="color:#96b5b4;">has_data</span><span>() {
+</span><span>                </span><span style="color:#bf616a;">self</span><span>.inputs[index].port.</span><span style="color:#96b5b4;">set_need_data</span><span>();
+</span><span>                </span><span style="color:#bf616a;">self</span><span>.initialized_all_inputs = </span><span style="color:#d08770;">false</span><span>;
+</span><span>                </span><span style="color:#b48ead;">continue</span><span>;
+</span><span>            }
+</span><span>
+</span><span>            </span><span style="color:#b48ead;">let</span><span> data_block = </span><span style="color:#bf616a;">self</span><span>.inputs[index].port.</span><span style="color:#96b5b4;">pull_data</span><span>().</span><span style="color:#96b5b4;">unwrap</span><span>()?;
+</span><span>            </span><span style="color:#bf616a;">self</span><span>.inputs[index].bucket = </span><span style="color:#bf616a;">self</span><span>.</span><span style="color:#96b5b4;">add_bucket</span><span>(data_block);
+</span><span>
+</span><span>            </span><span style="color:#b48ead;">if </span><span style="color:#bf616a;">self</span><span>.inputs[index].bucket &lt;= </span><span style="color:#d08770;">SINGLE_LEVEL_BUCKET_NUM </span><span>{
+</span><span>                </span><span style="color:#bf616a;">self</span><span>.inputs[index].port.</span><span style="color:#96b5b4;">set_need_data</span><span>();
+</span><span>                </span><span style="color:#bf616a;">self</span><span>.initialized_all_inputs = </span><span style="color:#d08770;">false</span><span>;
+</span><span>            }
+</span><span>        }
+</span><span>
+</span><span>        Ok(</span><span style="color:#bf616a;">self</span><span>.initialized_all_inputs)
+</span><span>    }
+</span><span>  	</span><span style="color:#65737e;">// ...
+</span><span>}
+</span></code></pre>
+<p>首先我们先看一下 <code>initialize_all_inputs</code> 这个函数，每次调用 event 的时候，我们都会首先：</p>
+<pre data-lang="rust" style="background-color:#2b303b;color:#c0c5ce;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="color:#65737e;">// We pull the first unsplitted data block
+</span><span style="color:#b48ead;">if </span><span>!</span><span style="color:#bf616a;">self</span><span>.initialized_all_inputs &amp;&amp; !</span><span style="color:#bf616a;">self</span><span>.</span><span style="color:#96b5b4;">initialize_all_inputs</span><span>()? {
+</span><span>    </span><span style="color:#b48ead;">return </span><span>Ok(Event::NeedData);
+</span><span>}
+</span></code></pre>
+<p>它的作用是将 unsplitted data block，即 bucket id 为 -1 的 block 全 pull 过来，我们先回顾一下 <code>TransformPartitionBucket</code> 的上游的上游，即 <code>AccumulatingTransformer</code>，在 <code>AccumulatingTransformer</code> 中，我们如果 hash table 过大，我们会将其 spill 到存储上，而如果没有 spill 的话，会在 on_finish 的时候返回 bucket id 为 -1 的 DataBlock，而一旦有 spill，则不会有 bucket id 为 -1 的 DataBlock 被 push 到下游，上面这段代码利用了这一特点保证了 bucket id 为 -1 的 DataBlock 全都 pull 过来后，才会向下，执行，否则会一直返回 <code>Event::NeedData</code>。</p>
+<h3 id="event-4">event</h3>
+<p>（1）如果 <code>self.output.is_finished()</code> 为 true，调用每个 input 的 <code>finish</code> 并清空 <code>buckets_blocks</code>。</p>
+<p>（2）利用 <code>!self.buckets_blocks.is_empty() &amp;&amp; !self.unsplitted_blocks.is_empty()</code> 将所有的 unsplitted data block 全都 pull 过来后才会向下执行。</p>
+<p>（3）如果 <code>!self.buckets_blocks.is_empty() &amp;&amp; !self.unsplitted_blocks.is_empty()</code> 为 true，表示在 pull unsplitted data 的时候把 bucket id 不为 -1 的也 pull 过来了，这时候返回 <code>Event::Sync</code>，进而在下次调用 <code>process</code> 的时候将 bucket id 为 -1 的 DataBlock partition 为多个 bucket id 不为 -1 的 DataBlock。</p>
+<p>（4）如果 <code>!self.buckets_blocks.is_empty() &amp;&amp; !self.unsplitted_blocks.is_empty()</code> 为 false，表示 pull 过来的都是 bucket id 为 -1 的 DataBlock 或者 bucket id 为 -1 的 DataBlock 已经被 partition 为 bucket id 不为 -1 的 DataBlock 了。这时候我们首先调用 <code>try_push_data_block</code> 来 push bucket id 为 -1 的 DataBlock，bucket id 不为 -1 由于代码中 <code>self.pushing_bucket &lt; self.working_bucket</code> 的限制还不能被 push。</p>
+<p>（5）然后就是一个 loop 循环，具体做的事情就是 bucket id 从 0 开始，等 bucket id 为 0 的都 pull 过来了，再 pull bucket id 为 1 的，以此类推，一旦某个所有的 input 都 finish 了或者某个 input 的数据没准备好，则 break；</p>
+<p>（6）如果之前那次 push 有数据被 push 了或本次 push 返回 true，则返回 <code>Event::NeedConsume</code>。</p>
+<p>（7）从 <code>buckets_blocks</code> 中 pop first，调用 <code>convert_blocks</code> 将多个 bucket id 相同的 DataBlock 组成一个 <code>AggregateMeta::Partitioned</code> 发送出去。（在 <code>try_push_two_level</code> 中， <code>self.pushing_bucket</code> 是递增不会退的，因此可能 bucket id 小的 DataBlock 不会在 <code>try_push_two_level</code> 中被 push 出去，而会在这里被 push 出去。</p>
+<h4 id="add-bucket">add_bucket</h4>
+<pre data-lang="rust" style="background-color:#2b303b;color:#c0c5ce;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="color:#b48ead;">impl</span><span>&lt;Method: HashMethodBounds, V: Copy + Send + Sync + </span><span style="color:#b48ead;">&#39;static</span><span>&gt;
+</span><span>    TransformPartitionBucket&lt;Method, V&gt;
+</span><span>{
+</span><span>  	</span><span style="color:#65737e;">// ...
+</span><span>    </span><span style="color:#b48ead;">fn </span><span style="color:#8fa1b3;">add_bucket</span><span>(&amp;</span><span style="color:#b48ead;">mut </span><span style="color:#bf616a;">self</span><span>, </span><span style="color:#bf616a;">data_block</span><span>: DataBlock) -&gt; </span><span style="color:#b48ead;">isize </span><span>{
+</span><span>        </span><span style="color:#b48ead;">if let </span><span>Some(block_meta) = data_block.</span><span style="color:#96b5b4;">get_meta</span><span>() {
+</span><span>            </span><span style="color:#b48ead;">if let </span><span>Some(block_meta) = AggregateMeta::&lt;Method, V&gt;::downcast_ref_from(block_meta) {
+</span><span>                </span><span style="color:#b48ead;">let </span><span>(bucket, res) = </span><span style="color:#b48ead;">match</span><span> block_meta {
+</span><span>                    AggregateMeta::Spilling(_) =&gt; unreachable!(),
+</span><span>                    AggregateMeta::Partitioned { .. } =&gt; unreachable!(),
+</span><span>                    AggregateMeta::Spilled(payload) =&gt; (payload.bucket, </span><span style="color:#d08770;">SINGLE_LEVEL_BUCKET_NUM</span><span>),
+</span><span>                    AggregateMeta::Serialized(payload) =&gt; (payload.bucket, payload.bucket),
+</span><span>                    AggregateMeta::HashTable(payload) =&gt; (payload.bucket, payload.bucket),
+</span><span>                };
+</span><span>
+</span><span>                </span><span style="color:#b48ead;">if</span><span> bucket &gt; </span><span style="color:#d08770;">SINGLE_LEVEL_BUCKET_NUM </span><span>{
+</span><span>                    </span><span style="color:#b48ead;">match </span><span style="color:#bf616a;">self</span><span>.buckets_blocks.</span><span style="color:#96b5b4;">entry</span><span>(bucket) {
+</span><span>                        Entry::Vacant(v) =&gt; {
+</span><span>                            v.</span><span style="color:#96b5b4;">insert</span><span>(vec![data_block]);
+</span><span>                        }
+</span><span>                        Entry::Occupied(</span><span style="color:#b48ead;">mut</span><span> v) =&gt; {
+</span><span>                            v.</span><span style="color:#96b5b4;">get_mut</span><span>().</span><span style="color:#96b5b4;">push</span><span>(data_block);
+</span><span>                        }
+</span><span>                    };
+</span><span>
+</span><span>                    </span><span style="color:#b48ead;">return</span><span> res;
+</span><span>                }
+</span><span>            }
+</span><span>        }
+</span><span>
+</span><span>        </span><span style="color:#bf616a;">self</span><span>.unsplitted_blocks.</span><span style="color:#96b5b4;">push</span><span>(data_block);
+</span><span>        </span><span style="color:#d08770;">SINGLE_LEVEL_BUCKET_NUM
+</span><span>    }
+</span><span>  	</span><span style="color:#65737e;">// ...
+</span><span>}
+</span></code></pre>
+<p>将一个 <code>DataBlock</code> 加到 <code>unsplitted_blocks</code> 或者 <code>buckets_blocks</code> 中，可以看到，bucket id 为 -1 的 DataBlock 都会被 push 到 <code>unsplitted_blocks</code> 中。</p>
+<h3 id="process-4">Process</h3>
+<pre data-lang="rust" style="background-color:#2b303b;color:#c0c5ce;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="color:#b48ead;">impl</span><span>&lt;Method: HashMethodBounds, V: Copy + Send + Sync + </span><span style="color:#b48ead;">&#39;static</span><span>&gt;
+</span><span>    TransformPartitionBucket&lt;Method, V&gt;
+</span><span>{
+</span><span>    </span><span style="color:#b48ead;">fn </span><span style="color:#8fa1b3;">process</span><span>(&amp;</span><span style="color:#b48ead;">mut </span><span style="color:#bf616a;">self</span><span>) -&gt; Result&lt;()&gt; {
+</span><span>        </span><span style="color:#b48ead;">let</span><span> block_meta = </span><span style="color:#bf616a;">self
+</span><span>            .unsplitted_blocks
+</span><span>            .</span><span style="color:#96b5b4;">pop</span><span>()
+</span><span>            .</span><span style="color:#96b5b4;">and_then</span><span>(|</span><span style="color:#b48ead;">mut </span><span style="color:#bf616a;">block</span><span>| block.</span><span style="color:#96b5b4;">take_meta</span><span>())
+</span><span>            .</span><span style="color:#96b5b4;">and_then</span><span>(AggregateMeta::&lt;Method, V&gt;::downcast_from);
+</span><span>
+</span><span>        </span><span style="color:#b48ead;">match</span><span> block_meta {
+</span><span>            None =&gt; Err(ErrorCode::Internal(
+</span><span>                &quot;</span><span style="color:#a3be8c;">Internal error, TransformPartitionBucket only recv AggregateMeta.</span><span>&quot;,
+</span><span>            )),
+</span><span>            Some(agg_block_meta) =&gt; {
+</span><span>                </span><span style="color:#b48ead;">let</span><span> data_blocks = </span><span style="color:#b48ead;">match</span><span> agg_block_meta {
+</span><span>                    AggregateMeta::Spilled(_) =&gt; unreachable!(),
+</span><span>                    AggregateMeta::Spilling(_) =&gt; unreachable!(),
+</span><span>                    AggregateMeta::Partitioned { .. } =&gt; unreachable!(),
+</span><span>                    AggregateMeta::Serialized(payload) =&gt; </span><span style="color:#bf616a;">self</span><span>.</span><span style="color:#96b5b4;">partition_block</span><span>(payload)?,
+</span><span>                    AggregateMeta::HashTable(payload) =&gt; </span><span style="color:#bf616a;">self</span><span>.</span><span style="color:#96b5b4;">partition_hashtable</span><span>(payload)?,
+</span><span>                };
+</span><span>
+</span><span>                </span><span style="color:#b48ead;">for </span><span>(bucket, block) in data_blocks.</span><span style="color:#96b5b4;">into_iter</span><span>().</span><span style="color:#96b5b4;">enumerate</span><span>() {
+</span><span>                    </span><span style="color:#b48ead;">if let </span><span>Some(data_block) = block {
+</span><span>                        </span><span style="color:#b48ead;">match </span><span style="color:#bf616a;">self</span><span>.buckets_blocks.</span><span style="color:#96b5b4;">entry</span><span>(bucket as </span><span style="color:#b48ead;">isize</span><span>) {
+</span><span>                            Entry::Vacant(v) =&gt; {
+</span><span>                                v.</span><span style="color:#96b5b4;">insert</span><span>(vec![data_block]);
+</span><span>                            }
+</span><span>                            Entry::Occupied(</span><span style="color:#b48ead;">mut</span><span> v) =&gt; {
+</span><span>                                v.</span><span style="color:#96b5b4;">get_mut</span><span>().</span><span style="color:#96b5b4;">push</span><span>(data_block);
+</span><span>                            }
+</span><span>                        };
+</span><span>                    }
+</span><span>                }
+</span><span>
+</span><span>                Ok(())
+</span><span>            }
+</span><span>        }
+</span><span>    }
+</span><span>}
+</span></code></pre>
+<p>可以看到 process 是对 bucket id 为 -1 的 DataBlock 调用 <code>partition_block</code> 或 <code>partition_hashtable</code> 进行 partition 从而得到 <code>data_blocks</code>，然后将 <code>data_blocks</code> 插入到 <code>buckets_blocks</code> 中。</p>
+<h2 id="transformspillreader">TransformSpillReader</h2>
+<p><code>src/query/service/src/pipelines/processors/transforms/aggregator/serde/transform_spill_reader.rs</code></p>
+<p>如果 DataBlock 不是 <code>Spilled</code> 类型，则直接 push 到下游，否则需要进行一些列处理：</p>
+<p><code>TransformSpillReader</code> 的处理是围绕着三个成员变量展开的：<code>reading_meta</code>，<code>deserializing_meta</code> 和 <code>deserialized_meta</code>：</p>
+<ul>
+<li><code>reading_meta</code>：上游传来的 <code>AggregateMeta::Spilled</code> 类型的 DataBlock，将它转交给 <code>self.reading_meta</code> 然后返回 <code>Event::Async</code>，在后面会调用 <code>async_process</code> 对其进行异步读取。</li>
+<li><code>deserializing_meta</code>：异步线程会调用 <code>async_process</code> 对 <code>reading_meta</code> 进行处理：按照 <code>reading_meta</code> 中的信息读取存储，并将读到的内容存到的 <code>self.deserializing_meta</code> 中。在后续调用 <code>event</code> 时如果发现 <code>self.deserializing_meta.is_some()</code> 为 true，则返回 <code>Event::Sync</code> 来让线程调用 <code>process</code> 进行反序列化。</li>
+<li><code>deserialized_meta</code>：将 <code>deserializing_meta</code> 中的数据进行反序列化，对于 <code>AggregateMeta::Spilled</code> 类型的 meta，我们将其分序列化为 <code>AggregateMeta::Serialized</code>。而对于 <code>AggregateMeta::Partitioned</code> 类型的 meta，我们将其中每个 meta 都反序列化为 <code>AggregateMeta::Serialized</code>，然后组成一个 <code>AggregateMeta::Partitioned</code>。最终我们将反序列化后的结果转交给 <code>deserialized_meta</code>，让它在下次 <code>event</code> 时被 push 出去。</li>
+</ul>
+<h2 id="blockmetatransformer">BlockMetaTransformer</h2>
+<pre data-lang="rust" style="background-color:#2b303b;color:#c0c5ce;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="color:#65737e;">// src/query/pipeline/transforms/src/processors/transforms/transform.rs
+</span><span>#[</span><span style="color:#bf616a;">async_trait</span><span>::</span><span style="color:#bf616a;">async_trait</span><span>]
+</span><span style="color:#b48ead;">impl</span><span>&lt;B: BlockMetaInfo, T: BlockMetaTransform&lt;B&gt;&gt; Processor </span><span style="color:#b48ead;">for </span><span>BlockMetaTransformer&lt;B, T&gt; {
+</span><span>    </span><span style="color:#b48ead;">fn </span><span style="color:#8fa1b3;">name</span><span>(&amp;</span><span style="color:#bf616a;">self</span><span>) -&gt; String {
+</span><span>        String::from(T::</span><span style="color:#d08770;">NAME</span><span>)
+</span><span>    }
+</span><span>
+</span><span>    </span><span style="color:#b48ead;">fn </span><span style="color:#8fa1b3;">as_any</span><span>(&amp;</span><span style="color:#b48ead;">mut </span><span style="color:#bf616a;">self</span><span>) -&gt; &amp;</span><span style="color:#b48ead;">mut</span><span> dyn Any {
+</span><span>        </span><span style="color:#bf616a;">self
+</span><span>    }
+</span><span>
+</span><span>    </span><span style="color:#b48ead;">fn </span><span style="color:#8fa1b3;">event</span><span>(&amp;</span><span style="color:#b48ead;">mut </span><span style="color:#bf616a;">self</span><span>) -&gt; Result&lt;Event&gt; {
+</span><span>        </span><span style="color:#b48ead;">if </span><span>!</span><span style="color:#bf616a;">self</span><span>.called_on_start {
+</span><span>            </span><span style="color:#b48ead;">return </span><span>Ok(Event::Sync);
+</span><span>        }
+</span><span>
+</span><span>        </span><span style="color:#b48ead;">match </span><span style="color:#bf616a;">self</span><span>.output.</span><span style="color:#96b5b4;">is_finished</span><span>() {
+</span><span>            </span><span style="color:#d08770;">true </span><span>=&gt; </span><span style="color:#bf616a;">self</span><span>.</span><span style="color:#96b5b4;">finish_input</span><span>(),
+</span><span>            </span><span style="color:#d08770;">false </span><span style="color:#b48ead;">if </span><span>!</span><span style="color:#bf616a;">self</span><span>.output.</span><span style="color:#96b5b4;">can_push</span><span>() =&gt; </span><span style="color:#bf616a;">self</span><span>.</span><span style="color:#96b5b4;">not_need_data</span><span>(),
+</span><span>            </span><span style="color:#d08770;">false </span><span>=&gt; </span><span style="color:#b48ead;">match </span><span style="color:#bf616a;">self</span><span>.output_data.</span><span style="color:#96b5b4;">take</span><span>() {
+</span><span>                None </span><span style="color:#b48ead;">if </span><span style="color:#bf616a;">self</span><span>.input_data.</span><span style="color:#96b5b4;">is_some</span><span>() =&gt; Ok(Event::Sync),
+</span><span>                None =&gt; </span><span style="color:#bf616a;">self</span><span>.</span><span style="color:#96b5b4;">pull_data</span><span>(),
+</span><span>                Some(data) =&gt; {
+</span><span>                    </span><span style="color:#bf616a;">self</span><span>.output.</span><span style="color:#96b5b4;">push_data</span><span>(Ok(data));
+</span><span>                    Ok(Event::NeedConsume)
+</span><span>                }
+</span><span>            },
+</span><span>        }
+</span><span>    }
+</span><span>
+</span><span>    </span><span style="color:#b48ead;">fn </span><span style="color:#8fa1b3;">process</span><span>(&amp;</span><span style="color:#b48ead;">mut </span><span style="color:#bf616a;">self</span><span>) -&gt; Result&lt;()&gt; {
+</span><span>        </span><span style="color:#b48ead;">if </span><span>!</span><span style="color:#bf616a;">self</span><span>.called_on_start {
+</span><span>            </span><span style="color:#bf616a;">self</span><span>.called_on_start = </span><span style="color:#d08770;">true</span><span>;
+</span><span>            </span><span style="color:#bf616a;">self</span><span>.transform.</span><span style="color:#96b5b4;">on_start</span><span>()?;
+</span><span>            </span><span style="color:#b48ead;">return </span><span>Ok(());
+</span><span>        }
+</span><span>
+</span><span>        </span><span style="color:#b48ead;">if let </span><span>Some(</span><span style="color:#b48ead;">mut</span><span> data_block) = </span><span style="color:#bf616a;">self</span><span>.input_data.</span><span style="color:#96b5b4;">take</span><span>() {
+</span><span>            debug_assert!(data_block.</span><span style="color:#96b5b4;">is_empty</span><span>());
+</span><span>            </span><span style="color:#b48ead;">if let </span><span>Some(block_meta) = data_block.</span><span style="color:#96b5b4;">take_meta</span><span>() {
+</span><span>                </span><span style="color:#b48ead;">if let </span><span>Some(block_meta) = B::downcast_from(block_meta) {
+</span><span>                    </span><span style="color:#b48ead;">let</span><span> data_block = </span><span style="color:#bf616a;">self</span><span>.transform.</span><span style="color:#96b5b4;">transform</span><span>(block_meta)?;
+</span><span>                    </span><span style="color:#bf616a;">self</span><span>.output_data = Some(data_block);
+</span><span>                }
+</span><span>            }
+</span><span>
+</span><span>            </span><span style="color:#b48ead;">return </span><span>Ok(());
+</span><span>        }
+</span><span>
+</span><span>        </span><span style="color:#b48ead;">if </span><span>!</span><span style="color:#bf616a;">self</span><span>.called_on_finish {
+</span><span>            </span><span style="color:#bf616a;">self</span><span>.called_on_finish = </span><span style="color:#d08770;">true</span><span>;
+</span><span>            </span><span style="color:#bf616a;">self</span><span>.transform.</span><span style="color:#96b5b4;">on_finish</span><span>()?;
+</span><span>        }
+</span><span>
+</span><span>        Ok(())
+</span><span>    }
+</span><span>}
+</span></code></pre>
+<h3 id="process-5">process</h3>
+<p>如果 <code>input_data</code> 有数据的话，将 block_meta downcast 成实现 <code>trait BlockMetaInfo</code> 的某种 meta，例如 <code>AggregateMeta</code>，然后调用 <code>self.transform.transform(block_meta)?</code> 将 meta 转换 column 不为空的 DataBlock，然后将其转交给 <code>self.output_data</code> 等待下一次 event 时被 push 出去。</p>
+<h2 id="compoundblockoperator">CompoundBlockOperator</h2>
+<p>调用链：<code>Processor</code> 会包装一个 <code>Transformer</code>，<code>Transformer</code> 里面有一个 <code>transform</code> 成员，这个成员就是 <code>BlockOperator</code> 类型，调用 <code>Processor</code> 的 <code>process</code> 会调用 <code>Transformer</code> 的 <code>self.transform.transform</code> 进而调用 <code>BlockOperator</code> 的 <code>execute</code> 函数将 DataBlock transform 成另外的格式（例如 projection）</p>
+<p>BlockOperator 有四种类型：</p>
+<pre data-lang="rust" style="background-color:#2b303b;color:#c0c5ce;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="color:#65737e;">// src/query/sql/src/evaluator/block_operator.rs
+</span><span style="color:#65737e;">/// `BlockOperator` takes a `DataBlock` as input and produces a `DataBlock` as output.
+</span><span>#[</span><span style="color:#bf616a;">derive</span><span>(Clone)]
+</span><span style="color:#b48ead;">pub enum </span><span>BlockOperator {
+</span><span>    </span><span style="color:#65737e;">/// Batch mode of map which merges map operators into one.
+</span><span>    Map { exprs: Vec&lt;Expr&gt; },
+</span><span>
+</span><span>    </span><span style="color:#65737e;">/// Filter the input `DataBlock` with the predicate `eval`.
+</span><span>    Filter { expr: Expr },
+</span><span>
+</span><span>    </span><span style="color:#65737e;">/// Reorganize the input `DataBlock` with `projection`.
+</span><span>    Project { projection: Vec&lt;FieldIndex&gt; },
+</span><span>
+</span><span>    </span><span style="color:#65737e;">/// Unnest certain fields of the input `DataBlock`.
+</span><span>    Unnest { fields: Vec&lt;</span><span style="color:#b48ead;">usize</span><span>&gt; },
+</span><span>}
+</span></code></pre>
+<p>execute 函数如下：</p>
+<pre data-lang="rust" style="background-color:#2b303b;color:#c0c5ce;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="color:#b48ead;">impl </span><span>BlockOperator {
+</span><span>    </span><span style="color:#b48ead;">pub fn </span><span style="color:#8fa1b3;">execute</span><span>(&amp;</span><span style="color:#bf616a;">self</span><span>, </span><span style="color:#bf616a;">func_ctx</span><span>: &amp;FunctionContext, </span><span style="color:#b48ead;">mut </span><span style="color:#bf616a;">input</span><span>: DataBlock) -&gt; Result&lt;DataBlock&gt; {
+</span><span>        </span><span style="color:#b48ead;">match </span><span style="color:#bf616a;">self </span><span>{
+</span><span>            BlockOperator::Map { exprs } =&gt; {
+</span><span>                </span><span style="color:#b48ead;">for</span><span> expr in exprs {
+</span><span>                    </span><span style="color:#b48ead;">let</span><span> evaluator = Evaluator::new(&amp;input, *func_ctx, &amp;</span><span style="color:#d08770;">BUILTIN_FUNCTIONS</span><span>);
+</span><span>                    </span><span style="color:#b48ead;">let</span><span> result = evaluator.</span><span style="color:#96b5b4;">run</span><span>(expr)?;
+</span><span>                    </span><span style="color:#b48ead;">let</span><span> col = BlockEntry {
+</span><span>                        data_type: expr.</span><span style="color:#96b5b4;">data_type</span><span>().</span><span style="color:#96b5b4;">clone</span><span>(),
+</span><span>                        value: result,
+</span><span>                    };
+</span><span>                    input.</span><span style="color:#96b5b4;">add_column</span><span>(col);
+</span><span>                }
+</span><span>                Ok(input)
+</span><span>            }
+</span><span>
+</span><span>            BlockOperator::Filter { expr } =&gt; {
+</span><span>                assert_eq!(expr.</span><span style="color:#96b5b4;">data_type</span><span>(), &amp;DataType::Boolean);
+</span><span>
+</span><span>                </span><span style="color:#b48ead;">let</span><span> evaluator = Evaluator::new(&amp;input, *func_ctx, &amp;</span><span style="color:#d08770;">BUILTIN_FUNCTIONS</span><span>);
+</span><span>                </span><span style="color:#b48ead;">let</span><span> filter = evaluator.</span><span style="color:#96b5b4;">run</span><span>(expr)?.try_downcast::&lt;BooleanType&gt;().</span><span style="color:#96b5b4;">unwrap</span><span>();
+</span><span>                input.</span><span style="color:#96b5b4;">filter_boolean_value</span><span>(&amp;filter)
+</span><span>            }
+</span><span>
+</span><span>            BlockOperator::Project { projection } =&gt; {
+</span><span>                </span><span style="color:#b48ead;">let mut</span><span> result = DataBlock::new(vec![], input.</span><span style="color:#96b5b4;">num_rows</span><span>());
+</span><span>                </span><span style="color:#b48ead;">for</span><span> index in projection {
+</span><span>                    result.</span><span style="color:#96b5b4;">add_column</span><span>(input.</span><span style="color:#96b5b4;">get_by_offset</span><span>(*index).</span><span style="color:#96b5b4;">clone</span><span>());
+</span><span>                }
+</span><span>                Ok(result)
+</span><span>            }
+</span><span>
+</span><span>            BlockOperator::Unnest { fields } =&gt; {
+</span><span>                </span><span style="color:#b48ead;">let</span><span> num_rows = input.</span><span style="color:#96b5b4;">num_rows</span><span>();
+</span><span>                </span><span style="color:#b48ead;">let mut</span><span> unnest_columns = Vec::with_capacity(fields.</span><span style="color:#96b5b4;">len</span><span>());
+</span><span>                </span><span style="color:#b48ead;">for</span><span> field in fields {
+</span><span>                    </span><span style="color:#b48ead;">let</span><span> col = input.</span><span style="color:#96b5b4;">get_by_offset</span><span>(*field);
+</span><span>                    </span><span style="color:#b48ead;">let</span><span> array_col = </span><span style="color:#b48ead;">match </span><span>&amp;col.value {
+</span><span>                        Value::Scalar(Scalar::Array(col)) =&gt; {
+</span><span>                            Box::new(ArrayColumnBuilder::&lt;AnyType&gt;::repeat(col, num_rows).</span><span style="color:#96b5b4;">build</span><span>())
+</span><span>                        }
+</span><span>                        Value::Column(Column::Array(col)) =&gt; col.</span><span style="color:#96b5b4;">clone</span><span>(),
+</span><span>                        _ =&gt; {
+</span><span>                            </span><span style="color:#b48ead;">return </span><span>Err(ErrorCode::Internal(
+</span><span>                                &quot;</span><span style="color:#a3be8c;">Unnest can only be applied to array types.</span><span>&quot;,
+</span><span>                            ));
+</span><span>                        }
+</span><span>                    };
+</span><span>                    unnest_columns.</span><span style="color:#96b5b4;">push</span><span>((*field, array_col));
+</span><span>                }
+</span><span>                </span><span style="color:#b48ead;">Self</span><span>::fit_unnest(input, unnest_columns)
+</span><span>            }
+</span><span>        }
+</span><span>    }
+</span><span>}
+</span></code></pre>
+<p>至此，一条 SQL 的 pipeline 就执行完毕了。</p>
+
+        
+        
+<div class="docs-navigation d-flex justify-content-between">
+  
+  
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+          
+        
+      
+        
+        
+          
+        
+      
+        
+        
+          
+        
+      
+        
+        
+          
+        
+      
+        
+        
+          
+        
+      
+        
+        
+          
+            
+              
+              <a href="https:&#x2F;&#x2F;databend-internals.psiace.me&#x2F;docs&#x2F;productivity-topics&#x2F;the-databend-way-to-sky&#x2F;">
+                <div class="card my-1">
+                  <div class="card-body py-2">
+                    &larr; 多云转晴：Databend 的天空计算之路
+                  </div>
+                </div>
+              </a>
+            
+            
+            
+          
+        
+      
+        
+        
+          
+        
+      
+        
+        
+          
+        
+      
+    
+  
+
+  
+  
+  
+  
+  
+    
+    
+    
+      
+      
+        
+      
+    
+      
+      
+        
+      
+    
+      
+      
+        
+      
+    
+      
+      
+        
+      
+    
+      
+      
+        
+          
+          
+          <a class="ms-auto" href="https:&#x2F;&#x2F;databend-internals.psiace.me&#x2F;docs&#x2F;minibend&#x2F;intro&#x2F;">
+            <div class="card my-1">
+              <div class="card-body py-2">
+                第一弹 - minibend 简介 &rarr;
+              </div>
+            </div>
+          </a>
+          
+          
+          
+        
+      
+    
+      
+      
+        
+      
+    
+      
+      
+        
+      
+    
+      
+      
+        
+      
+    
+  
+</div>
+
+        
+        <script src="https://giscus.app/client.js" data-repo="psiace/databend-internals" data-repo-id="R_kgDOHQXEtA"
+          data-category="Announcements" data-category-id="DIC_kwDOHQXEtM4CPQhI" data-mapping="title"
+          data-reactions-enabled="1" data-emit-metadata="0" data-input-position="top" data-theme="light_protanopia"
+          data-lang="zh-CN" data-loading="lazy" crossorigin="anonymous" async>
+          </script>
+        
+      </main>
+    </div>
+  </div>
+</div>
+
+
+  
+    
+<footer class="footer text-muted">
+	<div class="container">
+		<div class="row">
+			<div class="col-lg-8 order-last order-lg-first">
+				<ul class="list-inline">
+					
+						<li class="list-inline-item">由 <a href="https://pages.github.com/">GitHub Pages</a> 、<a href="https://www.getzola.org/">Zola</a> 及 <a href="https://github.com/aaranxu/adidoks">AdiDoks</a> 强力驱动</li>
+					
+				</ul>
+			</div>
+			<div class="col-lg-8 order-first order-lg-last text-lg-end">
+				<ul class="list-inline">
+					
+						
+							<li class="list-inline-item"><a href="https://databend-internals.psiace.me/privacy-policy/">隐私政策</a></li>
+						
+							<li class="list-inline-item"><a href="https://databend-internals.psiace.me/docs/contributing/code-of-conduct/">行为准则</a></li>
+						
+					
+				</ul>
+			</div>
+		</div>
+	</div>
+</footer>
+
+  
+
+  
+<script type="text/javascript" src="https://databend-internals.psiace.me/js/main.js" defer></script>
+
+  
+</body>
+</html>

@@ -1,0 +1,748 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="x-ua-compatible" content="ie=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+  <link rel="preload" as="font" href="https://databend-internals.psiace.me/fonts/vendor/jost/jost-v4-latin-regular.woff2" type="font/woff2" crossorigin>
+  <link rel="preload" as="font" href="https://databend-internals.psiace.me/fonts/vendor/jost/jost-v4-latin-700.woff2"  type="font/woff2" crossorigin>
+
+
+<link rel="stylesheet" href="https://databend-internals.psiace.me/main.css">
+
+
+
+  
+  
+    
+  
+
+  
+  
+    
+    
+  
+  
+  
+    
+  
+  
+  
+  
+    
+  
+  
+  
+
+
+  <meta name="robots" content="index, follow">
+  <meta name="googlebot" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1">
+  <meta name="bingbot" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1">
+
+
+	
+
+
+	
+
+<title>如何参与 Databend 开源协作 | Databend 内幕大揭秘</title>
+<meta name="description" content="Databend 是一个开源的云数仓项目，这意味着你可以轻松参与“设计-&gt;研发-&gt;使用-&gt;反馈”的整个链路。这篇文章总结了参与 Databend 开源协作时需要注意的一些事项，以使贡献流程更加清晰和透明。">
+<link rel="canonical" href="https://databend-internals.psiace.me/docs/contribute-to-databend/how-to-contribute/">
+
+
+
+
+
+
+
+
+
+
+<script type="application/ld+json">
+  {
+    "@context": "http://schema.org",
+    "@type": "BreadcrumbList",
+    
+      
+      
+        
+        
+        
+        
+        
+        
+        
+        
+          {
+            "@type": "ListItem",
+            "position":  1 ,
+            "name": "Home",
+            "item": "https://databend-internals.psiace.me/"
+          },
+          
+          
+          {
+            "@type": "ListItem",
+            "position":  2 ,
+            "name": "Docs",
+            "item": "https://databend-internals.psiace.me/docs/"
+          },
+        
+      
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+          
+          
+          {
+            "@type": "ListItem",
+            "position":  3 ,
+            "name": "Contribute To Databend",
+            "item": "https://databend-internals.psiace.me/docs/contribute-to-databend/"
+          },
+        
+      
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+          
+          
+          {
+            "@type": "ListItem",
+            "position":  4 ,
+            "name": "How To Contribute",
+            "item": "https://databend-internals.psiace.me/docs/contribute-to-databend/how-to-contribute/"
+          },
+        
+      
+    
+  }
+</script>
+
+
+
+
+
+
+  <meta name="theme-color" content="#fff">
+  <link rel="apple-touch-icon" sizes="180x180" href="https://databend-internals.psiace.me/apple-touch-icon.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="https://databend-internals.psiace.me/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="https://databend-internals.psiace.me/favicon-16x16.png">
+  
+    <link rel="manifest" href="https://databend-internals.psiace.me/site.webmanifest" crossorigin>
+  
+
+
+  
+
+</head>
+
+
+
+<body class="docs single">
+  
+
+
+
+<div class="header-bar fixed-top"></div>
+<header class="navbar fixed-top navbar-expand-md navbar-light">
+	<div class="container">
+		<input class="menu-btn order-0" type="checkbox" id="menu-btn">
+		<label class="menu-icon d-md-none" for="menu-btn"><span class="navicon"></span></label>
+		<a class="navbar-brand order-1 order-md-0 me-auto" href="https://databend-internals.psiace.me">Databend 内幕大揭秘</a>
+		<button id="mode" class="btn btn-link order-2 order-md-4" type="button" aria-label="Toggle mode">
+			<span class="toggle-dark"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-moon"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg></span>
+			<span class="toggle-light"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-sun"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg></span>
+		</button>
+		<ul class="navbar-nav fork-me order-3 order-md-5">
+			
+				
+					<li class="nav-item">
+						<a class="nav-link" href="https://twitter.com/repsiace"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-twitter"><path d="M23 3a10.9 10.9 0 0 1-3.14 1.53 4.48 4.48 0 0 0-7.86 3v1A10.66 10.66 0 0 1 3 4s-4 9 5 13a11.64 11.64 0 0 1-7 2c9 5 20 0 20-11.5a4.5 4.5 0 0 0-.08-.83A7.72 7.72 0 0 0 23 3z"></path></svg><span class="ms-2 visually-hidden">Twitter</span></a>
+					</li>
+				
+					<li class="nav-item">
+						<a class="nav-link" href="https://github.com/psiace/databend-internals"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-github"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"></path></svg><span class="ms-2 visually-hidden">GitHub</span></a>
+					</li>
+				
+			
+		</ul>
+		<div class="collapse navbar-collapse order-4 order-md-1">
+			<ul class="navbar-nav main-nav me-auto order-5 order-md-2">
+				
+					
+				
+				
+				
+					
+						<li class="nav-item docs active">
+							<a class="nav-link" href="https://databend-internals.psiace.me/docs/getting-started/introduction/">在线阅读</a>
+						</li>
+					
+				
+			</ul>
+			<div class="break order-6 d-md-none"></div>
+			
+		</div>
+	</div>
+</header>
+
+
+
+  
+<div class="wrap container" role="document">
+  <div class="content">
+    <div class="row flex-xl-nowrap">
+      
+<div class="col-lg-5 col-xl-4 docs-sidebar">
+	<nav class="docs-links" aria-label="Main navigation">
+			
+			
+			
+			
+					
+					
+					
+							<h3>入门指南</h3>
+							<ul class="list-unstyled">
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/getting-started/introduction/">简介</a></li>
+							
+					</ul>
+					
+					
+					
+					
+							<h3>基础导览</h3>
+							<ul class="list-unstyled">
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/the-basics/storage/">存储</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/the-basics/about-index/">索引</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/the-basics/executor-in-query-process/">查询执行</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/the-basics/query-optimization/">查询优化</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/the-basics/mpp/">大规模并行处理</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/the-basics/distributed/">分布式</a></li>
+							
+					</ul>
+					
+					
+					
+					
+							<h3>特性探索</h3>
+							<ul class="list-unstyled">
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/productivity-topics/databend-rustchinaconf/">使用 Rust 构建云原生数仓 Databend</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/productivity-topics/quality-assurance-in-databend/">Databend 的质量保障</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/productivity-topics/the-databend-way-to-sky/">多云转晴：Databend 的天空计算之路</a></li>
+							
+					</ul>
+					
+					
+					
+					
+							<h3>源码解读</h3>
+							<ul class="list-unstyled">
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/source-reading/intro/">Databend 源码阅读： 开篇</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/source-reading/init-session-handler/">Databend 源码阅读： Query Server 启动、Session 管理及请求处理</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/source-reading/pipeline-execution/">Databend 源码阅读： pipeline 的执行</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/source-reading/config/">Databend 源码阅读：配置管理</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/source-reading/pipeline-model-graph-based/">Databend 源码阅读： 图解 pipeline 调度模型</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/source-reading/storage-basics-read-partitions/">Databend 源码阅读： Storage 概要和 Read Partitions</a></li>
+							
+					</ul>
+					
+					
+					
+					
+							<h3>minibend</h3>
+							<ul class="list-unstyled">
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/minibend/intro/">第一弹 - minibend 简介</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/minibend/datasource/">第二弹 - Data Source</a></li>
+							
+					</ul>
+					
+					
+					
+					
+							<h3>开源贡献</h3>
+							<ul class="list-unstyled">
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/contribute-to-databend/development-environment/">如何设置 Databend 开发环境</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/contribute-to-databend/build-and-more/">轻松了解 Databend 构建</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/contribute-to-databend/build-with-pgo/">使用 PGO 优化 Databend 二进制构建</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/contribute-to-databend/write-and-run-tests/">如何为 Databend 添加新的测试</a></li>
+							                           
+									<li><a class="docs-link active" href="https://databend-internals.psiace.me/docs/contribute-to-databend/how-to-contribute/">如何参与 Databend 开源协作</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/contribute-to-databend/tracing-in-databend/">Databend 全链路追踪</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/contribute-to-databend/how-to-benchmark/">如何对 Databend 进行基准测试</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/contribute-to-databend/how-to-profile/">Databend 性能剖析方法与工具</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/contribute-to-databend/how-to-write-functions/">如何为 Databend 添加新的函数</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/contribute-to-databend/how-to-write-system-table/">如何为 Databend 添加新的系统表</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/contribute-to-databend/release/">Databend 版本发布</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/contribute-to-databend/routine-maintenance/">Databend 的日常维护是怎么进行的</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/contribute-to-databend/faq/">常见问题解答</a></li>
+							
+					</ul>
+					
+					
+					
+					
+							<h3>专题研讨</h3>
+							<ul class="list-unstyled">
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/advanced-workshops/paper-list/">推荐阅读的论文清单</a></li>
+							
+					</ul>
+					
+					
+					
+					
+							<h3>贡献相关</h3>
+							<ul class="list-unstyled">
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/contributing/outline/">大纲速览</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/contributing/code-of-conduct/">行为准则</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/contributing/how-to-contributing/">如何协作</a></li>
+							
+					</ul>
+					
+					
+			
+	</nav>
+</div>
+
+      
+  
+  <nav class="docs-toc d-none d-xl-block col-xl-3" aria-label="Secondary navigation">
+  	<div class="page-links">
+  			<h3>On this page</h3>
+  			<nav id="TableOfContents">
+  					<ul>
+  							
+  							<li><a href="https://databend-internals.psiace.me/docs/contribute-to-databend/how-to-contribute/#gou-tong">沟通</a></li>
+  							
+  									<ul>
+  											
+  											<li><a href="https://databend-internals.psiace.me/docs/contribute-to-databend/how-to-contribute/#issues">Issues</a></li>
+  											
+  											<li><a href="https://databend-internals.psiace.me/docs/contribute-to-databend/how-to-contribute/#rfcs">RFCs</a></li>
+  											
+  											<li><a href="https://databend-internals.psiace.me/docs/contribute-to-databend/how-to-contribute/#channels">Channels</a></li>
+  											
+  									</ul>
+  							
+  							
+  							<li><a href="https://databend-internals.psiace.me/docs/contribute-to-databend/how-to-contribute/#shi-shi">实施</a></li>
+  							
+  									<ul>
+  											
+  											<li><a href="https://databend-internals.psiace.me/docs/contribute-to-databend/how-to-contribute/#bian-ma">编码</a></li>
+  											
+  											<li><a href="https://databend-internals.psiace.me/docs/contribute-to-databend/how-to-contribute/#wen-dang">文档</a></li>
+  											
+  											<li><a href="https://databend-internals.psiace.me/docs/contribute-to-databend/how-to-contribute/#zhun-bei">准备</a></li>
+  											
+  											<li><a href="https://databend-internals.psiace.me/docs/contribute-to-databend/how-to-contribute/#la-qing-qiu-pull-request">拉请求（Pull Request）</a></li>
+  											
+  											<li><a href="https://databend-internals.psiace.me/docs/contribute-to-databend/how-to-contribute/#chi-xu-ji-cheng">持续集成</a></li>
+  											
+  											<li><a href="https://databend-internals.psiace.me/docs/contribute-to-databend/how-to-contribute/#he-bing">合并</a></li>
+  											
+  									</ul>
+  							
+  							
+  					</ul>
+  			</nav>
+  	</div>
+  </nav>
+  
+
+      <main class="docs-content col-lg-11 col-xl-9">
+        <h1>如何参与 Databend 开源协作</h1>
+        <p class="lead"><blockquote>Databend 是一个开源的云数仓项目，这意味着你可以轻松参与“设计->研发->使用->反馈”的整个链路。这篇文章总结了参与 Databend 开源协作时需要注意的一些事项，以使贡献流程更加清晰和透明。</blockquote></p>
+        <p>在这篇文章中，主要从“沟通”和“实施”两个方面介绍 Databend 的开源协作。</p>
+<h2 id="gou-tong">沟通</h2>
+<p>沟通是参与开源的重要环节，正是得益于开源世界中沟通的公开与透明，才能迸发出如此生机与活力。</p>
+<p>参与 Databend 开源协作的主要沟通方式有 Issues 、RFCs 以及 Channels 三种。</p>
+<h3 id="issues">Issues</h3>
+<p>Issues 通常用于 Bug 反馈和新特性请求，Databend 使用 GitHub Issues 来跟踪和管理这些反馈。</p>
+<p><a href="https://github.com/datafuselabs/databend/issues/new/choose">https://github.com/datafuselabs/databend/issues/new/choose</a></p>
+<p><strong>Bug 反馈</strong></p>
+<p>Databend 提供了一个基本的 Bug 反馈模板以确保沟通的顺畅进行。</p>
+<p>在进行 Bug 反馈之前，请检索是否存在已知的解决方案，并确定你正在运行的版本，最好包含 <code>commit id</code> 。</p>
+<p>当然，提供清晰的问题描述和可复现步骤也是非常重要的环节。</p>
+<p>好例子：<a href="https://github.com/datafuselabs/databend/issues/6564">https://github.com/datafuselabs/databend/issues/6564</a></p>
+<blockquote>
+<p>Databend 的迭代速度非常快，每天都会发布新的 nightly 供用户尝鲜，建议尝试新版本以确定能否复现。</p>
+</blockquote>
+<p><strong>新特性请求</strong></p>
+<p>对于新特性请求，请尽可能提供详细的描述或是预期的行为，如果有可以参考的文档就更好了。</p>
+<p>好例子：https://github.com/datafuselabs/databend/issues/5979</p>
+<h3 id="rfcs">RFCs</h3>
+<p>对于小的功能点，打开 Issues 进行沟通就足够了。而大的功能、设计上的变动或者是需要充分讨论和同步的想法，请以 RFC 的形式提交。</p>
+<p>在设计和沟通的早期阶段，推荐使用 Discusssions 进行讨论。</p>
+<p>一旦确认实施和落地，提交 RFC 文档并建立用于跟踪的 Issues 则是更为合适的做法。</p>
+<p>好例子：https://github.com/datafuselabs/databend/discussions/5438</p>
+<h3 id="channels">Channels</h3>
+<p>Channels 通常用于一般的交流和讨论，Databend 团队鼓励使用 GitHub Discusssions 进行一般问题的咨询和讨论，形成一个“知识库”，方便检索和参与。</p>
+<p>当然，Databend 也提供 Slack 频道和微信群用于日常交流与讨论。</p>
+<p>Slack：<a href="https://link.databend.rs/join-slack">https://link.databend.rs/join-slack</a></p>
+<h2 id="shi-shi">实施</h2>
+<p>进入到实施环节，你将亲自动手改进 Databend 的代码或者文档，并踏上成为 Databend 维护者的道路，接下来让我们一起看一下有哪些环节需要重视。</p>
+<h3 id="bian-ma">编码</h3>
+<p><strong>前置环境</strong></p>
+<p>在「<a href="https://databend-internals.psiace.me/docs/contribute-to-databend/development-environment/">Databend 贡献之路 | 如何设置 Databend 开发环境</a>」一文中，已经详细介绍过如何配置 Databend 开发环境。</p>
+<p>需要注意的是，考虑到不同系统和发行版之间的差异，你可能需要自行安装 <code>gcc</code>，<code>python</code> 和 <code>openssl</code> 等相关基础程序。 </p>
+<p><strong>代码文档</strong></p>
+<p>任何公共字段、函数和方法都应该用 <a href="https://doc.rust-lang.org/book/ch14-02-publishing-to-crates-io.html#making-useful-documentation-comments">Rustdoc</a> 进行文档化。</p>
+<p>必要的时候，请使用 <a href="https://arthursonzogni.com/Diagon/">Diagon</a> 或其他 ASCII 图像生成器生成示意图以对设计进行充分描述。</p>
+<p>下面给出一个简单的例子：</p>
+<pre data-lang="rust" style="background-color:#2b303b;color:#c0c5ce;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="color:#65737e;">/// Represents (x, y) of a 2-dimensional grid
+</span><span style="color:#65737e;">///
+</span><span style="color:#65737e;">/// A line is defined by 2 instances.
+</span><span style="color:#65737e;">/// A plane is defined by 3 instances.
+</span><span>#[</span><span style="color:#bf616a;">repr</span><span>(C)]
+</span><span style="color:#b48ead;">struct </span><span>Point {
+</span><span>    </span><span style="color:#bf616a;">x</span><span>: </span><span style="color:#b48ead;">i32</span><span>,
+</span><span>    </span><span style="color:#bf616a;">y</span><span>: </span><span style="color:#b48ead;">i32</span><span>,
+</span><span>}
+</span></code></pre>
+<h3 id="wen-dang">文档</h3>
+<p><strong>前置环境</strong></p>
+<p>本机上需要安装有用于 <code>node</code> 环境管理的 <code>nvm</code> ，以及用于 <code>node</code> 依赖管理的 <code>yarn</code> 。</p>
+<p>文档的开发环节需要进入 <code>website</code> 目录后根据 <code>README.md</code> 中的描述进行配置。</p>
+<p>通常情况下，包含以下步骤：</p>
+<ul>
+<li>使用指定的 <code>node</code> 版本：<code>nvm use</code></li>
+<li>安装依赖：<code>yarn install</code></li>
+<li>本地预览：<code>yarn start</code></li>
+</ul>
+<p><strong>重要提示</strong></p>
+<p>文档应当正确放置在 <code>docs</code> 目录下，请本地预览确认无误后再进行提交。</p>
+<p>最终文档会托管到 <a href="https://databend.rs">https://databend.rs</a> 。</p>
+<h3 id="zhun-bei">准备</h3>
+<p><strong>License 检查</strong></p>
+<p>如果引入了新文件，建议执行 License 以确认是否添加了合适的许可信息。对于非代码文件，可能需要编辑 <code>.licenserc.yaml</code> 以跳过检查。</p>
+<pre data-lang="bash" style="background-color:#2b303b;color:#c0c5ce;" class="language-bash "><code class="language-bash" data-lang="bash"><span style="color:#bf616a;">make</span><span> check-license
+</span></code></pre>
+<p><strong>代码风格</strong></p>
+<p>请运行下述命令以完成代码风格的统一：</p>
+<pre data-lang="bash" style="background-color:#2b303b;color:#c0c5ce;" class="language-bash "><code class="language-bash" data-lang="bash"><span style="color:#bf616a;">make</span><span> lint
+</span></code></pre>
+<p><strong>依赖审计</strong></p>
+<p>如果你引入了一些新的依赖项，可以使用：</p>
+<pre data-lang="bash" style="background-color:#2b303b;color:#c0c5ce;" class="language-bash "><code class="language-bash" data-lang="bash"><span style="color:#bf616a;">cargo</span><span> udeps</span><span style="color:#bf616a;"> --workspace
+</span><span style="color:#bf616a;">cargo</span><span> audit
+</span></code></pre>
+<p><strong>测试</strong></p>
+<p>在「<a href="https://databend-internals.psiace.me/docs/contribute-to-databend/write-and-run-tests/">Databend 贡献之路 | 如何为 Databend 添加新的测试</a>」中，已经对测试做了详细的描述。</p>
+<p>通常情况下，使用 <code>make test</code> 一次性执行 <code>单元测试</code> 和 <code>功能测试</code> 就可以。</p>
+<p>但是，也建议执行 <code>集群</code> 相关的测试，以确保分布式执行不会出现差错。</p>
+<h3 id="la-qing-qiu-pull-request">拉请求（Pull Request）</h3>
+<p><strong>一般流程</strong></p>
+<ul>
+<li>分叉 Databend 的 repo 并从 main 创建分支。</li>
+<li>如果不存在跟踪的问题，请打开一个对应的问题并提供上下文</li>
+<li>提交一份「草稿请求（Draft Pull Request）」，以标记你正在进行相关工作。</li>
+<li>如果涉及编写代码，请添加对应的单元测试。</li>
+<li>进行测试，验证并确保测试套件通过。</li>
+<li>确保代码能够通过风格审计，<code>make lint</code> 。</li>
+<li>将状态更改为「准备检查（Ready for review）」。</li>
+<li>当心 <code>@mergify</code> 的回复，它会提供一些指导。</li>
+</ul>
+<p><strong>PR 标题填写</strong></p>
+<p>PR 标题需要符合 <code>&lt;类型&gt;(&lt;范围&gt;): &lt;描述&gt;</code> 的约束。</p>
+<pre data-lang="plain text" style="background-color:#2b303b;color:#c0c5ce;" class="language-plain text "><code class="language-plain text" data-lang="plain text"><span>fix(query): fix group by string bug
+</span><span>^--^  ^------------^
+</span><span>|     |
+</span><span>|     +-&gt; Summary in present tense.
+</span><span>|
+</span><span>+-------&gt; Type: feat, fix, refactor, ci, build, docs, website, chore
+</span></code></pre>
+<p><strong>PR 模板填写</strong></p>
+<p>Databend 提供了一个基本的 PR 模板，请不要修改模板上下文，并填充对本次 PR 的总结信息，包括是否修复/修复了哪个已知的 Issue 。</p>
+<pre data-lang="plain text" style="background-color:#2b303b;color:#c0c5ce;" class="language-plain text "><code class="language-plain text" data-lang="plain text"><span>I hereby agree to the terms of the CLA available at: https://databend.rs/dev/policies/cla/
+</span><span>
+</span><span>## Summary
+</span><span>
+</span><span>Summary about this PR
+</span><span>
+</span><span>Fixes #issue
+</span></code></pre>
+<p>好例子：https://github.com/datafuselabs/databend/pull/6665</p>
+<h3 id="chi-xu-ji-cheng">持续集成</h3>
+<p>持续集成相关的文件位于 <code>.github</code> 目录中的 <code>actions</code> 和 <code>workflows</code> 目录下。</p>
+<p><strong>文档</strong></p>
+<p>文档相关的持续集成会通过 Vercel 进行，需要关注 <code>Status</code> ，并点击 <code>Visit Preview</code> 查看渲染情况。</p>
+<p><strong>检查</strong></p>
+<p>包括 License 检查、代码风格检查、依赖关系审计等内容。</p>
+<ul>
+<li>Dev Linux / check (pull_request)</li>
+</ul>
+<p><strong>构建</strong></p>
+<p>主要是测试跨平台构建，主要是针对 x86_64 和 aarch64 架构，对 Linux 的 GNU 和 MUSL 支持处于第一优先级别。MacOS 虽然标记为 optional ，但是需要尽量保证。</p>
+<ul>
+<li>Dev MacOS / build_x86_64_macos(optional)</li>
+<li>Dev MacOS / build_aarch64_macos(optional)</li>
+<li>Dev Linux / build_x86_64_gnu (pull_request)</li>
+<li>Dev Linux / build_aarch64_gnu (pull_request)</li>
+<li>Dev Linux / build_x86_64_musl (pull_request)</li>
+<li>Dev Linux / build_aarch64_musl (pull_request)</li>
+<li>Dev Linux / build_hive (pull_request)</li>
+</ul>
+<p><strong>测试</strong></p>
+<p>主要是执行各种测试确保代码和功能都符合要求，包括单元测试、功能测试、分布式测试、模糊测试等：</p>
+<ul>
+<li>Dev Linux / test_unit (pull_request)</li>
+<li>Dev Linux / test_metactl (pull_request)</li>
+<li>Dev Linux / test_compat (pull_request)</li>
+<li>Dev Linux / test_meta_cluster (pull_request)</li>
+<li>Dev Linux / test_stateless_standalone_linux (pull_request)</li>
+<li>Dev Linux / test_stateless_cluster_linux (pull_request)</li>
+<li>Dev Linux / test_sqllogic_standalone_linux (pull_request)</li>
+<li>Dev Linux / test_stateful_standalone_linux (pull_request)</li>
+<li>Dev Linux / test_fuzz_standalone_linux (pull_request)</li>
+<li>Dev Linux / test_stateful_hive_standalone (pull_request)</li>
+<li>Dev MacOS / test_stateless_cluster_macos(optional)</li>
+</ul>
+<h3 id="he-bing">合并</h3>
+<p>有两位或两位以上维护者投下赞同票，并满足下述条件，Mergify 将会帮助我们完成代码合并工作：</p>
+<ul>
+<li>所有测试都通过</li>
+<li>所有审核意见都已经解决</li>
+<li>没有代码冲突</li>
+</ul>
+<p>在合并之后，你的 git name 将收集在 Databend 的 <code>system.contributors</code> 表中，在新版本 release 之后，执行 <code>SELECT * FROM system.contributors</code> 即可查看。</p>
+
+        
+        
+<div class="docs-navigation d-flex justify-content-between">
+  
+  
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+          
+        
+      
+        
+        
+          
+        
+      
+        
+        
+          
+        
+      
+        
+        
+          
+            
+              
+              <a href="https:&#x2F;&#x2F;databend-internals.psiace.me&#x2F;docs&#x2F;minibend&#x2F;datasource&#x2F;">
+                <div class="card my-1">
+                  <div class="card-body py-2">
+                    &larr; 第二弹 - Data Source
+                  </div>
+                </div>
+              </a>
+            
+            
+            
+          
+        
+      
+        
+        
+          
+        
+      
+        
+        
+          
+        
+      
+        
+        
+          
+        
+      
+        
+        
+          
+        
+      
+    
+  
+
+  
+  
+  
+  
+  
+    
+    
+    
+      
+      
+        
+      
+    
+      
+      
+        
+      
+    
+      
+      
+        
+      
+    
+      
+      
+        
+      
+    
+      
+      
+        
+      
+    
+      
+      
+        
+      
+    
+      
+      
+        
+          
+          
+          <a class="ms-auto" href="https:&#x2F;&#x2F;databend-internals.psiace.me&#x2F;docs&#x2F;advanced-workshops&#x2F;paper-list&#x2F;">
+            <div class="card my-1">
+              <div class="card-body py-2">
+                推荐阅读的论文清单 &rarr;
+              </div>
+            </div>
+          </a>
+          
+          
+          
+        
+      
+    
+      
+      
+        
+      
+    
+  
+</div>
+
+        
+        <script src="https://giscus.app/client.js" data-repo="psiace/databend-internals" data-repo-id="R_kgDOHQXEtA"
+          data-category="Announcements" data-category-id="DIC_kwDOHQXEtM4CPQhI" data-mapping="title"
+          data-reactions-enabled="1" data-emit-metadata="0" data-input-position="top" data-theme="light_protanopia"
+          data-lang="zh-CN" data-loading="lazy" crossorigin="anonymous" async>
+          </script>
+        
+      </main>
+    </div>
+  </div>
+</div>
+
+
+  
+    
+<footer class="footer text-muted">
+	<div class="container">
+		<div class="row">
+			<div class="col-lg-8 order-last order-lg-first">
+				<ul class="list-inline">
+					
+						<li class="list-inline-item">由 <a href="https://pages.github.com/">GitHub Pages</a> 、<a href="https://www.getzola.org/">Zola</a> 及 <a href="https://github.com/aaranxu/adidoks">AdiDoks</a> 强力驱动</li>
+					
+				</ul>
+			</div>
+			<div class="col-lg-8 order-first order-lg-last text-lg-end">
+				<ul class="list-inline">
+					
+						
+							<li class="list-inline-item"><a href="https://databend-internals.psiace.me/privacy-policy/">隐私政策</a></li>
+						
+							<li class="list-inline-item"><a href="https://databend-internals.psiace.me/docs/contributing/code-of-conduct/">行为准则</a></li>
+						
+					
+				</ul>
+			</div>
+		</div>
+	</div>
+</footer>
+
+  
+
+  
+<script type="text/javascript" src="https://databend-internals.psiace.me/js/main.js" defer></script>
+
+  
+</body>
+</html>

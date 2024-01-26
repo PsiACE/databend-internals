@@ -1,0 +1,818 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="x-ua-compatible" content="ie=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+  <link rel="preload" as="font" href="https://databend-internals.psiace.me/fonts/vendor/jost/jost-v4-latin-regular.woff2" type="font/woff2" crossorigin>
+  <link rel="preload" as="font" href="https://databend-internals.psiace.me/fonts/vendor/jost/jost-v4-latin-700.woff2"  type="font/woff2" crossorigin>
+
+
+<link rel="stylesheet" href="https://databend-internals.psiace.me/main.css">
+
+
+
+  
+  
+    
+  
+
+  
+  
+    
+    
+  
+  
+  
+    
+  
+  
+  
+  
+    
+  
+  
+  
+
+
+  <meta name="robots" content="index, follow">
+  <meta name="googlebot" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1">
+  <meta name="bingbot" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1">
+
+
+	
+
+
+	
+
+<title>Databend 全链路追踪 | Databend 内幕大揭秘</title>
+<meta name="description" content="全链路追踪意味着能够追踪到每一个调用请求的完整调用链路、收集性能数据并反馈异常。Databend 使用 tracing 赋能可观测性，实现全链路追踪。">
+<link rel="canonical" href="https://databend-internals.psiace.me/docs/contribute-to-databend/tracing-in-databend/">
+
+
+
+
+
+
+
+
+
+
+<script type="application/ld+json">
+  {
+    "@context": "http://schema.org",
+    "@type": "BreadcrumbList",
+    
+      
+      
+        
+        
+        
+        
+        
+        
+        
+        
+          {
+            "@type": "ListItem",
+            "position":  1 ,
+            "name": "Home",
+            "item": "https://databend-internals.psiace.me/"
+          },
+          
+          
+          {
+            "@type": "ListItem",
+            "position":  2 ,
+            "name": "Docs",
+            "item": "https://databend-internals.psiace.me/docs/"
+          },
+        
+      
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+          
+          
+          {
+            "@type": "ListItem",
+            "position":  3 ,
+            "name": "Contribute To Databend",
+            "item": "https://databend-internals.psiace.me/docs/contribute-to-databend/"
+          },
+        
+      
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+          
+          
+          {
+            "@type": "ListItem",
+            "position":  4 ,
+            "name": "Tracing In Databend",
+            "item": "https://databend-internals.psiace.me/docs/contribute-to-databend/tracing-in-databend/"
+          },
+        
+      
+    
+  }
+</script>
+
+
+
+
+
+
+  <meta name="theme-color" content="#fff">
+  <link rel="apple-touch-icon" sizes="180x180" href="https://databend-internals.psiace.me/apple-touch-icon.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="https://databend-internals.psiace.me/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="https://databend-internals.psiace.me/favicon-16x16.png">
+  
+    <link rel="manifest" href="https://databend-internals.psiace.me/site.webmanifest" crossorigin>
+  
+
+
+  
+
+</head>
+
+
+
+<body class="docs single">
+  
+
+
+
+<div class="header-bar fixed-top"></div>
+<header class="navbar fixed-top navbar-expand-md navbar-light">
+	<div class="container">
+		<input class="menu-btn order-0" type="checkbox" id="menu-btn">
+		<label class="menu-icon d-md-none" for="menu-btn"><span class="navicon"></span></label>
+		<a class="navbar-brand order-1 order-md-0 me-auto" href="https://databend-internals.psiace.me">Databend 内幕大揭秘</a>
+		<button id="mode" class="btn btn-link order-2 order-md-4" type="button" aria-label="Toggle mode">
+			<span class="toggle-dark"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-moon"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg></span>
+			<span class="toggle-light"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-sun"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg></span>
+		</button>
+		<ul class="navbar-nav fork-me order-3 order-md-5">
+			
+				
+					<li class="nav-item">
+						<a class="nav-link" href="https://twitter.com/repsiace"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-twitter"><path d="M23 3a10.9 10.9 0 0 1-3.14 1.53 4.48 4.48 0 0 0-7.86 3v1A10.66 10.66 0 0 1 3 4s-4 9 5 13a11.64 11.64 0 0 1-7 2c9 5 20 0 20-11.5a4.5 4.5 0 0 0-.08-.83A7.72 7.72 0 0 0 23 3z"></path></svg><span class="ms-2 visually-hidden">Twitter</span></a>
+					</li>
+				
+					<li class="nav-item">
+						<a class="nav-link" href="https://github.com/psiace/databend-internals"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-github"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"></path></svg><span class="ms-2 visually-hidden">GitHub</span></a>
+					</li>
+				
+			
+		</ul>
+		<div class="collapse navbar-collapse order-4 order-md-1">
+			<ul class="navbar-nav main-nav me-auto order-5 order-md-2">
+				
+					
+				
+				
+				
+					
+						<li class="nav-item docs active">
+							<a class="nav-link" href="https://databend-internals.psiace.me/docs/getting-started/introduction/">在线阅读</a>
+						</li>
+					
+				
+			</ul>
+			<div class="break order-6 d-md-none"></div>
+			
+		</div>
+	</div>
+</header>
+
+
+
+  
+<div class="wrap container" role="document">
+  <div class="content">
+    <div class="row flex-xl-nowrap">
+      
+<div class="col-lg-5 col-xl-4 docs-sidebar">
+	<nav class="docs-links" aria-label="Main navigation">
+			
+			
+			
+			
+					
+					
+					
+							<h3>入门指南</h3>
+							<ul class="list-unstyled">
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/getting-started/introduction/">简介</a></li>
+							
+					</ul>
+					
+					
+					
+					
+							<h3>基础导览</h3>
+							<ul class="list-unstyled">
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/the-basics/storage/">存储</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/the-basics/about-index/">索引</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/the-basics/executor-in-query-process/">查询执行</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/the-basics/query-optimization/">查询优化</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/the-basics/mpp/">大规模并行处理</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/the-basics/distributed/">分布式</a></li>
+							
+					</ul>
+					
+					
+					
+					
+							<h3>特性探索</h3>
+							<ul class="list-unstyled">
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/productivity-topics/databend-rustchinaconf/">使用 Rust 构建云原生数仓 Databend</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/productivity-topics/quality-assurance-in-databend/">Databend 的质量保障</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/productivity-topics/the-databend-way-to-sky/">多云转晴：Databend 的天空计算之路</a></li>
+							
+					</ul>
+					
+					
+					
+					
+							<h3>源码解读</h3>
+							<ul class="list-unstyled">
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/source-reading/intro/">Databend 源码阅读： 开篇</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/source-reading/init-session-handler/">Databend 源码阅读： Query Server 启动、Session 管理及请求处理</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/source-reading/pipeline-execution/">Databend 源码阅读： pipeline 的执行</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/source-reading/config/">Databend 源码阅读：配置管理</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/source-reading/pipeline-model-graph-based/">Databend 源码阅读： 图解 pipeline 调度模型</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/source-reading/storage-basics-read-partitions/">Databend 源码阅读： Storage 概要和 Read Partitions</a></li>
+							
+					</ul>
+					
+					
+					
+					
+							<h3>minibend</h3>
+							<ul class="list-unstyled">
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/minibend/intro/">第一弹 - minibend 简介</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/minibend/datasource/">第二弹 - Data Source</a></li>
+							
+					</ul>
+					
+					
+					
+					
+							<h3>开源贡献</h3>
+							<ul class="list-unstyled">
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/contribute-to-databend/development-environment/">如何设置 Databend 开发环境</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/contribute-to-databend/build-and-more/">轻松了解 Databend 构建</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/contribute-to-databend/build-with-pgo/">使用 PGO 优化 Databend 二进制构建</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/contribute-to-databend/write-and-run-tests/">如何为 Databend 添加新的测试</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/contribute-to-databend/how-to-contribute/">如何参与 Databend 开源协作</a></li>
+							                           
+									<li><a class="docs-link active" href="https://databend-internals.psiace.me/docs/contribute-to-databend/tracing-in-databend/">Databend 全链路追踪</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/contribute-to-databend/how-to-benchmark/">如何对 Databend 进行基准测试</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/contribute-to-databend/how-to-profile/">Databend 性能剖析方法与工具</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/contribute-to-databend/how-to-write-functions/">如何为 Databend 添加新的函数</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/contribute-to-databend/how-to-write-system-table/">如何为 Databend 添加新的系统表</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/contribute-to-databend/release/">Databend 版本发布</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/contribute-to-databend/routine-maintenance/">Databend 的日常维护是怎么进行的</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/contribute-to-databend/faq/">常见问题解答</a></li>
+							
+					</ul>
+					
+					
+					
+					
+							<h3>专题研讨</h3>
+							<ul class="list-unstyled">
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/advanced-workshops/paper-list/">推荐阅读的论文清单</a></li>
+							
+					</ul>
+					
+					
+					
+					
+							<h3>贡献相关</h3>
+							<ul class="list-unstyled">
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/contributing/outline/">大纲速览</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/contributing/code-of-conduct/">行为准则</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/contributing/how-to-contributing/">如何协作</a></li>
+							
+					</ul>
+					
+					
+			
+	</nav>
+</div>
+
+      
+  
+  <nav class="docs-toc d-none d-xl-block col-xl-3" aria-label="Secondary navigation">
+  	<div class="page-links">
+  			<h3>On this page</h3>
+  			<nav id="TableOfContents">
+  					<ul>
+  							
+  							<li><a href="https://databend-internals.psiace.me/docs/contribute-to-databend/tracing-in-databend/#databend-yu-tracing">Databend 与 Tracing</a></li>
+  							
+  									<ul>
+  											
+  											<li><a href="https://databend-internals.psiace.me/docs/contribute-to-databend/tracing-in-databend/#chu-shi-tracing">初识 Tracing</a></li>
+  											
+  											<li><a href="https://databend-internals.psiace.me/docs/contribute-to-databend/tracing-in-databend/#databend-zhong-de-tracing">Databend 中的 Tracing</a></li>
+  											
+  											<li><a href="https://databend-internals.psiace.me/docs/contribute-to-databend/tracing-in-databend/#guan-ce-databend-zhui-zong-de-fang-shi">观测 Databend 追踪的方式</a></li>
+  											
+  									</ul>
+  							
+  							
+  							<li><a href="https://databend-internals.psiace.me/docs/contribute-to-databend/tracing-in-databend/#jaeger-fen-bu-shi-zhui-zong">Jaeger 分布式追踪</a></li>
+  							
+  									<ul>
+  											
+  											<li><a href="https://databend-internals.psiace.me/docs/contribute-to-databend/tracing-in-databend/#opentelemetry-jaeger">Opentelemetry &amp; Jaeger</a></li>
+  											
+  											<li><a href="https://databend-internals.psiace.me/docs/contribute-to-databend/tracing-in-databend/#step-by-step">Step by Step</a></li>
+  											
+  											<li><a href="https://databend-internals.psiace.me/docs/contribute-to-databend/tracing-in-databend/#jie-guo-tan-suo">结果探索</a></li>
+  											
+  									</ul>
+  							
+  							
+  							<li><a href="https://databend-internals.psiace.me/docs/contribute-to-databend/tracing-in-databend/#tokio-console-zhen-duan">tokio-console 诊断</a></li>
+  							
+  									<ul>
+  											
+  											<li><a href="https://databend-internals.psiace.me/docs/contribute-to-databend/tracing-in-databend/#console-shi-shen-me">console 是什么</a></li>
+  											
+  											<li><a href="https://databend-internals.psiace.me/docs/contribute-to-databend/tracing-in-databend/#step-by-step-1">Step by Step</a></li>
+  											
+  											<li><a href="https://databend-internals.psiace.me/docs/contribute-to-databend/tracing-in-databend/#jie-guo-tan-suo-1">结果探索</a></li>
+  											
+  									</ul>
+  							
+  							
+  							<li><a href="https://databend-internals.psiace.me/docs/contribute-to-databend/tracing-in-databend/#huan-neng-zuo-shen-me">还能做什么</a></li>
+  							
+  									<ul>
+  											
+  											<li><a href="https://databend-internals.psiace.me/docs/contribute-to-databend/tracing-in-databend/#ke-guan-ce-xing">可观测性 + +</a></li>
+  											
+  											<li><a href="https://databend-internals.psiace.me/docs/contribute-to-databend/tracing-in-databend/#liao-jie-geng-duo">了解更多 . . .</a></li>
+  											
+  									</ul>
+  							
+  							
+  					</ul>
+  			</nav>
+  	</div>
+  </nav>
+  
+
+      <main class="docs-content col-lg-11 col-xl-9">
+        <h1>Databend 全链路追踪</h1>
+        <p class="lead">全链路追踪意味着能够追踪到每一个调用请求的完整调用链路、收集性能数据并反馈异常。Databend 使用 tracing 赋能可观测性，实现全链路追踪。</p>
+        <h2 id="databend-yu-tracing">Databend 与 Tracing</h2>
+<p>初步了解 Databend 怎么实现全链路追踪。</p>
+<h3 id="chu-shi-tracing">初识 Tracing</h3>
+<p><img src="https://databend-internals.psiace.me/contribute-to-databend/tracing-in-databend/01-tracing.svg" alt="Tracing Logo" /></p>
+<p>Tracing 是由 Tokio 团队维护的 Rust 应用追踪框架，用来收集结构化的、基于事件的诊断信息。</p>
+<p>项目地址：https://github.com/tokio-rs/tracing</p>
+<p><strong>示例：</strong></p>
+<pre data-lang="rust" style="background-color:#2b303b;color:#c0c5ce;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="color:#b48ead;">use </span><span>tracing::{info, Level};
+</span><span style="color:#b48ead;">use</span><span> tracing_subscriber;
+</span><span>
+</span><span style="color:#b48ead;">fn </span><span style="color:#8fa1b3;">main</span><span>() {
+</span><span>    </span><span style="color:#b48ead;">let</span><span> collector = tracing_subscriber::fmt()
+</span><span>        </span><span style="color:#65737e;">// filter spans/events with level TRACE or higher.
+</span><span>        .</span><span style="color:#96b5b4;">with_max_level</span><span>(Level::</span><span style="color:#d08770;">TRACE</span><span>)
+</span><span>        </span><span style="color:#65737e;">// build but do not install the subscriber.
+</span><span>        .</span><span style="color:#96b5b4;">finish</span><span>();
+</span><span>
+</span><span>    tracing::collect::with_default(collector, || {
+</span><span>        info!(&quot;</span><span style="color:#a3be8c;">This will be logged to stdout</span><span>&quot;);
+</span><span>    });
+</span><span>    info!(&quot;</span><span style="color:#a3be8c;">This will _not_ be logged to stdout</span><span>&quot;);
+</span><span>}
+</span></code></pre>
+<h3 id="databend-zhong-de-tracing">Databend 中的 Tracing</h3>
+<p>Databend 的 <code>tracing-subscriber</code> 被统一整合在 <code>common/tracing</code>，由 query 和 meta 共用。</p>
+<pre data-lang="rust" style="background-color:#2b303b;color:#c0c5ce;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="color:#65737e;">// Use env RUST_LOG to initialize log if present.
+</span><span style="color:#65737e;">// Otherwise use the specified level.
+</span><span style="color:#b48ead;">let</span><span> directives = env::var(EnvFilter::</span><span style="color:#d08770;">DEFAULT_ENV</span><span>).</span><span style="color:#96b5b4;">unwrap_or_else</span><span>(|</span><span style="color:#bf616a;">_x</span><span>| level.</span><span style="color:#96b5b4;">to_string</span><span>());
+</span><span style="color:#b48ead;">let</span><span> env_filter = EnvFilter::new(directives);
+</span><span style="color:#b48ead;">let</span><span> subscriber = Registry::default()
+</span><span>    .</span><span style="color:#96b5b4;">with</span><span>(env_filter)                # 根据环境变量过滤
+</span><span>    .</span><span style="color:#96b5b4;">with</span><span>(JsonStorageLayer)          # 利用 tracing-bunyan-formatter 格式化为 json
+</span><span>    .</span><span style="color:#96b5b4;">with</span><span>(stdout_logging_layer)      # 标准输出
+</span><span>    .</span><span style="color:#96b5b4;">with</span><span>(file_logging_layer)        # 输出到文件，默认位于 `_logs` 目录下
+</span><span>    .</span><span style="color:#96b5b4;">with</span><span>(jaeger_layer);             # opentelemetry-jaeger
+</span><span>
+</span><span>#[</span><span style="color:#bf616a;">cfg</span><span>(feature = &quot;</span><span style="color:#a3be8c;">console</span><span>&quot;)]
+</span><span style="color:#b48ead;">let</span><span> subscriber = subscriber.</span><span style="color:#96b5b4;">with</span><span>(console_subscriber::spawn()); # tokio console
+</span><span>
+</span><span>tracing::subscriber::set_global_default(subscriber)
+</span><span>    .</span><span style="color:#96b5b4;">expect</span><span>(&quot;</span><span style="color:#a3be8c;">error setting global tracing subscriber</span><span>&quot;);
+</span></code></pre>
+<p>具体到内部的 <code>tracing</code> 记录，大致有两类：</p>
+<ol>
+<li>
+<p>普通：与其他 <code>log</code> 方式一样，利用 <code>info!</code>、<code>debug!</code> 来收集信息。</p>
+<pre data-lang="rust" style="background-color:#2b303b;color:#c0c5ce;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="color:#b48ead;">use </span><span>common_tracing::tracing;
+</span><span>
+</span><span>tracing::info!(&quot;</span><span style="color:#a3be8c;">{:?}</span><span>&quot;, conf);
+</span><span>tracing::info!(&quot;</span><span style="color:#a3be8c;">DatabendQuery {}</span><span>&quot;, *databend_query::</span><span style="color:#d08770;">DATABEND_COMMIT_VERSION</span><span>);
+</span></code></pre>
+</li>
+<li>
+<p>Instruments：在调用函数时创建并进入 tracing span（跨度），span 表示程序在特定上下文中执行的时间段。</p>
+<pre data-lang="rust" style="background-color:#2b303b;color:#c0c5ce;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="color:#b48ead;">use </span><span>common_tracing::tracing::debug_span;
+</span><span>#[</span><span style="color:#bf616a;">tracing</span><span>::</span><span style="color:#bf616a;">instrument</span><span>(level = &quot;</span><span style="color:#a3be8c;">debug</span><span>&quot;, skip_all)]
+</span><span>async </span><span style="color:#b48ead;">fn </span><span style="color:#8fa1b3;">read</span><span>(&amp;</span><span style="color:#b48ead;">mut </span><span style="color:#bf616a;">self</span><span>) -&gt; Result&lt;Option&lt;DataBlock&gt;&gt; {
+</span><span>    ...
+</span><span>        fetched_metadata = </span><span style="color:#96b5b4;">read_metadata_async</span><span>(&amp;</span><span style="color:#b48ead;">mut </span><span style="color:#bf616a;">self</span><span>.reader)
+</span><span>            .</span><span style="color:#96b5b4;">instrument</span><span>(debug_span!(&quot;</span><span style="color:#a3be8c;">parquet_source_read_meta</span><span>&quot;))
+</span><span>            .await
+</span><span>            .</span><span style="color:#96b5b4;">map_err</span><span>(|</span><span style="color:#bf616a;">e</span><span>| ErrorCode::ParquetError(e.</span><span style="color:#96b5b4;">to_string</span><span>()))?;
+</span><span>    ...
+</span><span>}
+</span></code></pre>
+</li>
+</ol>
+<p><strong>示例：</strong></p>
+<pre data-lang="json" style="background-color:#2b303b;color:#c0c5ce;" class="language-json "><code class="language-json" data-lang="json"><span>{
+</span><span>  &quot;</span><span style="color:#a3be8c;">v</span><span>&quot;: </span><span style="color:#d08770;">0</span><span>,
+</span><span>  &quot;</span><span style="color:#a3be8c;">name</span><span>&quot;: &quot;</span><span style="color:#a3be8c;">databend-query-test_cluster@0.0.0.0:3307</span><span>&quot;,
+</span><span>  &quot;</span><span style="color:#a3be8c;">msg</span><span>&quot;: &quot;</span><span style="color:#a3be8c;">Shutdown server.</span><span>&quot;,
+</span><span>  &quot;</span><span style="color:#a3be8c;">level</span><span>&quot;: </span><span style="color:#d08770;">30</span><span>,
+</span><span>  &quot;</span><span style="color:#a3be8c;">hostname</span><span>&quot;: &quot;</span><span style="color:#a3be8c;">dataslime</span><span>&quot;,
+</span><span>  &quot;</span><span style="color:#a3be8c;">pid</span><span>&quot;: </span><span style="color:#d08770;">53341</span><span>,
+</span><span>  &quot;</span><span style="color:#a3be8c;">time</span><span>&quot;: &quot;</span><span style="color:#a3be8c;">2022-05-11T00:51:56.374807359Z</span><span>&quot;,
+</span><span>  &quot;</span><span style="color:#a3be8c;">target</span><span>&quot;: &quot;</span><span style="color:#a3be8c;">databend_query</span><span>&quot;,
+</span><span>  &quot;</span><span style="color:#a3be8c;">line</span><span>&quot;: </span><span style="color:#d08770;">153</span><span>,
+</span><span>  &quot;</span><span style="color:#a3be8c;">file</span><span>&quot;: &quot;</span><span style="color:#a3be8c;">query/src/bin/databend-query.rs</span><span>&quot;
+</span><span>}
+</span></code></pre>
+<h3 id="guan-ce-databend-zhui-zong-de-fang-shi">观测 Databend 追踪的方式</h3>
+<p>Databend 原生提供了多种观测方式，以方便诊断和调试：</p>
+<ol>
+<li>http tracing ：访问 localhost:8080/v1/logs（根据配置）。</li>
+<li>stdout/filelog ：检查终端输出或 <code>_logs</code> 目录（根据配置）。</li>
+<li>system.tracing 表 ：执行 <code>select * from system.tracing limit 20;</code> 。</li>
+<li>jaeger ：运行 jaeger ，访问 http://127.0.0.1:16686/ 。</li>
+<li>console ：按特定方式构建后，运行 tokio-console 。</li>
+</ol>
+<h2 id="jaeger-fen-bu-shi-zhui-zong">Jaeger 分布式追踪</h2>
+<p>使用 Jaeger 对 Databend 进行全链路追踪。</p>
+<h3 id="opentelemetry-jaeger">Opentelemetry &amp; Jaeger</h3>
+<p><strong>OpenTelemetry</strong> 是工具、API 和 SDK 的集合。使用它来检测、生成、收集和导出遥测数据（度量、日志和追踪），以帮助您分析软件的性能和行为。</p>
+<p><strong>Jaeger</strong> 是一个开源的端到端分布式追踪系统。由 Uber 捐赠给 CNCF 。它可以用于监视基于微服务的分布式系统，提供以下能力：</p>
+<ul>
+<li>分布式上下文传播</li>
+<li>分布式事务监视</li>
+<li>根本原因分析</li>
+<li>服务依赖性分析</li>
+<li>性能/延迟优化</li>
+</ul>
+<p><img src="https://databend-internals.psiace.me/contribute-to-databend/tracing-in-databend/02-jaeger-and-opentelemetry.png" alt="Opentelemetry &amp; Jaeger" /></p>
+<h3 id="step-by-step">Step by Step</h3>
+<p>遵循下述步骤，即可使用 Jaeger 探索 Databend ：</p>
+<ol>
+<li>构建二进制程式：<code>cargo build</code>（可以使用 <code>--bin</code> 指定）。</li>
+<li>指定 Jaeger endpoint ，并将日志级别设定为 <code>DEBUG</code> ，接着运行需要调试的应用程式。例如，<code>DATABEND_JAEGER_AGENT_ENDPOINT=localhost:6831 LOG_LEVEL=DEBUG ./databend-query</code> 。</li>
+<li>运行 jaeger ：<code>docker run -d -p6831:6831/udp -p6832:6832/udp -p16686:16686 jaegertracing/all-in- one:latest</code> 。</li>
+<li>打开 <code>http://127.0.0.1:16686/</code> 以查看 jaeger 收集的信息。</li>
+</ol>
+<p><strong>注意</strong> 只有正确配置 <code>DATABEND_JAEGER_AGENT_ENDPOINT</code> 才能启用 Jaeger 支持。</p>
+<h3 id="jie-guo-tan-suo">结果探索</h3>
+<p><img src="https://databend-internals.psiace.me/contribute-to-databend/tracing-in-databend/03-jaeger-dot-graph.png" alt="dot graph" /></p>
+<p><em>x 轴是执行时刻，y 轴是持续的时间，圆点反映 span 的聚集程度。</em></p>
+<p>执行下述语句即可得到上图所示追踪结果：</p>
+<pre data-lang="SQL" style="background-color:#2b303b;color:#c0c5ce;" class="language-SQL "><code class="language-SQL" data-lang="SQL"><span style="color:#b48ead;">CREATE TABLE </span><span style="color:#8fa1b3;">t1</span><span>(a </span><span style="color:#b48ead;">INT</span><span>);
+</span><span style="color:#b48ead;">INSERT INTO</span><span> t1 </span><span style="color:#b48ead;">VALUES</span><span>(</span><span style="color:#d08770;">1</span><span>);
+</span><span style="color:#b48ead;">INSERT INTO</span><span> t1 </span><span style="color:#b48ead;">SELECT </span><span style="color:#bf616a;">* </span><span style="color:#b48ead;">FROM</span><span> t1;
+</span></code></pre>
+<p><strong>Timeline</strong></p>
+<p>下图是点击最大的圆点得到的追踪情况：</p>
+<p><img src="https://databend-internals.psiace.me/contribute-to-databend/tracing-in-databend/04-jaeger-span-tracing.png" alt="span tracing" /></p>
+<p>使用 timeline 模式来展现 tracing 的各个跨度之间的关系。以时间为主线进行分析,方便使用者观看在某个时间点观看程序信息。</p>
+<p>点开第一个跨度，可以看到这是执行 <code>INSERT INTO t1 SELECT *FROM t1</code> 查询时的情况。</p>
+<p><img src="https://databend-internals.psiace.me/contribute-to-databend/tracing-in-databend/05-jaeger-span-info.png" alt="span info" /></p>
+<p><strong>Graph</strong></p>
+<p>切换到 graph 模式，可以看到各个 span 之间的调用链，每个 span 具体用时 ,以及百分比。</p>
+<p><img src="https://databend-internals.psiace.me/contribute-to-databend/tracing-in-databend/06-jaeger-span-graph.png" alt="span graph" /></p>
+<p>通过这个视图使用者很容易知道系统瓶颈,快速定位问题。</p>
+<p><strong>Compare</strong></p>
+<p>连起来的各个部分形成整个 trace 的调用链。因为比较时一般会比较两个相同类型的调用，所以看到的会是重合后的视图。</p>
+<p><img src="https://databend-internals.psiace.me/contribute-to-databend/tracing-in-databend/07-jaeger-span-compare.png" alt="span compare" /></p>
+<p>对于颜色的一个说明：</p>
+<ul>
+<li>深绿色，表示这个 span 只存在于 trace-B 中，A 没有这个 span</li>
+<li>深红色，表示这个 span 只存在于 trace-A 中，B 没有这个 span</li>
+<li>浅绿色，表示这个 span 在 trace-B（右边这个）的数量多</li>
+<li>浅红色，表示这个 span 在 trace-A（左边这个）的数量多</li>
+</ul>
+<h2 id="tokio-console-zhen-duan">tokio-console 诊断</h2>
+<p>tokio-rs 团队出品的诊断和调试工具，可以帮助我们诊断与 tokio 运行时相关的问题。</p>
+<h3 id="console-shi-shen-me">console 是什么</h3>
+<p><img src="https://databend-internals.psiace.me/contribute-to-databend/tracing-in-databend/08-tokio-console.png" alt="tokio console" /></p>
+<p>tokio-console 是专为异步程序设计的调试与诊断工具，能够列出 tokio 的任务，提供对程序的任务和资源的实时、易于导航的视图，总结了它们的当前状态和历史行为。主要包含以下组件：</p>
+<ul>
+<li>传输诊断数据的协议</li>
+<li>用于收集诊断数据的仪器</li>
+<li>当然，用于展示和探索诊断数据的实用工具</li>
+</ul>
+<p>项目地址：https://github.com/tokio-rs/console</p>
+<h3 id="step-by-step-1">Step by Step</h3>
+<ol>
+<li>使用特定的 <code>rustflags</code> 和 <code>features</code> 来构建：
+<code>RUSTFLAGS=&quot;--cfg tokio_unstable&quot; cargo build --features tokio-console</code> ，也可以只构建单个二进制程式，使用 <code>--bin</code> 进行指定。</li>
+<li>将日志级别设定为 <code>TRACE</code> ，运行需要调试的应用程式 <code>LOG_LEVEL=TRACE databend-query</code> 或者 <code>databend-meta --single --log-level=TRACE</code>。可以使用 <code>TOKIO_CONSOLE_BIND</code> 指定端口，以避免潜在的端口抢占问题。</li>
+<li>运行 <code>tokio-console</code>，默认连接到 http://127.0.0.1:6669 。</li>
+</ol>
+<h3 id="jie-guo-tan-suo-1">结果探索</h3>
+<p><strong>任务</strong></p>
+<p>先看什么是 tokio 任务：</p>
+<ol>
+<li>任务是一个轻量级的、非阻塞的执行单元。类似操作系统的线程，但是是由 tokio 运行时管理，一般叫做“绿色线程”，与 Go 的 goroutine，Kotlin 的 coroutine 类似。</li>
+<li>任务是协同调度的。大多数操作系统实现抢占式多任务。操作系统允许每个线程运行一段时间，然后抢占它，暂停该线程并切换到另一个线程。另一方面，任务实现协同多任务。一个任务被允许运行直到它让出执行权，运行时会切换到执行下一个任务。</li>
+</ol>
+<p><img src="https://databend-internals.psiace.me/contribute-to-databend/tracing-in-databend/09-tokio-console-basic.png" alt="tokio console basic" /></p>
+<p><strong>基础视图</strong></p>
+<p>通过左右切换，可以得到总忙时间或轮询次数等指标对任务进行排序。控制台通过高亮来提示较大差异，比如从毫秒到秒的切换。</p>
+<p><img src="https://databend-internals.psiace.me/contribute-to-databend/tracing-in-databend/10-tokio-console-sort.png" alt="tokio console sort" /></p>
+<p>控制台还实现了一个“警告”系统。通过监视应用程序中任务的运行时操作，控制台可以检测可能提示 bug 或性能问题的行为模式，并突出显示这些行为模式供用户分析。比如已经运行了很长时间而没有让步的任务，唤醒的次数比被其他任务唤醒的次数还要多的任务。</p>
+<p><strong>任务视图</strong></p>
+<p>上下切换选中任务，enter 查看关于每个任务的翔实数据，比如轮询持续时间的直方图。</p>
+<p><img src="https://databend-internals.psiace.me/contribute-to-databend/tracing-in-databend/11-tokio-console-task.png" alt="tokio console task" /></p>
+<p>不仅列出任务。console 还会插入异步互斥和信号量等资源。Tokio Console 的资源详细信息视图显示了哪些任务已经进入临界区，哪些任务正在等待获得访问权限。</p>
+<h2 id="huan-neng-zuo-shen-me">还能做什么</h2>
+<p>与分布式追踪和日志系统相关的一些其他内容。</p>
+<h3 id="ke-guan-ce-xing">可观测性 + +</h3>
+<p>目前还有一系列关于可观测性和 Tracing 的 Issue 有待解决：</p>
+<ul>
+<li>Integrate tokio metrics for query task based tokio runtime monitoring #4205</li>
+<li>Configure on jaeger tracing address similar to metrics api server #3633</li>
+<li>Summary of todos about distributed tracing #1227</li>
+<li>Query traces and analysis, based on user behavior. #1177</li>
+<li>Http stack traces #1085</li>
+<li>Shuffle read/write metrics #1004</li>
+</ul>
+<p>另外，更进一步的考量是，如何基于可观测性来自动/半自动地发现问题并对系统进行调优。</p>
+<h3 id="liao-jie-geng-duo">了解更多 . . .</h3>
+<p><strong>Tracing</strong></p>
+<ul>
+<li>https://github.com/tokio-rs/tracing</li>
+<li>https://docs.rs/tracing/latest/tracing/</li>
+<li>https://tokio.rs/blog/2019-08-tracing</li>
+</ul>
+<p><strong>Jaeger</strong></p>
+<ul>
+<li>https://github.com/open-telemetry/opentelemetry-rust/tree/main/opentelemetry-jaeger</li>
+<li>https://21-lessons.com/ship-rust-tracing-spans-to-jaeger/</li>
+</ul>
+<p><strong>tokio-console</strong></p>
+<ul>
+<li>https://github.com/tokio-rs/console</li>
+<li>https://hackmd.io/@aws-rust-platform/ByChcdB-t</li>
+<li>https://tokio.rs/blog/2021-12-announcing-tokio-console</li>
+</ul>
+
+        
+        
+<div class="docs-navigation d-flex justify-content-between">
+  
+  
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+          
+        
+      
+        
+        
+          
+        
+      
+        
+        
+          
+        
+      
+        
+        
+          
+            
+              
+              <a href="https:&#x2F;&#x2F;databend-internals.psiace.me&#x2F;docs&#x2F;minibend&#x2F;datasource&#x2F;">
+                <div class="card my-1">
+                  <div class="card-body py-2">
+                    &larr; 第二弹 - Data Source
+                  </div>
+                </div>
+              </a>
+            
+            
+            
+          
+        
+      
+        
+        
+          
+        
+      
+        
+        
+          
+        
+      
+        
+        
+          
+        
+      
+        
+        
+          
+        
+      
+    
+  
+
+  
+  
+  
+  
+  
+    
+    
+    
+      
+      
+        
+      
+    
+      
+      
+        
+      
+    
+      
+      
+        
+      
+    
+      
+      
+        
+      
+    
+      
+      
+        
+      
+    
+      
+      
+        
+      
+    
+      
+      
+        
+          
+          
+          <a class="ms-auto" href="https:&#x2F;&#x2F;databend-internals.psiace.me&#x2F;docs&#x2F;advanced-workshops&#x2F;paper-list&#x2F;">
+            <div class="card my-1">
+              <div class="card-body py-2">
+                推荐阅读的论文清单 &rarr;
+              </div>
+            </div>
+          </a>
+          
+          
+          
+        
+      
+    
+      
+      
+        
+      
+    
+  
+</div>
+
+        
+        <script src="https://giscus.app/client.js" data-repo="psiace/databend-internals" data-repo-id="R_kgDOHQXEtA"
+          data-category="Announcements" data-category-id="DIC_kwDOHQXEtM4CPQhI" data-mapping="title"
+          data-reactions-enabled="1" data-emit-metadata="0" data-input-position="top" data-theme="light_protanopia"
+          data-lang="zh-CN" data-loading="lazy" crossorigin="anonymous" async>
+          </script>
+        
+      </main>
+    </div>
+  </div>
+</div>
+
+
+  
+    
+<footer class="footer text-muted">
+	<div class="container">
+		<div class="row">
+			<div class="col-lg-8 order-last order-lg-first">
+				<ul class="list-inline">
+					
+						<li class="list-inline-item">由 <a href="https://pages.github.com/">GitHub Pages</a> 、<a href="https://www.getzola.org/">Zola</a> 及 <a href="https://github.com/aaranxu/adidoks">AdiDoks</a> 强力驱动</li>
+					
+				</ul>
+			</div>
+			<div class="col-lg-8 order-first order-lg-last text-lg-end">
+				<ul class="list-inline">
+					
+						
+							<li class="list-inline-item"><a href="https://databend-internals.psiace.me/privacy-policy/">隐私政策</a></li>
+						
+							<li class="list-inline-item"><a href="https://databend-internals.psiace.me/docs/contributing/code-of-conduct/">行为准则</a></li>
+						
+					
+				</ul>
+			</div>
+		</div>
+	</div>
+</footer>
+
+  
+
+  
+<script type="text/javascript" src="https://databend-internals.psiace.me/js/main.js" defer></script>
+
+  
+</body>
+</html>

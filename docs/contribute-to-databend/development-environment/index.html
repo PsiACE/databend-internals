@@ -1,0 +1,739 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="x-ua-compatible" content="ie=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+  <link rel="preload" as="font" href="https://databend-internals.psiace.me/fonts/vendor/jost/jost-v4-latin-regular.woff2" type="font/woff2" crossorigin>
+  <link rel="preload" as="font" href="https://databend-internals.psiace.me/fonts/vendor/jost/jost-v4-latin-700.woff2"  type="font/woff2" crossorigin>
+
+
+<link rel="stylesheet" href="https://databend-internals.psiace.me/main.css">
+
+
+
+  
+  
+    
+  
+
+  
+  
+    
+    
+  
+  
+  
+    
+  
+  
+  
+  
+    
+  
+  
+  
+
+
+  <meta name="robots" content="index, follow">
+  <meta name="googlebot" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1">
+  <meta name="bingbot" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1">
+
+
+	
+
+
+	
+
+<title>如何设置 Databend 开发环境 | Databend 内幕大揭秘</title>
+<meta name="description" content="工欲善其事，必先利其器。在开启 Databend 贡献之旅前，一起来配置适合自己的开发环境吧。">
+<link rel="canonical" href="https://databend-internals.psiace.me/docs/contribute-to-databend/development-environment/">
+
+
+
+
+
+
+
+
+
+
+<script type="application/ld+json">
+  {
+    "@context": "http://schema.org",
+    "@type": "BreadcrumbList",
+    
+      
+      
+        
+        
+        
+        
+        
+        
+        
+        
+          {
+            "@type": "ListItem",
+            "position":  1 ,
+            "name": "Home",
+            "item": "https://databend-internals.psiace.me/"
+          },
+          
+          
+          {
+            "@type": "ListItem",
+            "position":  2 ,
+            "name": "Docs",
+            "item": "https://databend-internals.psiace.me/docs/"
+          },
+        
+      
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+          
+          
+          {
+            "@type": "ListItem",
+            "position":  3 ,
+            "name": "Contribute To Databend",
+            "item": "https://databend-internals.psiace.me/docs/contribute-to-databend/"
+          },
+        
+      
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+          
+          
+          {
+            "@type": "ListItem",
+            "position":  4 ,
+            "name": "Development Environment",
+            "item": "https://databend-internals.psiace.me/docs/contribute-to-databend/development-environment/"
+          },
+        
+      
+    
+  }
+</script>
+
+
+
+
+
+
+  <meta name="theme-color" content="#fff">
+  <link rel="apple-touch-icon" sizes="180x180" href="https://databend-internals.psiace.me/apple-touch-icon.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="https://databend-internals.psiace.me/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="https://databend-internals.psiace.me/favicon-16x16.png">
+  
+    <link rel="manifest" href="https://databend-internals.psiace.me/site.webmanifest" crossorigin>
+  
+
+
+  
+
+</head>
+
+
+
+<body class="docs single">
+  
+
+
+
+<div class="header-bar fixed-top"></div>
+<header class="navbar fixed-top navbar-expand-md navbar-light">
+	<div class="container">
+		<input class="menu-btn order-0" type="checkbox" id="menu-btn">
+		<label class="menu-icon d-md-none" for="menu-btn"><span class="navicon"></span></label>
+		<a class="navbar-brand order-1 order-md-0 me-auto" href="https://databend-internals.psiace.me">Databend 内幕大揭秘</a>
+		<button id="mode" class="btn btn-link order-2 order-md-4" type="button" aria-label="Toggle mode">
+			<span class="toggle-dark"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-moon"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg></span>
+			<span class="toggle-light"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-sun"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg></span>
+		</button>
+		<ul class="navbar-nav fork-me order-3 order-md-5">
+			
+				
+					<li class="nav-item">
+						<a class="nav-link" href="https://twitter.com/repsiace"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-twitter"><path d="M23 3a10.9 10.9 0 0 1-3.14 1.53 4.48 4.48 0 0 0-7.86 3v1A10.66 10.66 0 0 1 3 4s-4 9 5 13a11.64 11.64 0 0 1-7 2c9 5 20 0 20-11.5a4.5 4.5 0 0 0-.08-.83A7.72 7.72 0 0 0 23 3z"></path></svg><span class="ms-2 visually-hidden">Twitter</span></a>
+					</li>
+				
+					<li class="nav-item">
+						<a class="nav-link" href="https://github.com/psiace/databend-internals"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-github"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"></path></svg><span class="ms-2 visually-hidden">GitHub</span></a>
+					</li>
+				
+			
+		</ul>
+		<div class="collapse navbar-collapse order-4 order-md-1">
+			<ul class="navbar-nav main-nav me-auto order-5 order-md-2">
+				
+					
+				
+				
+				
+					
+						<li class="nav-item docs active">
+							<a class="nav-link" href="https://databend-internals.psiace.me/docs/getting-started/introduction/">在线阅读</a>
+						</li>
+					
+				
+			</ul>
+			<div class="break order-6 d-md-none"></div>
+			
+		</div>
+	</div>
+</header>
+
+
+
+  
+<div class="wrap container" role="document">
+  <div class="content">
+    <div class="row flex-xl-nowrap">
+      
+<div class="col-lg-5 col-xl-4 docs-sidebar">
+	<nav class="docs-links" aria-label="Main navigation">
+			
+			
+			
+			
+					
+					
+					
+							<h3>入门指南</h3>
+							<ul class="list-unstyled">
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/getting-started/introduction/">简介</a></li>
+							
+					</ul>
+					
+					
+					
+					
+							<h3>基础导览</h3>
+							<ul class="list-unstyled">
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/the-basics/storage/">存储</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/the-basics/about-index/">索引</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/the-basics/executor-in-query-process/">查询执行</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/the-basics/query-optimization/">查询优化</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/the-basics/mpp/">大规模并行处理</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/the-basics/distributed/">分布式</a></li>
+							
+					</ul>
+					
+					
+					
+					
+							<h3>特性探索</h3>
+							<ul class="list-unstyled">
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/productivity-topics/databend-rustchinaconf/">使用 Rust 构建云原生数仓 Databend</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/productivity-topics/quality-assurance-in-databend/">Databend 的质量保障</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/productivity-topics/the-databend-way-to-sky/">多云转晴：Databend 的天空计算之路</a></li>
+							
+					</ul>
+					
+					
+					
+					
+							<h3>源码解读</h3>
+							<ul class="list-unstyled">
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/source-reading/intro/">Databend 源码阅读： 开篇</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/source-reading/init-session-handler/">Databend 源码阅读： Query Server 启动、Session 管理及请求处理</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/source-reading/pipeline-execution/">Databend 源码阅读： pipeline 的执行</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/source-reading/config/">Databend 源码阅读：配置管理</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/source-reading/pipeline-model-graph-based/">Databend 源码阅读： 图解 pipeline 调度模型</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/source-reading/storage-basics-read-partitions/">Databend 源码阅读： Storage 概要和 Read Partitions</a></li>
+							
+					</ul>
+					
+					
+					
+					
+							<h3>minibend</h3>
+							<ul class="list-unstyled">
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/minibend/intro/">第一弹 - minibend 简介</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/minibend/datasource/">第二弹 - Data Source</a></li>
+							
+					</ul>
+					
+					
+					
+					
+							<h3>开源贡献</h3>
+							<ul class="list-unstyled">
+							                           
+									<li><a class="docs-link active" href="https://databend-internals.psiace.me/docs/contribute-to-databend/development-environment/">如何设置 Databend 开发环境</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/contribute-to-databend/build-and-more/">轻松了解 Databend 构建</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/contribute-to-databend/build-with-pgo/">使用 PGO 优化 Databend 二进制构建</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/contribute-to-databend/write-and-run-tests/">如何为 Databend 添加新的测试</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/contribute-to-databend/how-to-contribute/">如何参与 Databend 开源协作</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/contribute-to-databend/tracing-in-databend/">Databend 全链路追踪</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/contribute-to-databend/how-to-benchmark/">如何对 Databend 进行基准测试</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/contribute-to-databend/how-to-profile/">Databend 性能剖析方法与工具</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/contribute-to-databend/how-to-write-functions/">如何为 Databend 添加新的函数</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/contribute-to-databend/how-to-write-system-table/">如何为 Databend 添加新的系统表</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/contribute-to-databend/release/">Databend 版本发布</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/contribute-to-databend/routine-maintenance/">Databend 的日常维护是怎么进行的</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/contribute-to-databend/faq/">常见问题解答</a></li>
+							
+					</ul>
+					
+					
+					
+					
+							<h3>专题研讨</h3>
+							<ul class="list-unstyled">
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/advanced-workshops/paper-list/">推荐阅读的论文清单</a></li>
+							
+					</ul>
+					
+					
+					
+					
+							<h3>贡献相关</h3>
+							<ul class="list-unstyled">
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/contributing/outline/">大纲速览</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/contributing/code-of-conduct/">行为准则</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/contributing/how-to-contributing/">如何协作</a></li>
+							
+					</ul>
+					
+					
+			
+	</nav>
+</div>
+
+      
+  
+  <nav class="docs-toc d-none d-xl-block col-xl-3" aria-label="Secondary navigation">
+  	<div class="page-links">
+  			<h3>On this page</h3>
+  			<nav id="TableOfContents">
+  					<ul>
+  							
+  							<li><a href="https://databend-internals.psiace.me/docs/contribute-to-databend/development-environment/#kuai-su-an-zhuang">快速安装</a></li>
+  							
+  							
+  							<li><a href="https://databend-internals.psiace.me/docs/contribute-to-databend/development-environment/#fen-bu-an-zhuang">分步安装</a></li>
+  							
+  									<ul>
+  											
+  											<li><a href="https://databend-internals.psiace.me/docs/contribute-to-databend/development-environment/#an-zhuang-rust-toolchain">安装 Rust toolchain</a></li>
+  											
+  											<li><a href="https://databend-internals.psiace.me/docs/contribute-to-databend/development-environment/#an-zhuang-bi-bei-yi-lai">安装必备依赖</a></li>
+  											
+  									</ul>
+  							
+  							
+  							<li><a href="https://databend-internals.psiace.me/docs/contribute-to-databend/development-environment/#bian-ji-qi-visual-studio-code">编辑器 - Visual Studio Code</a></li>
+  							
+  									<ul>
+  											
+  											<li><a href="https://databend-internals.psiace.me/docs/contribute-to-databend/development-environment/#cha-jian-tui-jian">插件推荐</a></li>
+  											
+  											<li><a href="https://databend-internals.psiace.me/docs/contribute-to-databend/development-environment/#li-yong-dev-containers-kai-fa-for-linux">利用 Dev Containers 开发（For Linux）</a></li>
+  											
+  									</ul>
+  							
+  							
+  							<li><a href="https://databend-internals.psiace.me/docs/contribute-to-databend/development-environment/#qi-ta-shi-yong-gong-ju-tui-jian">其他实用工具推荐</a></li>
+  							
+  									<ul>
+  											
+  											<li><a href="https://databend-internals.psiace.me/docs/contribute-to-databend/development-environment/#starship">starship</a></li>
+  											
+  											<li><a href="https://databend-internals.psiace.me/docs/contribute-to-databend/development-environment/#hyperfine">hyperfine</a></li>
+  											
+  									</ul>
+  							
+  							
+  					</ul>
+  			</nav>
+  	</div>
+  </nav>
+  
+
+      <main class="docs-content col-lg-11 col-xl-9">
+        <h1>如何设置 Databend 开发环境</h1>
+        <p class="lead">工欲善其事，必先利其器。在开启 Databend 贡献之旅前，一起来配置适合自己的开发环境吧。</p>
+        <h2 id="kuai-su-an-zhuang">快速安装</h2>
+<p>为方便开发者快速建立开发环境，Databend 维护了一个复杂的 shell 脚本，位于 <code>scripts/setup/dev_setup.sh</code> 。</p>
+<p>只需执行一条指令即可完成开发环境配置：</p>
+<pre data-lang="bash" style="background-color:#2b303b;color:#c0c5ce;" class="language-bash "><code class="language-bash" data-lang="bash"><span style="color:#bf616a;">$</span><span> make setup</span><span style="color:#bf616a;"> -d
+</span></code></pre>
+<blockquote>
+<p>注意：此过程会辅助安装部分 python 环境，可能会对本地原开发环境造成影响，建议预先执行以下命令以创建并启用专属虚拟环境。</p>
+<pre data-lang="bash" style="background-color:#2b303b;color:#c0c5ce;" class="language-bash "><code class="language-bash" data-lang="bash"><span style="color:#bf616a;">$</span><span> python</span><span style="color:#bf616a;"> -m</span><span> venv .databend
+</span><span style="color:#bf616a;">$</span><span> source .databend/bin/activate
+</span></code></pre>
+</blockquote>
+<p>如果遇到依赖缺失问题，可以参考「<strong>分步安装 - 测试必备</strong>」这一部分的内容安装。</p>
+<h2 id="fen-bu-an-zhuang">分步安装</h2>
+<p>这里以 <code>Fedora 36</code> 为例，考虑到不同系统和发行版之间的差异，你可能需要自行安装 <code>gcc</code>，<code>python</code> 和 <code>openssl</code> 。</p>
+<h3 id="an-zhuang-rust-toolchain">安装 Rust toolchain</h3>
+<p>推荐使用 rustup 来管理 Rust toolchain ，参考 <a href="https://rustup.rs/">https://rustup.rs/</a> 进行安装。</p>
+<p>对于 MacOS 和 Linux 用户，执行：</p>
+<pre data-lang="bash" style="background-color:#2b303b;color:#c0c5ce;" class="language-bash "><code class="language-bash" data-lang="bash"><span style="color:#bf616a;">$</span><span> curl</span><span style="color:#bf616a;"> --proto </span><span>&#39;</span><span style="color:#a3be8c;">=https</span><span>&#39;</span><span style="color:#bf616a;"> --tlsv1</span><span>.2</span><span style="color:#bf616a;"> -sSf</span><span> https://sh.rustup.rs | </span><span style="color:#bf616a;">sh
+</span></code></pre>
+<p>Databend 通常使用最新发布的 nightly 工具链进行开发，相关信息记录在 <code>rust-toolchain.toml</code> 中。</p>
+<p>Rustup 会在使用时对工具链进行自动重载，安装时只需默认配置。</p>
+<pre data-lang="bash" style="background-color:#2b303b;color:#c0c5ce;" class="language-bash "><code class="language-bash" data-lang="bash"><span style="color:#bf616a;">$</span><span> cargo build
+</span><span style="color:#bf616a;">info:</span><span> syncing channel updates for &#39;</span><span style="color:#a3be8c;">nightly-2022-05-19-x86_64-unknown-linux-gnu</span><span>&#39;
+</span><span style="color:#bf616a;">info:</span><span> latest update on 2022-05-19, rust version 1.63.0-nightly (cd282d7f7 2022-05-18)
+</span></code></pre>
+<h3 id="an-zhuang-bi-bei-yi-lai">安装必备依赖</h3>
+<p>以下列出了一些安装构建和测试必备依赖的关键步骤，说明及报错信息以注释形式呈现。</p>
+<p><strong>构建必备</strong></p>
+<pre data-lang="bash" style="background-color:#2b303b;color:#c0c5ce;" class="language-bash "><code class="language-bash" data-lang="bash"><span style="color:#65737e;"># common-hive-meta-store 需要，thrift not found
+</span><span style="color:#bf616a;">$</span><span> sudo dnf install thrift
+</span><span style="color:#65737e;"># openssl-sys 需要，Can&#39;t locate FindBin.pm, File/Compare.pm in @INC
+</span><span style="color:#bf616a;">$</span><span> sudo dnf install perl-FindBin perl-File-Compare
+</span><span style="color:#65737e;"># prost-build 需要，is `cmake` not installed?
+</span><span style="color:#65737e;"># The CMAKE_CXX_COMPILER: c++ is not a full path and was not found in the PATH.，安装 clang 时也会安装 gcc-c++ 和 llvm
+</span><span style="color:#bf616a;">$</span><span> sudo dnf install cmake clang
+</span></code></pre>
+<p><strong>测试必备</strong></p>
+<pre data-lang="bash" style="background-color:#2b303b;color:#c0c5ce;" class="language-bash "><code class="language-bash" data-lang="bash"><span style="color:#65737e;"># 功能测试和后续体验需要
+</span><span style="color:#bf616a;">$</span><span> sudo dnf install mysql
+</span><span style="color:#65737e;"># 包含目前功能测试和 lint 需要的所有 Python 依赖
+</span><span style="color:#bf616a;">$</span><span> cd tests
+</span><span style="color:#bf616a;">$</span><span> pip install poetry
+</span><span style="color:#bf616a;">$</span><span> poetry install
+</span><span style="color:#bf616a;">$</span><span> poetry shell
+</span><span style="color:#65737e;"># sqllogic 测试需要（包含在上面步骤中，按需选用）
+</span><span>(</span><span style="color:#bf616a;">tests</span><span>) $ cd logictest
+</span><span style="color:#bf616a;">$</span><span> pip install</span><span style="color:#bf616a;"> -r</span><span> requirements.txt
+</span><span style="color:#65737e;"># fuzz 测试需要
+</span><span>(</span><span style="color:#bf616a;">tests</span><span>) $ cd fuzz
+</span><span style="color:#bf616a;">$</span><span> pip install</span><span style="color:#bf616a;"> -r</span><span> requirements.txt
+</span></code></pre>
+<p><strong>Lint 必备</strong></p>
+<pre data-lang="bash" style="background-color:#2b303b;color:#c0c5ce;" class="language-bash "><code class="language-bash" data-lang="bash"><span style="color:#65737e;"># taplo fmt 需要
+</span><span style="color:#bf616a;">$</span><span> cargo install taplo-cli
+</span></code></pre>
+<h2 id="bian-ji-qi-visual-studio-code">编辑器 - Visual Studio Code</h2>
+<p><img src="https://code.visualstudio.com/assets/home/home-screenshot-linux-lg.png" alt="Visual Studio Code" /></p>
+<ul>
+<li>访问 <a href="https://code.visualstudio.com/">https://code.visualstudio.com/</a> ，安装 Visual Studio Code 。</li>
+</ul>
+<h3 id="cha-jian-tui-jian">插件推荐</h3>
+<p><strong>rust-analyzer</strong></p>
+<ul>
+<li>作者：<em>The Rust Programming Language</em></li>
+<li>为 Visual Studio Code 提供 Rust 语言支持。</li>
+</ul>
+<p><strong>crates</strong></p>
+<ul>
+<li>作者：<em>Seray Uzgur</em></li>
+<li>帮助 Rust 开发者管理 Cargo.toml 中的依赖。仅支持来源为 crates.io 的依赖。</li>
+</ul>
+<p><strong>CodeLLDB</strong></p>
+<ul>
+<li>作者：<em>Vadim Chugunov</em></li>
+<li>由 LLDB 驱动的原生调试工具。支持调试 C++ 、Rust 和其他编译语言。</li>
+</ul>
+<p><strong>Remote - Containers</strong></p>
+<ul>
+<li>作者：<em>Microsoft</em></li>
+<li>在 Docker 容器内打开任何文件夹或 Repo ，并利用 Visual Studio Code 的全部功能。</li>
+</ul>
+<h3 id="li-yong-dev-containers-kai-fa-for-linux">利用 Dev Containers 开发（For Linux）</h3>
+<p>安装「Remote - Containers」插件，打开 Databend 后会看到右下角弹出窗口并提示「Reopen in Container」。</p>
+<p><strong>安装 Docker</strong></p>
+<p>根据 <a href="https://docs.docker.com/engine/install/#server">Docker Docs - Install</a> 安装并启动对应你发行版的 docker 。</p>
+<p>以 <code>Fedora 36</code> 为例，步骤如下：</p>
+<pre data-lang="bash" style="background-color:#2b303b;color:#c0c5ce;" class="language-bash "><code class="language-bash" data-lang="bash"><span style="color:#65737e;"># 移除旧版本 docker
+</span><span style="color:#bf616a;">$</span><span> sudo dnf remove docker \
+</span><span>                  docker-client \
+</span><span>                  docker-client-latest \
+</span><span>                  docker-common \
+</span><span>                  docker-latest \
+</span><span>                  docker-latest-logrotate \
+</span><span>                  docker-logrotate \
+</span><span>                  docker-selinux \
+</span><span>                  docker-engine-selinux \
+</span><span>                  docker-engine
+</span><span style="color:#65737e;"># 设置存储库
+</span><span style="color:#bf616a;">$</span><span> sudo dnf</span><span style="color:#bf616a;"> -y</span><span> install dnf-plugins-core
+</span><span style="color:#bf616a;">$</span><span> sudo dnf config-manager \
+</span><span style="color:#bf616a;">    --add-repo </span><span>\
+</span><span>    https://download.docker.com/linux/fedora/docker-ce.repo
+</span><span style="color:#65737e;"># 安装 Docker Engine
+</span><span style="color:#bf616a;">$</span><span> sudo dnf install docker-ce docker-ce-cli containerd.io docker-compose-plugin
+</span></code></pre>
+<p><strong>将当前 User 添加到 'docker' group 中</strong></p>
+<p>参考  <a href="https://docs.docker.com/engine/install/linux-postinstall/">Docker Docs - PostInstall</a> 中 <strong>Manage Docker as a non-root user</strong> 一节配置，可能需要重启。</p>
+<p>步骤如下：</p>
+<pre data-lang="bash" style="background-color:#2b303b;color:#c0c5ce;" class="language-bash "><code class="language-bash" data-lang="bash"><span style="color:#65737e;"># 添加 docker 用户组
+</span><span style="color:#bf616a;">$</span><span> sudo groupadd docker
+</span><span style="color:#65737e;"># 将用户添加到 docker 这个组中
+</span><span style="color:#bf616a;">$</span><span> sudo usermod</span><span style="color:#bf616a;"> -aG</span><span> docker $</span><span style="color:#bf616a;">USER
+</span><span style="color:#65737e;"># 激活更改
+</span><span style="color:#bf616a;">$</span><span> newgrp docker
+</span><span style="color:#65737e;"># 更改权限以修复 permission denied
+</span><span style="color:#bf616a;">$</span><span> sudo chown &quot;$</span><span style="color:#bf616a;">USER</span><span>&quot;:&quot;$</span><span style="color:#bf616a;">USER</span><span>&quot; /home/&quot;$</span><span style="color:#bf616a;">USER</span><span>&quot;/.docker</span><span style="color:#bf616a;"> -R
+</span><span style="color:#bf616a;">$</span><span> sudo chmod g+rwx &quot;$</span><span style="color:#bf616a;">HOME</span><span style="color:#a3be8c;">/.docker</span><span>&quot;</span><span style="color:#bf616a;"> -R
+</span></code></pre>
+<p><strong>其他步骤</strong></p>
+<p>启用 Docker ：</p>
+<pre data-lang="bash" style="background-color:#2b303b;color:#c0c5ce;" class="language-bash "><code class="language-bash" data-lang="bash"><span style="color:#bf616a;">$</span><span> sudo systemctl start docker
+</span></code></pre>
+<p>点击左下角「打开远程窗口」选中「Reopen in Container」即可体验。</p>
+<h2 id="qi-ta-shi-yong-gong-ju-tui-jian">其他实用工具推荐</h2>
+<p>这里列出一些可能有助于 Databend 开发的实用工具，根据实际情况按需选用。</p>
+<h3 id="starship">starship</h3>
+<p>轻量级、反应迅速、可无限定制的高颜值终端！</p>
+<ul>
+<li><a href="https://github.com/starship/starship">https://github.com/starship/starship</a></li>
+</ul>
+<p><img src="https://raw.githubusercontent.com/starship/starship/master/media/demo.gif" alt="starship" /></p>
+<p>参考 <a href="https://github.com/starship/starship#-installation">starship - installation</a> 进行安装。</p>
+<pre data-lang="bash" style="background-color:#2b303b;color:#c0c5ce;" class="language-bash "><code class="language-bash" data-lang="bash"><span style="color:#bf616a;">curl -sS</span><span> https://starship.rs/install.sh | </span><span style="color:#bf616a;">sh
+</span></code></pre>
+<h3 id="hyperfine">hyperfine</h3>
+<p>命令行基准测试工具。</p>
+<ul>
+<li><a href="https://github.com/sharkdp/hyperfine">https://github.com/sharkdp/hyperfine</a></li>
+</ul>
+<p><img src="https://camo.githubusercontent.com/88a0cb35f42e02e28b0433d4b5e0029e52e723d8feb8df753e1ed06a5161db56/68747470733a2f2f692e696d6775722e636f6d2f7a31394f5978452e676966" alt="hyperfine" /></p>
+<p>参考 <a href="https://github.com/sharkdp/hyperfine#installation">hyperfine - installation</a> 进行安装。</p>
+<pre data-lang="bash" style="background-color:#2b303b;color:#c0c5ce;" class="language-bash "><code class="language-bash" data-lang="bash"><span style="color:#bf616a;">cargo</span><span> install hyperfine
+</span></code></pre>
+
+        
+        
+<div class="docs-navigation d-flex justify-content-between">
+  
+  
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+          
+        
+      
+        
+        
+          
+        
+      
+        
+        
+          
+        
+      
+        
+        
+          
+            
+              
+              <a href="https:&#x2F;&#x2F;databend-internals.psiace.me&#x2F;docs&#x2F;minibend&#x2F;datasource&#x2F;">
+                <div class="card my-1">
+                  <div class="card-body py-2">
+                    &larr; 第二弹 - Data Source
+                  </div>
+                </div>
+              </a>
+            
+            
+            
+          
+        
+      
+        
+        
+          
+        
+      
+        
+        
+          
+        
+      
+        
+        
+          
+        
+      
+        
+        
+          
+        
+      
+    
+  
+
+  
+  
+  
+  
+  
+    
+    
+    
+      
+      
+        
+      
+    
+      
+      
+        
+      
+    
+      
+      
+        
+      
+    
+      
+      
+        
+      
+    
+      
+      
+        
+      
+    
+      
+      
+        
+      
+    
+      
+      
+        
+          
+          
+          <a class="ms-auto" href="https:&#x2F;&#x2F;databend-internals.psiace.me&#x2F;docs&#x2F;advanced-workshops&#x2F;paper-list&#x2F;">
+            <div class="card my-1">
+              <div class="card-body py-2">
+                推荐阅读的论文清单 &rarr;
+              </div>
+            </div>
+          </a>
+          
+          
+          
+        
+      
+    
+      
+      
+        
+      
+    
+  
+</div>
+
+        
+        <script src="https://giscus.app/client.js" data-repo="psiace/databend-internals" data-repo-id="R_kgDOHQXEtA"
+          data-category="Announcements" data-category-id="DIC_kwDOHQXEtM4CPQhI" data-mapping="title"
+          data-reactions-enabled="1" data-emit-metadata="0" data-input-position="top" data-theme="light_protanopia"
+          data-lang="zh-CN" data-loading="lazy" crossorigin="anonymous" async>
+          </script>
+        
+      </main>
+    </div>
+  </div>
+</div>
+
+
+  
+    
+<footer class="footer text-muted">
+	<div class="container">
+		<div class="row">
+			<div class="col-lg-8 order-last order-lg-first">
+				<ul class="list-inline">
+					
+						<li class="list-inline-item">由 <a href="https://pages.github.com/">GitHub Pages</a> 、<a href="https://www.getzola.org/">Zola</a> 及 <a href="https://github.com/aaranxu/adidoks">AdiDoks</a> 强力驱动</li>
+					
+				</ul>
+			</div>
+			<div class="col-lg-8 order-first order-lg-last text-lg-end">
+				<ul class="list-inline">
+					
+						
+							<li class="list-inline-item"><a href="https://databend-internals.psiace.me/privacy-policy/">隐私政策</a></li>
+						
+							<li class="list-inline-item"><a href="https://databend-internals.psiace.me/docs/contributing/code-of-conduct/">行为准则</a></li>
+						
+					
+				</ul>
+			</div>
+		</div>
+	</div>
+</footer>
+
+  
+
+  
+<script type="text/javascript" src="https://databend-internals.psiace.me/js/main.js" defer></script>
+
+  
+</body>
+</html>

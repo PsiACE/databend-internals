@@ -1,0 +1,845 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="x-ua-compatible" content="ie=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+  <link rel="preload" as="font" href="https://databend-internals.psiace.me/fonts/vendor/jost/jost-v4-latin-regular.woff2" type="font/woff2" crossorigin>
+  <link rel="preload" as="font" href="https://databend-internals.psiace.me/fonts/vendor/jost/jost-v4-latin-700.woff2"  type="font/woff2" crossorigin>
+
+
+<link rel="stylesheet" href="https://databend-internals.psiace.me/main.css">
+
+
+
+  
+  
+    
+  
+
+  
+  
+    
+    
+  
+  
+  
+    
+  
+  
+  
+  
+    
+  
+  
+  
+
+
+  <meta name="robots" content="index, follow">
+  <meta name="googlebot" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1">
+  <meta name="bingbot" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1">
+
+
+	
+
+
+	
+
+<title>使用 Rust 构建云原生数仓 Databend | Databend 内幕大揭秘</title>
+<meta name="description" content="本篇文章是对 Databend 在 RustChinaConf 2022 上演讲的一个全文回顾。涉及「Databend 的架构和设计」以及「Databend 团队的 Rust 之旅」。">
+<link rel="canonical" href="https://databend-internals.psiace.me/docs/productivity-topics/databend-rustchinaconf/">
+
+
+
+
+
+
+
+
+
+
+<script type="application/ld+json">
+  {
+    "@context": "http://schema.org",
+    "@type": "BreadcrumbList",
+    
+      
+      
+        
+        
+        
+        
+        
+        
+        
+        
+          {
+            "@type": "ListItem",
+            "position":  1 ,
+            "name": "Home",
+            "item": "https://databend-internals.psiace.me/"
+          },
+          
+          
+          {
+            "@type": "ListItem",
+            "position":  2 ,
+            "name": "Docs",
+            "item": "https://databend-internals.psiace.me/docs/"
+          },
+        
+      
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+          
+          
+          {
+            "@type": "ListItem",
+            "position":  3 ,
+            "name": "Productivity Topics",
+            "item": "https://databend-internals.psiace.me/docs/productivity-topics/"
+          },
+        
+      
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+          
+          
+          {
+            "@type": "ListItem",
+            "position":  4 ,
+            "name": "Databend Rustchinaconf",
+            "item": "https://databend-internals.psiace.me/docs/productivity-topics/databend-rustchinaconf/"
+          },
+        
+      
+    
+  }
+</script>
+
+
+
+
+
+
+  <meta name="theme-color" content="#fff">
+  <link rel="apple-touch-icon" sizes="180x180" href="https://databend-internals.psiace.me/apple-touch-icon.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="https://databend-internals.psiace.me/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="https://databend-internals.psiace.me/favicon-16x16.png">
+  
+    <link rel="manifest" href="https://databend-internals.psiace.me/site.webmanifest" crossorigin>
+  
+
+
+  
+
+</head>
+
+
+
+<body class="docs single">
+  
+
+
+
+<div class="header-bar fixed-top"></div>
+<header class="navbar fixed-top navbar-expand-md navbar-light">
+	<div class="container">
+		<input class="menu-btn order-0" type="checkbox" id="menu-btn">
+		<label class="menu-icon d-md-none" for="menu-btn"><span class="navicon"></span></label>
+		<a class="navbar-brand order-1 order-md-0 me-auto" href="https://databend-internals.psiace.me">Databend 内幕大揭秘</a>
+		<button id="mode" class="btn btn-link order-2 order-md-4" type="button" aria-label="Toggle mode">
+			<span class="toggle-dark"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-moon"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg></span>
+			<span class="toggle-light"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-sun"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg></span>
+		</button>
+		<ul class="navbar-nav fork-me order-3 order-md-5">
+			
+				
+					<li class="nav-item">
+						<a class="nav-link" href="https://twitter.com/repsiace"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-twitter"><path d="M23 3a10.9 10.9 0 0 1-3.14 1.53 4.48 4.48 0 0 0-7.86 3v1A10.66 10.66 0 0 1 3 4s-4 9 5 13a11.64 11.64 0 0 1-7 2c9 5 20 0 20-11.5a4.5 4.5 0 0 0-.08-.83A7.72 7.72 0 0 0 23 3z"></path></svg><span class="ms-2 visually-hidden">Twitter</span></a>
+					</li>
+				
+					<li class="nav-item">
+						<a class="nav-link" href="https://github.com/psiace/databend-internals"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-github"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"></path></svg><span class="ms-2 visually-hidden">GitHub</span></a>
+					</li>
+				
+			
+		</ul>
+		<div class="collapse navbar-collapse order-4 order-md-1">
+			<ul class="navbar-nav main-nav me-auto order-5 order-md-2">
+				
+					
+				
+				
+				
+					
+						<li class="nav-item docs active">
+							<a class="nav-link" href="https://databend-internals.psiace.me/docs/getting-started/introduction/">在线阅读</a>
+						</li>
+					
+				
+			</ul>
+			<div class="break order-6 d-md-none"></div>
+			
+		</div>
+	</div>
+</header>
+
+
+
+  
+<div class="wrap container" role="document">
+  <div class="content">
+    <div class="row flex-xl-nowrap">
+      
+<div class="col-lg-5 col-xl-4 docs-sidebar">
+	<nav class="docs-links" aria-label="Main navigation">
+			
+			
+			
+			
+					
+					
+					
+							<h3>入门指南</h3>
+							<ul class="list-unstyled">
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/getting-started/introduction/">简介</a></li>
+							
+					</ul>
+					
+					
+					
+					
+							<h3>基础导览</h3>
+							<ul class="list-unstyled">
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/the-basics/storage/">存储</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/the-basics/about-index/">索引</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/the-basics/executor-in-query-process/">查询执行</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/the-basics/query-optimization/">查询优化</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/the-basics/mpp/">大规模并行处理</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/the-basics/distributed/">分布式</a></li>
+							
+					</ul>
+					
+					
+					
+					
+							<h3>特性探索</h3>
+							<ul class="list-unstyled">
+							                           
+									<li><a class="docs-link active" href="https://databend-internals.psiace.me/docs/productivity-topics/databend-rustchinaconf/">使用 Rust 构建云原生数仓 Databend</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/productivity-topics/quality-assurance-in-databend/">Databend 的质量保障</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/productivity-topics/the-databend-way-to-sky/">多云转晴：Databend 的天空计算之路</a></li>
+							
+					</ul>
+					
+					
+					
+					
+							<h3>源码解读</h3>
+							<ul class="list-unstyled">
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/source-reading/intro/">Databend 源码阅读： 开篇</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/source-reading/init-session-handler/">Databend 源码阅读： Query Server 启动、Session 管理及请求处理</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/source-reading/pipeline-execution/">Databend 源码阅读： pipeline 的执行</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/source-reading/config/">Databend 源码阅读：配置管理</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/source-reading/pipeline-model-graph-based/">Databend 源码阅读： 图解 pipeline 调度模型</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/source-reading/storage-basics-read-partitions/">Databend 源码阅读： Storage 概要和 Read Partitions</a></li>
+							
+					</ul>
+					
+					
+					
+					
+							<h3>minibend</h3>
+							<ul class="list-unstyled">
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/minibend/intro/">第一弹 - minibend 简介</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/minibend/datasource/">第二弹 - Data Source</a></li>
+							
+					</ul>
+					
+					
+					
+					
+							<h3>开源贡献</h3>
+							<ul class="list-unstyled">
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/contribute-to-databend/development-environment/">如何设置 Databend 开发环境</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/contribute-to-databend/build-and-more/">轻松了解 Databend 构建</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/contribute-to-databend/build-with-pgo/">使用 PGO 优化 Databend 二进制构建</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/contribute-to-databend/write-and-run-tests/">如何为 Databend 添加新的测试</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/contribute-to-databend/how-to-contribute/">如何参与 Databend 开源协作</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/contribute-to-databend/tracing-in-databend/">Databend 全链路追踪</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/contribute-to-databend/how-to-benchmark/">如何对 Databend 进行基准测试</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/contribute-to-databend/how-to-profile/">Databend 性能剖析方法与工具</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/contribute-to-databend/how-to-write-functions/">如何为 Databend 添加新的函数</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/contribute-to-databend/how-to-write-system-table/">如何为 Databend 添加新的系统表</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/contribute-to-databend/release/">Databend 版本发布</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/contribute-to-databend/routine-maintenance/">Databend 的日常维护是怎么进行的</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/contribute-to-databend/faq/">常见问题解答</a></li>
+							
+					</ul>
+					
+					
+					
+					
+							<h3>专题研讨</h3>
+							<ul class="list-unstyled">
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/advanced-workshops/paper-list/">推荐阅读的论文清单</a></li>
+							
+					</ul>
+					
+					
+					
+					
+							<h3>贡献相关</h3>
+							<ul class="list-unstyled">
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/contributing/outline/">大纲速览</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/contributing/code-of-conduct/">行为准则</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/contributing/how-to-contributing/">如何协作</a></li>
+							
+					</ul>
+					
+					
+			
+	</nav>
+</div>
+
+      
+  
+  <nav class="docs-toc d-none d-xl-block col-xl-3" aria-label="Secondary navigation">
+  	<div class="page-links">
+  			<h3>On this page</h3>
+  			<nav id="TableOfContents">
+  					<ul>
+  							
+  							<li><a href="https://databend-internals.psiace.me/docs/productivity-topics/databend-rustchinaconf/#databend-jian-jie">Databend 简介</a></li>
+  							
+  									<ul>
+  											
+  											<li><a href="https://databend-internals.psiace.me/docs/productivity-topics/databend-rustchinaconf/#shen-me-shi-databend">什么是 Databend</a></li>
+  											
+  											<li><a href="https://databend-internals.psiace.me/docs/productivity-topics/databend-rustchinaconf/#databend-te-xing">Databend 特性</a></li>
+  											
+  									</ul>
+  							
+  							
+  							<li><a href="https://databend-internals.psiace.me/docs/productivity-topics/databend-rustchinaconf/#databend-jia-gou-yu-she-ji">Databend 架构与设计</a></li>
+  							
+  									<ul>
+  											
+  											<li><a href="https://databend-internals.psiace.me/docs/productivity-topics/databend-rustchinaconf/#zong-lan">总览</a></li>
+  											
+  											<li><a href="https://databend-internals.psiace.me/docs/productivity-topics/databend-rustchinaconf/#jia-gou-yu-she-ji-meta">架构与设计 - Meta</a></li>
+  											
+  											<li><a href="https://databend-internals.psiace.me/docs/productivity-topics/databend-rustchinaconf/#jia-gou-yu-she-ji-computing">架构与设计 - Computing</a></li>
+  											
+  											<li><a href="https://databend-internals.psiace.me/docs/productivity-topics/databend-rustchinaconf/#jia-gou-yu-she-ji-storage">架构与设计 - Storage</a></li>
+  											
+  									</ul>
+  							
+  							
+  							<li><a href="https://databend-internals.psiace.me/docs/productivity-topics/databend-rustchinaconf/#what-s-new">What&#x27;s New</a></li>
+  							
+  									<ul>
+  											
+  											<li><a href="https://databend-internals.psiace.me/docs/productivity-topics/databend-rustchinaconf/#geng-jia-you-hao-de-cha-xun-ti-yan">更加友好的查询体验</a></li>
+  											
+  											<li><a href="https://databend-internals.psiace.me/docs/productivity-topics/databend-rustchinaconf/#quan-xin-planner">全新 Planner</a></li>
+  											
+  											<li><a href="https://databend-internals.psiace.me/docs/productivity-topics/databend-rustchinaconf/#lei-xing-an-quan-de-expression">类型安全的 Expression</a></li>
+  											
+  									</ul>
+  							
+  							
+  							<li><a href="https://databend-internals.psiace.me/docs/productivity-topics/databend-rustchinaconf/#in-rust-way">In Rust Way</a></li>
+  							
+  									<ul>
+  											
+  											<li><a href="https://databend-internals.psiace.me/docs/productivity-topics/databend-rustchinaconf/#kuai-su-die-dai">快速迭代</a></li>
+  											
+  											<li><a href="https://databend-internals.psiace.me/docs/productivity-topics/databend-rustchinaconf/#ce-shi-feng-ge">测试风格</a></li>
+  											
+  											<li><a href="https://databend-internals.psiace.me/docs/productivity-topics/databend-rustchinaconf/#dai-ma-yan-jin">代码演进</a></li>
+  											
+  											<li><a href="https://databend-internals.psiace.me/docs/productivity-topics/databend-rustchinaconf/#cai-keng-xiao-ji">踩坑小记</a></li>
+  											
+  									</ul>
+  							
+  							
+  							<li><a href="https://databend-internals.psiace.me/docs/productivity-topics/databend-rustchinaconf/#she-qu">社区</a></li>
+  							
+  									<ul>
+  											
+  											<li><a href="https://databend-internals.psiace.me/docs/productivity-topics/databend-rustchinaconf/#kai-yuan-xiang-mu">开源项目</a></li>
+  											
+  											<li><a href="https://databend-internals.psiace.me/docs/productivity-topics/databend-rustchinaconf/#ke-cheng">课程</a></li>
+  											
+  											<li><a href="https://databend-internals.psiace.me/docs/productivity-topics/databend-rustchinaconf/#shang-you-you-xian">上游优先</a></li>
+  											
+  									</ul>
+  							
+  							
+  							<li><a href="https://databend-internals.psiace.me/docs/productivity-topics/databend-rustchinaconf/#databend-cloud">Databend Cloud</a></li>
+  							
+  									<ul>
+  											
+  											<li><a href="https://databend-internals.psiace.me/docs/productivity-topics/databend-rustchinaconf/#yi-zhan-shi-shu-ju-fen-xi-yun-ping-tai">一站式数据分析云平台</a></li>
+  											
+  									</ul>
+  							
+  							
+  					</ul>
+  			</nav>
+  	</div>
+  </nav>
+  
+
+      <main class="docs-content col-lg-11 col-xl-9">
+        <h1>使用 Rust 构建云原生数仓 Databend</h1>
+        <p class="lead"><blockquote>本篇文章是对 Databend 在 RustChinaConf 2022 上演讲的一个全文回顾。涉及「Databend 的架构和设计」以及「Databend 团队的 Rust 之旅」。</blockquote></p>
+        <h2 id="databend-jian-jie">Databend 简介</h2>
+<p>那么，在进入正题之前，让我们先来回答这样一个问题：“什么是 Databend”？</p>
+<h3 id="shen-me-shi-databend">什么是 Databend</h3>
+<p><img src="https://databend-internals.psiace.me/productivity-topics/Databend-RustConfChina2022/Databend-RustConfChina2022_05.png" alt="what's databend" /></p>
+<p>官方的说法是：Databend 是一个使用 Rust 研发、开源、完全面向云架构的新式数仓。</p>
+<p>借用当下大数据分析领域最流行的两个数据库产品打个比方：Databend 就像是开源的 Snowflake 或者说云原生的 Clickhouse 。</p>
+<ul>
+<li>网站：<a href="https://databend.rs">https://databend.rs</a></li>
+<li>GitHub：<a href="https://github.com/datafuselabs/databend">https://github.com/datafuselabs/databend</a></li>
+</ul>
+<h3 id="databend-te-xing">Databend 特性</h3>
+<p>作为新式数仓，Databend 有哪些基本特性呢？</p>
+<p><img src="https://databend-internals.psiace.me/productivity-topics/Databend-RustConfChina2022/Databend-RustConfChina2022_06.png" alt="databend features" /></p>
+<ul>
+<li>首先是弹性：得益于存算分离的架构与设计，Databend 完全可以做到按需、按量弹性扩展。</li>
+<li>而向量化执行引擎、单指令流多数据流（SIMD）、大规模并行处理（MPP），共同为 Databend 的性能保驾护航。</li>
+<li>Databend 的存储引擎受 Git 启发，使用快照存储数据。支持 <code>TIME TRIVAL</code>，可以轻松回滚到任意时间节点。</li>
+<li>另外，近年来经常提的一个词叫“海量数据”，在这些数据中，由各种各样程序产生的半结构化数据是占到相当大一部分比重的。Databend 内置 ARRAY, MAP, JSON 这些数据类型，能够帮助用户进一步发掘半结构化数据的价值。</li>
+<li>作为一个新生数仓，不管从研发还是客户的角度上，都非常关心生态问题。Databend 使用 SQL 语句进行查询，并且对 MySQL 和 ClickHouse 协议进行兼容，从而与现有工具和 BI 系统无缝集成，比如数据科学家喜欢的 Jupyter、以及用于生成图表的 Metabase 。 </li>
+</ul>
+<h2 id="databend-jia-gou-yu-she-ji">Databend 架构与设计</h2>
+<p>刚刚介绍了 Databend 的一些基本信息，接下来，让我们一起走进 Databend 的架构和设计。看看一个存算分离的云原生数仓该是什么样子。</p>
+<h3 id="zong-lan">总览</h3>
+<p><img src="https://databend-internals.psiace.me/productivity-topics/Databend-RustConfChina2022/Databend-RustConfChina2022_08.png" alt="databend arch" /></p>
+<p>左边是 Databend 的一个架构图。</p>
+<p>最上一层对接 AI、BI 等应用，最下一层打通 S3、GCS、IPFS 等存储系统。中间三层则是 Databend 的主体部分。</p>
+<p>Databend 可以分成 Meta、Computing 和 Storage 三层，也就是元数据、计算和存储。</p>
+<p>说是存储层，其实叫做数据访问层更贴切一些。</p>
+<h3 id="jia-gou-yu-she-ji-meta">架构与设计 - Meta</h3>
+<p><img src="https://databend-internals.psiace.me/productivity-topics/Databend-RustConfChina2022/Databend-RustConfChina2022_09.png" alt="databend arch - meta" /></p>
+<p>Meta 是一个多租户、高可用的分布式 key-value 存储服务，具备事务能力。</p>
+<p>它会负责管理元数据，像索引和集群的一些信息；Meta 还具备租户管理的能力，包括权限管理以及配额使用统计。</p>
+<p>当然，安全相关的部分也由 Meta 承担，比如用户登录认证。</p>
+<h3 id="jia-gou-yu-she-ji-computing">架构与设计 - Computing</h3>
+<p><img src="https://databend-internals.psiace.me/productivity-topics/Databend-RustConfChina2022/Databend-RustConfChina2022_10.png" alt="databend arch - computing" /></p>
+<p>计算层可以由多个集群组成，不同集群可以承担不同的工作负载。每个集群又可以由多个计算节点（node）组成。</p>
+<p>计算层中的核心组件有三个：</p>
+<ul>
+<li>执行计划，也就是 Planner ：用于指导整个计算流水线的编排与生成。</li>
+<li>优化器，Optimizer：基于规则做一些优化，比如谓词下推或是去掉不必要的列。</li>
+<li>处理器 （Processors）是执行计算逻辑的核心组件：Databend 最近还落地了 Pull &amp; Push 模型的流水线，大幅提高了处理器的执行效率。整个 Pipeline 是一个有向无环图，每个节点是一个处理器，每条边由处理器的 InPort 和 OutPort 相连构成，数据到达不同的处理器进行计算后，通过边流向下一个处理器，多个处理器可以并行计算，在集群模式下还可以跨节点分布式执行。</li>
+</ul>
+<h3 id="jia-gou-yu-she-ji-storage">架构与设计 - Storage</h3>
+<p><img src="https://databend-internals.psiace.me/productivity-topics/Databend-RustConfChina2022/Databend-RustConfChina2022_11.png" alt="databend arch - storage" /></p>
+<p>Databend 使用 Parquet 格式储存数据，为了加快查找（Partition Pruning），Databend 为每个 Parquet 提供了自己的索引：min_max，bloom 。这一部分工作是放在存储层完成的。</p>
+<p>前面其实有提到，存储层的另一个说法是数据访问层。</p>
+<p>一方面，它支持对接多种对象存储服务，像 AWS S3 和 Azure Blob，做到让数据自由流动。当然也支持在本地文件系统做测试，但是没有做专门的性能优化。</p>
+<p>另一方面，存储层也支持挂载多种 catalog，在社区小伙伴的帮助下，Databend 完成了 Hive 引擎的对接，支持进行一些简单的查询。</p>
+<h2 id="what-s-new">What's New</h2>
+<p>“存算分离”、“云原生”对于新式数仓而言，只能算是基本特性。除了卯足劲大搞性能优化之外，还有没有其他值得关注的地方呢？让我们一起来看一下。</p>
+<h3 id="geng-jia-you-hao-de-cha-xun-ti-yan">更加友好的查询体验</h3>
+<p>好的产品是一定会强调用户体验的，Databend 作为一款云数仓产品，自然要关注查询体验。</p>
+<p>那么，在新的 parser 和 planner 中，Databend 引入了语义检查的环节，在查询编译过程中就可以拦截大部分错误。</p>
+<p><img src="https://databend-internals.psiace.me/productivity-topics/Databend-RustConfChina2022/Databend-RustConfChina2022_13.png" alt="databend - query check" /></p>
+<p>右图展示的正是两类语义错误，一类是使用了不存在的 Column ，一类是 Column 具有歧义。</p>
+<h3 id="quan-xin-planner">全新 Planner</h3>
+<p>其实新 planner 除了更加友好的查询体验之外，还为支持复杂查询打下了扎实的基础。那么 Databend 现在可以支持多种 Join 和关联子查询，感兴趣的小伙伴可以体验一下。</p>
+<p>在引入新 Planner 之后，计算层的架构得到进一步的划分，当一个查询请求进来以后，会经过以下处理：</p>
+<p><img src="https://databend-internals.psiace.me/productivity-topics/Databend-RustConfChina2022/Databend-RustConfChina2022_14.png" alt="databend - planner" /></p>
+<ul>
+<li>基于 nom 定制的解析器会负责生成抽象语法树，值得一提的是，在新 parser 中支持新语句也非常方便。</li>
+<li>Binder 会对语法树进行语义分析，并且生成一个初始的 Logical Plan（逻辑计划）。</li>
+<li>基于规则的 Cascades 优化器框架会对 Logical Plan 进行改写和优化，最终生成一个可执行的 Physical Plan 。</li>
+<li>Physical Plan  经由解释器翻译成可执行的 Pipeline，并交由 Databend 的 Processor 执行框架进行计算。</li>
+<li>在处理器执行之后得到一些 data blocks 用于生成最终的查询结果。</li>
+</ul>
+<p>对新 plannere 感兴趣的朋友可以看一下下面列出的内容。</p>
+<ul>
+<li><a href="https://databend.rs/doc/contributing/rfcs/new-sql-planner-framework">New SQL Planner Framework Design | Databend</a></li>
+<li><a href="https://mp.weixin.qq.com/s/yb3KivhKXmTyCDHVDXpYdQ">Databend SQL Planner 全新设计</a></li>
+</ul>
+<h3 id="lei-xing-an-quan-de-expression">类型安全的 Expression</h3>
+<p>Databend 最近正在研发一套全新的表达式框架，其中包含一套形式化的类型系统，算是使用 Rust 自定义类型系统的最佳范例。</p>
+<p><img src="https://databend-internals.psiace.me/productivity-topics/Databend-RustConfChina2022/Databend-RustConfChina2022_15.png" alt="databend - typed type" /></p>
+<p>通过引入形式化方法，可以提高设计的可靠性和健壮性。对应到新表达式框架中：</p>
+<p>一方面，引入类型检查，可以拦截 SQL 编译阶段的所有类型错误，运行时不再需要关注类型信息。</p>
+<p>另一方面，实现了类型安全的向下转型（downcast），得益于 Rust 的类型系统，只要函数能够正常编译就不需要担心类型转换的问题。</p>
+<p>当然，性能和开发体验也是新表达式框架非常关心的部分：</p>
+<p>通过 Enum 进行静态分发，可以减少运行时开销，降低开发难度。</p>
+<p>另外，在函数签名中大量使用泛型，减少手写的重载。</p>
+<p>图的右侧给出了一个例子：用几行代码即可定义一个快速、类型安全、自动向下转型并支持向量化的二元函数。</p>
+<p>如果对使用 Rust 自定义类型系统感兴趣，可以阅读下面列出的材料。我们也正在积极推进这套表达式框架的开发和迁移工作，欢迎体验。</p>
+<ul>
+<li><a href="https://github.com/datafuselabs/databend/discussions/5438">RFC | Formal Type System</a></li>
+<li><a href="https://github.com/andylokandy/typed-type-exercise-in-rust">Typed Type Exercise in Rust</a></li>
+<li><a href="https://github.com/datafuselabs/databend/issues/6547">Tracking issue for new expression framework</a></li>
+</ul>
+<h2 id="in-rust-way">In Rust Way</h2>
+<p>作为用 Rust 开发的大型项目，Databend 在一年半的迭代中也积累了一些经验，借这个机会和大家分享一下。</p>
+<h3 id="kuai-su-die-dai">快速迭代</h3>
+<p>Databend 选择 Rust ，其实有很多原因：极客精神、健壮性等。</p>
+<p>团队成员老 C 也分享了他的一个想法：</p>
+<ul>
+<li>在解决可预期的“编译时间”和难预期的“运行时问题”之间，更应该选择前者。人生苦短，浪费时间在解决运行时的各种内存问题太不值当了。</li>
+</ul>
+<p>参见：<a href="https://www.codedump.info/post/20220227-weekly-7/">周刊（第7期）：一个C系程序员的Rust初体验 - codedump的网络日志</a></p>
+<p><img src="https://databend-internals.psiace.me/productivity-topics/Databend-RustConfChina2022/Databend-RustConfChina2022_17.png" alt="databend - fast iter" /></p>
+<p>这里给大家分享一下 Databend 的快速迭代方法论。</p>
+<ul>
+<li>首先是要及时更新工具链和依赖关系，分享上游的最新成果。</li>
+<li>利用好 fmt 和 clippy 这些工具，打造适合团队协作的代码风格。</li>
+<li>作为大型项目，依赖管理其实很重要，要利用好生态中的一些管理和审计工具。
+<ul>
+<li>比如大家常用的 audit ，可以帮忙审计安全漏洞。</li>
+</ul>
+</li>
+<li>另外，也要积极探索一些能够改善开发体验的新工具。
+<ul>
+<li>比如 nextest，能够在数十秒将几分钟的测试跑完。</li>
+<li>再比如 goldenfiles 测试，在 similar 的加持下，可以很方便找出预期与实际结果的差异。</li>
+</ul>
+</li>
+</ul>
+<h3 id="ce-shi-feng-ge">测试风格</h3>
+<p><img src="https://databend-internals.psiace.me/productivity-topics/Databend-RustConfChina2022/Databend-RustConfChina2022_18.png" alt="databend - test style" /></p>
+<p>Databend 的单元测试组织形式有别于一般的 Rust 项目，像上图左侧展示的这样，针对性地禁用了 src 目录下的 doctest 和 test 。</p>
+<p>主要的优点就是节省构建测试需要的时间。</p>
+<p>一方面，减少遍历和检查的环节，并削减要构建的 test 目标；另一方面，如果不修改 src ，添加新单元测试时只需要编译对应的 test 目标。</p>
+<p>当然这样做也有缺点：不利于软件设计上的分层，需要引入编码规范并且更加依赖开发者的主动维护。</p>
+<p>上图右侧是 goldenfiles 的一个测试文件片段。Golden Files 测试是一种常用的测试手段，相当于是一类快照测试。我们计划大量使用它来替代手写断言。一方面变更测试文件无需重新编译，另一方面提供自动生成的办法可以减轻写测试的痛苦。</p>
+<p>测试相关的一些阅读材料见下：</p>
+<ul>
+<li><a href="https://matklad.github.io/2021/02/27/delete-cargo-integration-tests.html">Delete Cargo Integration Tests</a></li>
+<li><a href="https://bohutang.me/2021/09/14/databend-cloud-warehouse-how-to-test/">Databend 社区如何做测试 [ 虎哥的博客 ] (bohutang.me)</a></li>
+<li><a href="https://databend-internals.psiace.me/docs/contribute-to-databend/write-and-run-tests/">如何为 Databend 添加新的测试 | Databend 内幕大揭秘</a></li>
+</ul>
+<h3 id="dai-ma-yan-jin">代码演进</h3>
+<p>重构要兼顾性能和开发人员的心智负担，这里分享 Databend 代码演进的两个例子。</p>
+<p><strong>eg.1</strong></p>
+<p><img src="https://databend-internals.psiace.me/productivity-topics/Databend-RustConfChina2022/Databend-RustConfChina2022_19.png" alt="databend - code refactor 1" /></p>
+<p>第一个例子是大家编写异步代码时常用的 async trait ，用起来很方便，就像左上角的例子，但是有一些小缺点：</p>
+<p>一是动态调度会带来开销，比较难做一些编译器的优化。
+二是内存分配也会带来开销，每次调用都需要在堆上新建一个对象。如果是经常调用的函数，就会对程序的性能造成比较大的影响。</p>
+<p>那么有没有解决办法呢？左下角的例子中使用泛型关联类型对它进行了改写，虽然避免了开销，但是实现起来还是相对复杂一些。</p>
+<p>右上角是使用 SAP 的同学作的 async-trait 分叉，只需要加一个 <code>unboxed_simple</code> 就可以做到同样的效果，省心省力。</p>
+<ul>
+<li><a href="https://www.skyzh.dev/posts/articles/2022-01-31-gat-async-trait/">Skyzh | 2022-01-31-gat-async-trait/</a></li>
+<li><a href="https://github.com/dtolnay/async-trait/pull/189">Allow 'async fns' to return 'impl Future'</a></li>
+<li><a href="https://github.com/wvwwvwwv/async-trait">wvwwvwwv‘s async-trait fork with unboxed</a></li>
+</ul>
+<p><strong>eg.2</strong></p>
+<p><img src="https://databend-internals.psiace.me/productivity-topics/Databend-RustConfChina2022/Databend-RustConfChina2022_20.png" alt="databend - code refactor 2" /></p>
+<p>第二个例子是关于分发的，分发其实就是要确定调用接口时是调用哪个实例和它具体的类型。分发的方式不同，其成本也不同。</p>
+<p>左上角的例子是利用 trait object 动态分发，当然这会有一些开销。</p>
+<p>左下角使用 enum 进行静态分发，从语法上更便利。有数十倍的一个提升，但是 enum-dispatch 实现上比较硬核，基本上无法自动展开，需要自己手写规则。 </p>
+<p>在新表达式框架中，使用 <code>EnumAsInner</code> 完成静态分发，代码更简洁，而且对 IDE 也更友好。</p>
+<ul>
+<li><a href="https://docs.rs/enum_dispatch/0.1.2/enum_dispatch/">enum_dispatch - Rust (docs.rs)</a></li>
+<li><a href="https://github.com/datafuselabs/databend/pull/6576">feat(expr): add new crate <code>common-expression</code></a></li>
+</ul>
+<h3 id="cai-keng-xiao-ji">踩坑小记</h3>
+<p>尽管 Rust 是一门健壮的语言，但程序的健壮性还需要开发者自己用心，这里分享两例完全可以避免的内存问题。</p>
+<p><strong>eg.1</strong></p>
+<p><img src="https://databend-internals.psiace.me/productivity-topics/Databend-RustConfChina2022/Databend-RustConfChina2022_21.png" alt="databend - bug 1" /></p>
+<p>之前，上图中的代码片段没有加环境变量判断，导致程序会默认开启日志发送服务。</p>
+<p>但可能这个时候集群里没开对应的日志收集服务，没发的日志被 buffer 住，时间久了越攒越多，自然引发 OOM 。</p>
+<p><strong>eg.2</strong></p>
+<p><img src="https://databend-internals.psiace.me/productivity-topics/Databend-RustConfChina2022/Databend-RustConfChina2022_22.png" alt="databend - bug 2" /></p>
+<p>左图这个代码片段其实 tracing 的文档中已经给了提示。</p>
+<p>由于进入的 span 在异步执行结束后无法正确释放，会造成内存。onesignal 为此专门写了一篇文章，比较值得读。</p>
+<ul>
+<li><a href="https://github.com/tokio-rs/tracing#in-asynchronous-code">https://github.com/tokio-rs/tracing#in-asynchronous-code</a></li>
+<li><a href="https://onesignal.com/blog/solving-memory-leaks-in-rust/">Fixing Memory Leaks in Rust (onesignal.com)</a></li>
+</ul>
+<h2 id="she-qu">社区</h2>
+<p>Databend 的成长离不开 Rust 社区和开源共同体，Databend 社区也在为共筑更好的 Rust 生态而努力。</p>
+<h3 id="kai-yuan-xiang-mu">开源项目</h3>
+<p>这里介绍三个 Databend 社区维护的开源项目。</p>
+<p><strong>openraft</strong></p>
+<ul>
+<li>
+<p><a href="https://github.com/datafuselabs/openraft">https://github.com/datafuselabs/openraft</a></p>
+<p>openraft 是基于 tokio 运行时的异步共识算法实现，是披着 Raft 外壳的 Paxos，旨在成为构建下一代分布式系统的基石。</p>
+<p>目前已经应用在 SAP / Azure 的项目中。</p>
+</li>
+</ul>
+<p><strong>opendal</strong></p>
+<ul>
+<li>
+<p><a href="https://github.com/datafuselabs/opendal">https://github.com/datafuselabs/opendal</a></p>
+<p>opendal 的口号是：让所有人都可以无痛、高效地访问不同存储服务。</p>
+<p>近期的提案包括实现一个命令行工具，以操作不同服务中存储的数据，并支持数据迁移。</p>
+</li>
+</ul>
+<p><strong>opensrv</strong></p>
+<ul>
+<li>
+<p><a href="https://github.com/datafuselabs/opensrv">https://github.com/datafuselabs/opensrv</a></p>
+<p>opensrv 为数据库项目提供高性能和高可度可靠的服务端协议兼容，建立在 tokio 运行时上的异步实现。目前在 CeresDB 中得到应用。</p>
+</li>
+</ul>
+<h3 id="ke-cheng">课程</h3>
+<p><img src="https://databend-internals.psiace.me/productivity-topics/Databend-RustConfChina2022/Databend-RustConfChina2022_25.png" alt="databend - course" /></p>
+<p>自 21 年 8 月起，Databend 和 Rust 中文社区、知数堂，
+启动了面向 Rust 和数据库开发人员的公开课计划，前后一共输出 34 期课程。</p>
+<ul>
+<li><a href="https://space.bilibili.com/275673537/channel/seriesdetail?sid=488491&amp;ctype=0">Rust 培养计划（25 期）</a></li>
+<li><a href="https://space.bilibili.com/275673537/channel/collectiondetail?sid=87507&amp;ctype=0">Rust 新手入门系列课程（9 期）</a></li>
+</ul>
+<p>新一轮的公开课也在积极筹备，敬请期待。</p>
+<h3 id="shang-you-you-xian">上游优先</h3>
+<p>对待开源，Databend 一直秉承着上游优先的理念。也就是说开源协作理所当然地需要将变更反馈给社区。不光是做一个好的用户，也要做一个好的开发者。</p>
+<ul>
+<li><a href="https://xuanwo.io/reports/2022-25/">2022-25: 开源当以上游优先 (xuanwo.io)</a></li>
+</ul>
+<p>一个典型的例子是 arrow2 ，Databend 的核心依赖，我们应该是最早一批使用 arrow2 的项目。在 arrow2 的贡献者中有 9 位是 Databend Labs 成员，其中有三位是 top 15 贡献者。</p>
+<h2 id="databend-cloud">Databend Cloud</h2>
+<p>Databend 是一款云数仓，不仅仅是云原生数仓，更是云上数仓。</p>
+<h3 id="yi-zhan-shi-shu-ju-fen-xi-yun-ping-tai">一站式数据分析云平台</h3>
+<p><img src="https://databend-internals.psiace.me/productivity-topics/Databend-RustConfChina2022/Databend-RustConfChina2022_28.png" alt="databend - cloud" /></p>
+<p>Databend Cloud 是 Databend 打造的一款易用、低成本、高性能的新一代大数据分析平台，让用户更加专注数据价值的挖掘。</p>
+<p>目前 Databend Cloud 正处于测试阶段，有需要的朋友可以访问 <a href="https://app.databend.com/">app.databend.com</a> 注册帐号体验。</p>
+
+        
+        
+<div class="docs-navigation d-flex justify-content-between">
+  
+  
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+          
+        
+      
+        
+        
+          
+        
+      
+        
+        
+          
+        
+      
+        
+        
+          
+        
+      
+        
+        
+          
+        
+      
+        
+        
+          
+        
+      
+        
+        
+          
+            
+              
+              <a href="https:&#x2F;&#x2F;databend-internals.psiace.me&#x2F;docs&#x2F;the-basics&#x2F;distributed&#x2F;">
+                <div class="card my-1">
+                  <div class="card-body py-2">
+                    &larr; 分布式
+                  </div>
+                </div>
+              </a>
+            
+            
+            
+          
+        
+      
+        
+        
+          
+        
+      
+    
+  
+
+  
+  
+  
+  
+  
+    
+    
+    
+      
+      
+        
+      
+    
+      
+      
+        
+      
+    
+      
+      
+        
+      
+    
+      
+      
+        
+          
+          
+          <a class="ms-auto" href="https:&#x2F;&#x2F;databend-internals.psiace.me&#x2F;docs&#x2F;source-reading&#x2F;intro&#x2F;">
+            <div class="card my-1">
+              <div class="card-body py-2">
+                Databend 源码阅读： 开篇 &rarr;
+              </div>
+            </div>
+          </a>
+          
+          
+          
+        
+      
+    
+      
+      
+        
+      
+    
+      
+      
+        
+      
+    
+      
+      
+        
+      
+    
+      
+      
+        
+      
+    
+  
+</div>
+
+        
+        <script src="https://giscus.app/client.js" data-repo="psiace/databend-internals" data-repo-id="R_kgDOHQXEtA"
+          data-category="Announcements" data-category-id="DIC_kwDOHQXEtM4CPQhI" data-mapping="title"
+          data-reactions-enabled="1" data-emit-metadata="0" data-input-position="top" data-theme="light_protanopia"
+          data-lang="zh-CN" data-loading="lazy" crossorigin="anonymous" async>
+          </script>
+        
+      </main>
+    </div>
+  </div>
+</div>
+
+
+  
+    
+<footer class="footer text-muted">
+	<div class="container">
+		<div class="row">
+			<div class="col-lg-8 order-last order-lg-first">
+				<ul class="list-inline">
+					
+						<li class="list-inline-item">由 <a href="https://pages.github.com/">GitHub Pages</a> 、<a href="https://www.getzola.org/">Zola</a> 及 <a href="https://github.com/aaranxu/adidoks">AdiDoks</a> 强力驱动</li>
+					
+				</ul>
+			</div>
+			<div class="col-lg-8 order-first order-lg-last text-lg-end">
+				<ul class="list-inline">
+					
+						
+							<li class="list-inline-item"><a href="https://databend-internals.psiace.me/privacy-policy/">隐私政策</a></li>
+						
+							<li class="list-inline-item"><a href="https://databend-internals.psiace.me/docs/contributing/code-of-conduct/">行为准则</a></li>
+						
+					
+				</ul>
+			</div>
+		</div>
+	</div>
+</footer>
+
+  
+
+  
+<script type="text/javascript" src="https://databend-internals.psiace.me/js/main.js" defer></script>
+
+  
+</body>
+</html>

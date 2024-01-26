@@ -1,0 +1,676 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="x-ua-compatible" content="ie=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+  <link rel="preload" as="font" href="https://databend-internals.psiace.me/fonts/vendor/jost/jost-v4-latin-regular.woff2" type="font/woff2" crossorigin>
+  <link rel="preload" as="font" href="https://databend-internals.psiace.me/fonts/vendor/jost/jost-v4-latin-700.woff2"  type="font/woff2" crossorigin>
+
+
+<link rel="stylesheet" href="https://databend-internals.psiace.me/main.css">
+
+
+
+  
+  
+    
+  
+
+  
+  
+    
+    
+  
+  
+  
+    
+  
+  
+  
+  
+    
+  
+  
+  
+
+
+  <meta name="robots" content="index, follow">
+  <meta name="googlebot" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1">
+  <meta name="bingbot" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1">
+
+
+	
+
+
+	
+
+<title>第二弹 - Data Source | Databend 内幕大揭秘</title>
+<meta name="description" content="minibend 系列的第二篇，主要讲 Data Source 相关的一些内容。minibend：从零开始、使用 Rust 构建的查询引擎。">
+<link rel="canonical" href="https://databend-internals.psiace.me/docs/minibend/datasource/">
+
+
+
+
+
+
+
+
+
+
+<script type="application/ld+json">
+  {
+    "@context": "http://schema.org",
+    "@type": "BreadcrumbList",
+    
+      
+      
+        
+        
+        
+        
+        
+        
+        
+        
+          {
+            "@type": "ListItem",
+            "position":  1 ,
+            "name": "Home",
+            "item": "https://databend-internals.psiace.me/"
+          },
+          
+          
+          {
+            "@type": "ListItem",
+            "position":  2 ,
+            "name": "Docs",
+            "item": "https://databend-internals.psiace.me/docs/"
+          },
+        
+      
+        
+        
+        
+        
+        
+        
+        
+        
+          
+          
+          {
+            "@type": "ListItem",
+            "position":  3 ,
+            "name": "Minibend",
+            "item": "https://databend-internals.psiace.me/docs/minibend/"
+          },
+        
+      
+        
+        
+        
+        
+        
+        
+        
+        
+          
+          
+          {
+            "@type": "ListItem",
+            "position":  4 ,
+            "name": "Datasource",
+            "item": "https://databend-internals.psiace.me/docs/minibend/datasource/"
+          },
+        
+      
+    
+  }
+</script>
+
+
+
+
+
+
+  <meta name="theme-color" content="#fff">
+  <link rel="apple-touch-icon" sizes="180x180" href="https://databend-internals.psiace.me/apple-touch-icon.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="https://databend-internals.psiace.me/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="https://databend-internals.psiace.me/favicon-16x16.png">
+  
+    <link rel="manifest" href="https://databend-internals.psiace.me/site.webmanifest" crossorigin>
+  
+
+
+  
+
+</head>
+
+
+
+<body class="docs single">
+  
+
+
+
+<div class="header-bar fixed-top"></div>
+<header class="navbar fixed-top navbar-expand-md navbar-light">
+	<div class="container">
+		<input class="menu-btn order-0" type="checkbox" id="menu-btn">
+		<label class="menu-icon d-md-none" for="menu-btn"><span class="navicon"></span></label>
+		<a class="navbar-brand order-1 order-md-0 me-auto" href="https://databend-internals.psiace.me">Databend 内幕大揭秘</a>
+		<button id="mode" class="btn btn-link order-2 order-md-4" type="button" aria-label="Toggle mode">
+			<span class="toggle-dark"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-moon"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg></span>
+			<span class="toggle-light"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-sun"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg></span>
+		</button>
+		<ul class="navbar-nav fork-me order-3 order-md-5">
+			
+				
+					<li class="nav-item">
+						<a class="nav-link" href="https://twitter.com/repsiace"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-twitter"><path d="M23 3a10.9 10.9 0 0 1-3.14 1.53 4.48 4.48 0 0 0-7.86 3v1A10.66 10.66 0 0 1 3 4s-4 9 5 13a11.64 11.64 0 0 1-7 2c9 5 20 0 20-11.5a4.5 4.5 0 0 0-.08-.83A7.72 7.72 0 0 0 23 3z"></path></svg><span class="ms-2 visually-hidden">Twitter</span></a>
+					</li>
+				
+					<li class="nav-item">
+						<a class="nav-link" href="https://github.com/psiace/databend-internals"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-github"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"></path></svg><span class="ms-2 visually-hidden">GitHub</span></a>
+					</li>
+				
+			
+		</ul>
+		<div class="collapse navbar-collapse order-4 order-md-1">
+			<ul class="navbar-nav main-nav me-auto order-5 order-md-2">
+				
+					
+				
+				
+				
+					
+						<li class="nav-item docs active">
+							<a class="nav-link" href="https://databend-internals.psiace.me/docs/getting-started/introduction/">在线阅读</a>
+						</li>
+					
+				
+			</ul>
+			<div class="break order-6 d-md-none"></div>
+			
+		</div>
+	</div>
+</header>
+
+
+
+  
+<div class="wrap container" role="document">
+  <div class="content">
+    <div class="row flex-xl-nowrap">
+      
+<div class="col-lg-5 col-xl-4 docs-sidebar">
+	<nav class="docs-links" aria-label="Main navigation">
+			
+			
+			
+			
+					
+					
+					
+							<h3>入门指南</h3>
+							<ul class="list-unstyled">
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/getting-started/introduction/">简介</a></li>
+							
+					</ul>
+					
+					
+					
+					
+							<h3>基础导览</h3>
+							<ul class="list-unstyled">
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/the-basics/storage/">存储</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/the-basics/about-index/">索引</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/the-basics/executor-in-query-process/">查询执行</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/the-basics/query-optimization/">查询优化</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/the-basics/mpp/">大规模并行处理</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/the-basics/distributed/">分布式</a></li>
+							
+					</ul>
+					
+					
+					
+					
+							<h3>特性探索</h3>
+							<ul class="list-unstyled">
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/productivity-topics/databend-rustchinaconf/">使用 Rust 构建云原生数仓 Databend</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/productivity-topics/quality-assurance-in-databend/">Databend 的质量保障</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/productivity-topics/the-databend-way-to-sky/">多云转晴：Databend 的天空计算之路</a></li>
+							
+					</ul>
+					
+					
+					
+					
+							<h3>源码解读</h3>
+							<ul class="list-unstyled">
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/source-reading/intro/">Databend 源码阅读： 开篇</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/source-reading/init-session-handler/">Databend 源码阅读： Query Server 启动、Session 管理及请求处理</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/source-reading/pipeline-execution/">Databend 源码阅读： pipeline 的执行</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/source-reading/config/">Databend 源码阅读：配置管理</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/source-reading/pipeline-model-graph-based/">Databend 源码阅读： 图解 pipeline 调度模型</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/source-reading/storage-basics-read-partitions/">Databend 源码阅读： Storage 概要和 Read Partitions</a></li>
+							
+					</ul>
+					
+					
+					
+					
+							<h3>minibend</h3>
+							<ul class="list-unstyled">
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/minibend/intro/">第一弹 - minibend 简介</a></li>
+							                           
+									<li><a class="docs-link active" href="https://databend-internals.psiace.me/docs/minibend/datasource/">第二弹 - Data Source</a></li>
+							
+					</ul>
+					
+					
+					
+					
+							<h3>开源贡献</h3>
+							<ul class="list-unstyled">
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/contribute-to-databend/development-environment/">如何设置 Databend 开发环境</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/contribute-to-databend/build-and-more/">轻松了解 Databend 构建</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/contribute-to-databend/build-with-pgo/">使用 PGO 优化 Databend 二进制构建</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/contribute-to-databend/write-and-run-tests/">如何为 Databend 添加新的测试</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/contribute-to-databend/how-to-contribute/">如何参与 Databend 开源协作</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/contribute-to-databend/tracing-in-databend/">Databend 全链路追踪</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/contribute-to-databend/how-to-benchmark/">如何对 Databend 进行基准测试</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/contribute-to-databend/how-to-profile/">Databend 性能剖析方法与工具</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/contribute-to-databend/how-to-write-functions/">如何为 Databend 添加新的函数</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/contribute-to-databend/how-to-write-system-table/">如何为 Databend 添加新的系统表</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/contribute-to-databend/release/">Databend 版本发布</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/contribute-to-databend/routine-maintenance/">Databend 的日常维护是怎么进行的</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/contribute-to-databend/faq/">常见问题解答</a></li>
+							
+					</ul>
+					
+					
+					
+					
+							<h3>专题研讨</h3>
+							<ul class="list-unstyled">
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/advanced-workshops/paper-list/">推荐阅读的论文清单</a></li>
+							
+					</ul>
+					
+					
+					
+					
+							<h3>贡献相关</h3>
+							<ul class="list-unstyled">
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/contributing/outline/">大纲速览</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/contributing/code-of-conduct/">行为准则</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/contributing/how-to-contributing/">如何协作</a></li>
+							
+					</ul>
+					
+					
+			
+	</nav>
+</div>
+
+      
+  
+  <nav class="docs-toc d-none d-xl-block col-xl-3" aria-label="Secondary navigation">
+  	<div class="page-links">
+  			<h3>On this page</h3>
+  			<nav id="TableOfContents">
+  					<ul>
+  							
+  							<li><a href="https://databend-internals.psiace.me/docs/minibend/datasource/#lei-xing-xi-tong-he-arrow">类型系统和 Arrow</a></li>
+  							
+  									<ul>
+  											
+  											<li><a href="https://databend-internals.psiace.me/docs/minibend/datasource/#lei-xing-xi-tong">类型系统</a></li>
+  											
+  											<li><a href="https://databend-internals.psiace.me/docs/minibend/datasource/#xing-cun-huo-zhe-lie-cun">行存或者列存</a></li>
+  											
+  											<li><a href="https://databend-internals.psiace.me/docs/minibend/datasource/#arrow">Arrow</a></li>
+  											
+  											<li><a href="https://databend-internals.psiace.me/docs/minibend/datasource/#cong-databend-dao-minibend">从 Databend 到 minibend</a></li>
+  											
+  									</ul>
+  							
+  							
+  							<li><a href="https://databend-internals.psiace.me/docs/minibend/datasource/#data-source">Data Source</a></li>
+  							
+  									<ul>
+  											
+  											<li><a href="https://databend-internals.psiace.me/docs/minibend/datasource/#shu-ju-yuan">数据源</a></li>
+  											
+  											<li><a href="https://databend-internals.psiace.me/docs/minibend/datasource/#parquet">Parquet</a></li>
+  											
+  											<li><a href="https://databend-internals.psiace.me/docs/minibend/datasource/#cong-databend-dao-minibend-1">从 Databend 到 minibend</a></li>
+  											
+  									</ul>
+  							
+  							
+  							<li><a href="https://databend-internals.psiace.me/docs/minibend/datasource/#dai-ma-shi-jian">代码时间</a></li>
+  							
+  							
+  							<li><a href="https://databend-internals.psiace.me/docs/minibend/datasource/#qian-jin-si-hui-gu-yu-zhan-wang">前进四：回顾与展望</a></li>
+  							
+  									<ul>
+  											
+  											<li><a href="https://databend-internals.psiace.me/docs/minibend/datasource/#hui-gu">回顾</a></li>
+  											
+  											<li><a href="https://databend-internals.psiace.me/docs/minibend/datasource/#zhan-wang">展望</a></li>
+  											
+  											<li><a href="https://databend-internals.psiace.me/docs/minibend/datasource/#yue-du-cai-liao">阅读材料</a></li>
+  											
+  									</ul>
+  							
+  							
+  					</ul>
+  			</nav>
+  	</div>
+  </nav>
+  
+
+      <main class="docs-content col-lg-11 col-xl-9">
+        <h1>第二弹 - Data Source</h1>
+        
+        <p>本篇是 minibend 系列的第二期，将会介绍 <strong>Data Source</strong> 部分的设计与实现，当然，由于是刚开始涉及到编程的部分，也会提到包括 <strong>类型系统</strong> 和 <strong>错误处理</strong> 之类的一些额外内容。</p>
+<blockquote>
+<p>前排指路视频和 PPT 地址</p>
+<p>视频（哔哩哔哩）：<a href="https://www.bilibili.com/video/BV1A84y1Y7Ff/">https://www.bilibili.com/video/BV1A84y1Y7Ff/</a></p>
+<p>PPT：<a href="https://databend-internals.psiace.me/minibend/ppt/minibend-002-datasource.pdf">https://databend-internals.psiace.me/minibend/ppt/minibend-002-datasource.pdf</a></p>
+</blockquote>
+<h2 id="lei-xing-xi-tong-he-arrow">类型系统和 Arrow</h2>
+<p>这里仅仅是进行一个初步的介绍，类型系统相关的实现请期待下一期内容。</p>
+<h3 id="lei-xing-xi-tong">类型系统</h3>
+<p>在构建查询引擎的时候，很重要的一个问题就是「数据在查询引擎中是如何表示的？」。这往往意味着我们需要考虑引入一套类型系统来完成这一工作。</p>
+<p>为了能够让查询引擎处理来自不同数据源的数据，通常情况下，会选择设计并构建一套能够涵盖所有数据源所涉及的全部数据类型的类型系统，并引入一些额外的机制使得数据能够从数据源轻松转换到这套类型系统之上。</p>
+<p>当然，如果查询引擎仅仅针对单一数据源设计，或许可以考虑复用数据源的类型系统。</p>
+<h3 id="xing-cun-huo-zhe-lie-cun">行存或者列存</h3>
+<p>解决了数据类型的问题，那么就该考虑数据存储时候的模型。行式存储和列式存储都属于流行的方案，当然，这往往取决于要面对什么样的查询任务。另外还有混合行式和列式存储的方案，但这并不在今天讨论的范畴之中。</p>
+<p><img src="https://databend-internals.psiace.me/the-basics/executor-in-query-process/04-column-based-vectorwise.png" alt="Column Based" /></p>
+<p><center><small><i>左图可以看作列式存储的一个样本，同一列的数据在内存中形成一个连续的结构。<br/>而行式存储则如右图所示，同一行的数据在内存中是连续的。</i></small></center></p>
+<p>对于 OLAP 系统，往往处理大量数据，更需要关注数据的吞吐量和执行效率，采用列式存储具有天然的优势。</p>
+<ul>
+<li>只需要读取需要的列，无需经 IO 读取其余列，从而避免不必要的 IO 开销。</li>
+<li>同一列的数据中往往存在大量的重复项，压缩率会非常高，进一步节约 IO 资源。</li>
+<li>利用向量化处理和 SIMD 指令进行优化，提高性能。</li>
+</ul>
+<h3 id="arrow">Arrow</h3>
+<p>Apache Arrow 是一套通用、跨语言、高性能的列式数据内存格式规范，能够充分利用现代硬件的向量化执行能力。</p>
+<p>通过引入 Apache Arrow 作为标准的数据交换格式，可以有效提高各种大数据分析系统和应用程序之间的互操作性：</p>
+<ul>
+<li>高级语言在调用低级语言时，可以通过指针来传递数据，从而免于复制数据。</li>
+<li>数据可以在进程之间有效地传输，减少序列化开销。</li>
+<li>可以在各种开源和商业项目之间建立连接，使得大数据生态之间能够更好集成。</li>
+</ul>
+<p>Apache Arrow 现在有多种不同语言的实现，包括 C++、Java、Rust 等。</p>
+<p>值得关注的基于 Apache Arrow 的 Rust 实现的项目包括 <a href="https://github.com/pola-rs/polars/">pola-rs/polars</a>、<a href="https://github.com/apache/arrow-datafusion">apache/arrow-datafusion</a>，当然，还有 <a href="https://github.com/datafuselabs/databend/">Databend</a> 。</p>
+<h3 id="cong-databend-dao-minibend">从 Databend 到 minibend</h3>
+<p>Databend 是面向海量数据设计的云数仓，面向分析型工作负载进行设计，采用列式存储，使用 Apache Arrow 作为内存格式规范，并在此基础上设计开发类型系统。minibend 在这一点上将会与 Databend 保持一致。</p>
+<h5 id="you-qu-de-shi-shi">有趣的事实</h5>
+<p>Databend 当前实现使用的是 arrow2 而非 arrow-rs ，主要有以下几个原因：</p>
+<ul>
+<li>arrow2 代码质量更高，设计上弥补了很多 arrow-rs 的缺点。</li>
+<li>Databend 早期也是基于 arrow-rs ，但是 arrow-rs 推动 issue、pr 流程较慢，不适合 Databend 的快速迭代节奏。而 arrow2 的作者往往能够提供更加及时和友好的建议和修复，可以和 Databend 一同快速迭代。</li>
+</ul>
+<p>Databend 从 <a href="https://www.reddit.com/r/rust/comments/ooyhn1/release_of_arrow2_01_and_parquet2_01/">arrow2 0.1 和 parquet2 0.1 发布</a> 开始 <a href="https://github.com/datafuselabs/databend/issues/1170">考虑向 arrow2 迁移</a> ，十天左右完成 <a href="https://github.com/datafuselabs/databend/pull/1239">[commons] arrow -&gt; arrow2</a> 并在部分查询上获得性能提高。尽管从当时而言，切换到还处于早期的 arrow2 有些激进，但长远来看是利大于弊的。</p>
+<h2 id="data-source">Data Source</h2>
+<p>Data Source（数据源）是数据处理系统的重要部分，但通常只能依赖经验来谨慎处理。</p>
+<h3 id="shu-ju-yuan">数据源</h3>
+<p>顾名思义，数据源就是数据的来源，倘若没有数据源，数据处理系统就像无根浮萍，自然也谈不上用武之地。</p>
+<p>数据源可以以不同的形态出现，比如各种各样格式的文件：CSV、JSON、Parquet 等；当然也可以是数据库，之前有很多朋友问过比如 Databend 能不能查询 MySQL 里面的数据（将 MySQL 作为数据源）；也可以是内存对象，一个不那么典型的例子是 Databend 里面实现了用于测试向量化性能的 number 表。</p>
+<p>与不同数据源交互的处理逻辑也有所不同，为了能够更好接入不同数据源，查询引擎需要定义一套统一的接口，并确保能够返回符合预期的数据。对于查询引擎而言，主要关心两类数据：一类是 schema ，用来描述数据的结构，这可以帮助查询引擎对查询计划和表达式进行验证，但并不是所有数据都具有统一的/有效的结构，比如 JSON ；另一类就是具体的数据了，但考虑到查询引擎只需要处理关心的特定数据，所以应该有能力对数据进行过滤，只提取需要的列。</p>
+<h3 id="parquet">Parquet</h3>
+<p>ApacheParquet 是一种开源的、面向列的数据文件格式，用于高效的数据存储和检索。它提供了高效的数据压缩和编码方案，增强了处理大量复杂数据的性能。Parquet 支持多种语言，包括 Java、 C + + 、 Python 等等。.</p>
+<p>Parquet 受到 Google Dremel 格式启发，作为大数据领域的存储格式，被 iceberg 、hive 等各种系统使用。</p>
+<p><img src="https://camo.githubusercontent.com/e034316c88a806342315126d6b22f90cd88cdf810cb44c7725f63725e9037f96/68747470733a2f2f7261772e6769746875622e636f6d2f6170616368652f706172717565742d666f726d61742f6d61737465722f646f632f696d616765732f46696c654c61796f75742e676966" alt="parquet" /></p>
+<p>上图展示了 Parquet 文件的结构，Parquet 的存储模型主要由行组（Row Group）、列块（Column Chuck）、页（Page）组成。</p>
+<ul>
+<li>行组，Row Group：Parquet 在水平方向上将数据划分为行组，默认行组大小与 HDFS Block 块大小对齐，Parquet 保证一个行组会被一个 Mapper 处理。</li>
+<li>列块，Column Chunk：行组中每一列保存在一个列块中，一个列块具有相同的数据类型，不同的列块可以使用不同的压缩。</li>
+<li>页，Page：Parquet 是页存储方式，每一个列块包含多个页，一个页是最小的编码的单位，同一列块的不同页可以使用不同的编码方式。</li>
+</ul>
+<h3 id="cong-databend-dao-minibend-1">从 Databend 到 minibend</h3>
+<p>Databend 的底层存储格式为 Parquet ，过去其他格式的数据需要通过 Streaming Load 或者 Copy Into 等方式转换到 Databend 支持的 Parquet 格式。而在近期的设计和实现中，Databend 开始逐步实现对位于本地/远端的文件进行查询的支持。</p>
+<p>minibend 将会考虑优先从查询本地现有数据文件开始进行支持。首先是支持 Parquet 作为数据源，但为了方便浏览数据和审计查询结果，或许对 CSV 格式的支持应该提上日程。</p>
+<h5 id="you-qu-de-shi-shi-1">有趣的事实</h5>
+<p>Databend 中同样包含读取 Parquet 文件作为数据源的代码。关于读取 Parquet 文件作为表的第一版实现可以参考 <a href="https://github.com/datafuselabs/databend/pull/9080">new table function read_parquet to read parquet files as a table</a> 。</p>
+<p>在这个基础上，受 clickhouse-local 启发，<a href="https://github.com/eastfisher">@eastfisher</a> 为 Databend <a href="https://github.com/datafuselabs/databend/pull/9282">实现 databend-local</a>，支持在不启动 Databend 集群的情况下查询本地文件。</p>
+<h2 id="dai-ma-shi-jian">代码时间</h2>
+<p>请查阅视频和 PPT 中的对应部分，或者查看 PR <a href="https://github.com/PsiACE/databend-internals/pull/40">#40 | minibend: impl parquet data source</a> 中的代码。</p>
+<h2 id="qian-jin-si-hui-gu-yu-zhan-wang">前进四：回顾与展望</h2>
+<h3 id="hui-gu">回顾</h3>
+<p>在今天的内容中，我们简单介绍了类型系统和数据源的一些相关内容：</p>
+<ul>
+<li>类型系统用于处理数据在查询引擎中的表示。</li>
+<li>对于 OLAP 系统而言，基于列式存储会更能发挥现代硬件的能力。</li>
+<li>数据源可以是多种多样的，文件、数据库、内存对象都可以作为数据源。</li>
+<li>Apache Arrow 和 Apache Parquet，前者是一套通用、跨语言、高性能的列式数据内存格式规范，后者是一种旨在实现最大空间效率的存储格式。</li>
+</ul>
+<p>当然，在这一期的代码时间，我们初步建立了 minibend 的基础，并支持使用 Parquet 文件作为数据源。</p>
+<h3 id="zhan-wang">展望</h3>
+<p>下一期，我们将会进入到类型系统相关的部分，并进一步扩展到逻辑计划和表达式。</p>
+<h3 id="yue-du-cai-liao">阅读材料</h3>
+<p>这一次推荐两个博客给大家：</p>
+<p>一个是 <a href="https://blog.mwish.me/">风空之岛</a> ，<a href="https://github.com/mapleFU">@mwish</a> 的技术博客，有关于 Parquet 的一个更详细的系列介绍，并且还有论文阅读的部分。</p>
+<p>另一个是 <a href="http://mysql.taobao.org/monthly/">数据库内核月报</a> ，来自阿里云 PolarDB 数据库内核团队。</p>
+
+        
+        
+<div class="docs-navigation d-flex justify-content-between">
+  
+  
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+          
+        
+      
+        
+        
+          
+        
+      
+        
+        
+          
+        
+      
+        
+        
+          
+        
+      
+        
+        
+          
+            
+              
+              <a href="https:&#x2F;&#x2F;databend-internals.psiace.me&#x2F;docs&#x2F;source-reading&#x2F;storage-basics-read-partitions&#x2F;">
+                <div class="card my-1">
+                  <div class="card-body py-2">
+                    &larr; Databend 源码阅读： Storage 概要和 Read Partitions
+                  </div>
+                </div>
+              </a>
+            
+            
+            
+          
+        
+      
+        
+        
+          
+        
+      
+        
+        
+          
+        
+      
+        
+        
+          
+        
+      
+    
+  
+
+  
+  
+  
+  
+  
+    
+    
+    
+      
+      
+        
+      
+    
+      
+      
+        
+      
+    
+      
+      
+        
+      
+    
+      
+      
+        
+      
+    
+      
+      
+        
+      
+    
+      
+      
+        
+          
+          
+          <a class="ms-auto" href="https:&#x2F;&#x2F;databend-internals.psiace.me&#x2F;docs&#x2F;contribute-to-databend&#x2F;development-environment&#x2F;">
+            <div class="card my-1">
+              <div class="card-body py-2">
+                如何设置 Databend 开发环境 &rarr;
+              </div>
+            </div>
+          </a>
+          
+          
+          
+        
+      
+    
+      
+      
+        
+      
+    
+      
+      
+        
+      
+    
+  
+</div>
+
+        
+        <script src="https://giscus.app/client.js" data-repo="psiace/databend-internals" data-repo-id="R_kgDOHQXEtA"
+          data-category="Announcements" data-category-id="DIC_kwDOHQXEtM4CPQhI" data-mapping="title"
+          data-reactions-enabled="1" data-emit-metadata="0" data-input-position="top" data-theme="light_protanopia"
+          data-lang="zh-CN" data-loading="lazy" crossorigin="anonymous" async>
+          </script>
+        
+      </main>
+    </div>
+  </div>
+</div>
+
+
+  
+    
+<footer class="footer text-muted">
+	<div class="container">
+		<div class="row">
+			<div class="col-lg-8 order-last order-lg-first">
+				<ul class="list-inline">
+					
+						<li class="list-inline-item">由 <a href="https://pages.github.com/">GitHub Pages</a> 、<a href="https://www.getzola.org/">Zola</a> 及 <a href="https://github.com/aaranxu/adidoks">AdiDoks</a> 强力驱动</li>
+					
+				</ul>
+			</div>
+			<div class="col-lg-8 order-first order-lg-last text-lg-end">
+				<ul class="list-inline">
+					
+						
+							<li class="list-inline-item"><a href="https://databend-internals.psiace.me/privacy-policy/">隐私政策</a></li>
+						
+							<li class="list-inline-item"><a href="https://databend-internals.psiace.me/docs/contributing/code-of-conduct/">行为准则</a></li>
+						
+					
+				</ul>
+			</div>
+		</div>
+	</div>
+</footer>
+
+  
+
+  
+<script type="text/javascript" src="https://databend-internals.psiace.me/js/main.js" defer></script>
+
+  
+</body>
+</html>

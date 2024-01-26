@@ -1,0 +1,980 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="x-ua-compatible" content="ie=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+  <link rel="preload" as="font" href="https://databend-internals.psiace.me/fonts/vendor/jost/jost-v4-latin-regular.woff2" type="font/woff2" crossorigin>
+  <link rel="preload" as="font" href="https://databend-internals.psiace.me/fonts/vendor/jost/jost-v4-latin-700.woff2"  type="font/woff2" crossorigin>
+
+
+<link rel="stylesheet" href="https://databend-internals.psiace.me/main.css">
+
+
+
+  
+  
+    
+  
+
+  
+  
+    
+    
+  
+  
+  
+    
+  
+  
+  
+  
+    
+  
+  
+  
+
+
+  <meta name="robots" content="index, follow">
+  <meta name="googlebot" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1">
+  <meta name="bingbot" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1">
+
+
+	
+
+
+	
+
+<title>如何为 Databend 添加新的测试 | Databend 内幕大揭秘</title>
+<meta name="description" content="测试是提高软件健壮性、加速迭代进程的不二法宝。本文将会介绍如何为 Databend 添加不同种类的测试。">
+<link rel="canonical" href="https://databend-internals.psiace.me/docs/contribute-to-databend/write-and-run-tests/">
+
+
+
+
+
+
+
+
+
+
+<script type="application/ld+json">
+  {
+    "@context": "http://schema.org",
+    "@type": "BreadcrumbList",
+    
+      
+      
+        
+        
+        
+        
+        
+        
+        
+        
+          {
+            "@type": "ListItem",
+            "position":  1 ,
+            "name": "Home",
+            "item": "https://databend-internals.psiace.me/"
+          },
+          
+          
+          {
+            "@type": "ListItem",
+            "position":  2 ,
+            "name": "Docs",
+            "item": "https://databend-internals.psiace.me/docs/"
+          },
+        
+      
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+          
+          
+          {
+            "@type": "ListItem",
+            "position":  3 ,
+            "name": "Contribute To Databend",
+            "item": "https://databend-internals.psiace.me/docs/contribute-to-databend/"
+          },
+        
+      
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+          
+          
+          {
+            "@type": "ListItem",
+            "position":  4 ,
+            "name": "Write And Run Tests",
+            "item": "https://databend-internals.psiace.me/docs/contribute-to-databend/write-and-run-tests/"
+          },
+        
+      
+    
+  }
+</script>
+
+
+
+
+
+
+  <meta name="theme-color" content="#fff">
+  <link rel="apple-touch-icon" sizes="180x180" href="https://databend-internals.psiace.me/apple-touch-icon.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="https://databend-internals.psiace.me/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="https://databend-internals.psiace.me/favicon-16x16.png">
+  
+    <link rel="manifest" href="https://databend-internals.psiace.me/site.webmanifest" crossorigin>
+  
+
+
+  
+
+</head>
+
+
+
+<body class="docs single">
+  
+
+
+
+<div class="header-bar fixed-top"></div>
+<header class="navbar fixed-top navbar-expand-md navbar-light">
+	<div class="container">
+		<input class="menu-btn order-0" type="checkbox" id="menu-btn">
+		<label class="menu-icon d-md-none" for="menu-btn"><span class="navicon"></span></label>
+		<a class="navbar-brand order-1 order-md-0 me-auto" href="https://databend-internals.psiace.me">Databend 内幕大揭秘</a>
+		<button id="mode" class="btn btn-link order-2 order-md-4" type="button" aria-label="Toggle mode">
+			<span class="toggle-dark"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-moon"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg></span>
+			<span class="toggle-light"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-sun"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg></span>
+		</button>
+		<ul class="navbar-nav fork-me order-3 order-md-5">
+			
+				
+					<li class="nav-item">
+						<a class="nav-link" href="https://twitter.com/repsiace"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-twitter"><path d="M23 3a10.9 10.9 0 0 1-3.14 1.53 4.48 4.48 0 0 0-7.86 3v1A10.66 10.66 0 0 1 3 4s-4 9 5 13a11.64 11.64 0 0 1-7 2c9 5 20 0 20-11.5a4.5 4.5 0 0 0-.08-.83A7.72 7.72 0 0 0 23 3z"></path></svg><span class="ms-2 visually-hidden">Twitter</span></a>
+					</li>
+				
+					<li class="nav-item">
+						<a class="nav-link" href="https://github.com/psiace/databend-internals"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-github"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"></path></svg><span class="ms-2 visually-hidden">GitHub</span></a>
+					</li>
+				
+			
+		</ul>
+		<div class="collapse navbar-collapse order-4 order-md-1">
+			<ul class="navbar-nav main-nav me-auto order-5 order-md-2">
+				
+					
+				
+				
+				
+					
+						<li class="nav-item docs active">
+							<a class="nav-link" href="https://databend-internals.psiace.me/docs/getting-started/introduction/">在线阅读</a>
+						</li>
+					
+				
+			</ul>
+			<div class="break order-6 d-md-none"></div>
+			
+		</div>
+	</div>
+</header>
+
+
+
+  
+<div class="wrap container" role="document">
+  <div class="content">
+    <div class="row flex-xl-nowrap">
+      
+<div class="col-lg-5 col-xl-4 docs-sidebar">
+	<nav class="docs-links" aria-label="Main navigation">
+			
+			
+			
+			
+					
+					
+					
+							<h3>入门指南</h3>
+							<ul class="list-unstyled">
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/getting-started/introduction/">简介</a></li>
+							
+					</ul>
+					
+					
+					
+					
+							<h3>基础导览</h3>
+							<ul class="list-unstyled">
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/the-basics/storage/">存储</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/the-basics/about-index/">索引</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/the-basics/executor-in-query-process/">查询执行</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/the-basics/query-optimization/">查询优化</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/the-basics/mpp/">大规模并行处理</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/the-basics/distributed/">分布式</a></li>
+							
+					</ul>
+					
+					
+					
+					
+							<h3>特性探索</h3>
+							<ul class="list-unstyled">
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/productivity-topics/databend-rustchinaconf/">使用 Rust 构建云原生数仓 Databend</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/productivity-topics/quality-assurance-in-databend/">Databend 的质量保障</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/productivity-topics/the-databend-way-to-sky/">多云转晴：Databend 的天空计算之路</a></li>
+							
+					</ul>
+					
+					
+					
+					
+							<h3>源码解读</h3>
+							<ul class="list-unstyled">
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/source-reading/intro/">Databend 源码阅读： 开篇</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/source-reading/init-session-handler/">Databend 源码阅读： Query Server 启动、Session 管理及请求处理</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/source-reading/pipeline-execution/">Databend 源码阅读： pipeline 的执行</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/source-reading/config/">Databend 源码阅读：配置管理</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/source-reading/pipeline-model-graph-based/">Databend 源码阅读： 图解 pipeline 调度模型</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/source-reading/storage-basics-read-partitions/">Databend 源码阅读： Storage 概要和 Read Partitions</a></li>
+							
+					</ul>
+					
+					
+					
+					
+							<h3>minibend</h3>
+							<ul class="list-unstyled">
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/minibend/intro/">第一弹 - minibend 简介</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/minibend/datasource/">第二弹 - Data Source</a></li>
+							
+					</ul>
+					
+					
+					
+					
+							<h3>开源贡献</h3>
+							<ul class="list-unstyled">
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/contribute-to-databend/development-environment/">如何设置 Databend 开发环境</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/contribute-to-databend/build-and-more/">轻松了解 Databend 构建</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/contribute-to-databend/build-with-pgo/">使用 PGO 优化 Databend 二进制构建</a></li>
+							                           
+									<li><a class="docs-link active" href="https://databend-internals.psiace.me/docs/contribute-to-databend/write-and-run-tests/">如何为 Databend 添加新的测试</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/contribute-to-databend/how-to-contribute/">如何参与 Databend 开源协作</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/contribute-to-databend/tracing-in-databend/">Databend 全链路追踪</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/contribute-to-databend/how-to-benchmark/">如何对 Databend 进行基准测试</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/contribute-to-databend/how-to-profile/">Databend 性能剖析方法与工具</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/contribute-to-databend/how-to-write-functions/">如何为 Databend 添加新的函数</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/contribute-to-databend/how-to-write-system-table/">如何为 Databend 添加新的系统表</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/contribute-to-databend/release/">Databend 版本发布</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/contribute-to-databend/routine-maintenance/">Databend 的日常维护是怎么进行的</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/contribute-to-databend/faq/">常见问题解答</a></li>
+							
+					</ul>
+					
+					
+					
+					
+							<h3>专题研讨</h3>
+							<ul class="list-unstyled">
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/advanced-workshops/paper-list/">推荐阅读的论文清单</a></li>
+							
+					</ul>
+					
+					
+					
+					
+							<h3>贡献相关</h3>
+							<ul class="list-unstyled">
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/contributing/outline/">大纲速览</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/contributing/code-of-conduct/">行为准则</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/contributing/how-to-contributing/">如何协作</a></li>
+							
+					</ul>
+					
+					
+			
+	</nav>
+</div>
+
+      
+  
+  <nav class="docs-toc d-none d-xl-block col-xl-3" aria-label="Secondary navigation">
+  	<div class="page-links">
+  			<h3>On this page</h3>
+  			<nav id="TableOfContents">
+  					<ul>
+  							
+  							<li><a href="https://databend-internals.psiace.me/docs/contribute-to-databend/write-and-run-tests/#dan-yuan-ce-shi">单元测试</a></li>
+  							
+  									<ul>
+  											
+  											<li><a href="https://databend-internals.psiace.me/docs/contribute-to-databend/write-and-run-tests/#bian-xie">编写</a></li>
+  											
+  											<li><a href="https://databend-internals.psiace.me/docs/contribute-to-databend/write-and-run-tests/#yun-xing">运行</a></li>
+  											
+  											<li><a href="https://databend-internals.psiace.me/docs/contribute-to-databend/write-and-run-tests/#pai-cha">排查</a></li>
+  											
+  									</ul>
+  							
+  							
+  							<li><a href="https://databend-internals.psiace.me/docs/contribute-to-databend/write-and-run-tests/#gong-neng-ce-shi">功能测试</a></li>
+  							
+  									<ul>
+  											
+  											<li><a href="https://databend-internals.psiace.me/docs/contribute-to-databend/write-and-run-tests/#bian-xie-1">编写</a></li>
+  											
+  											<li><a href="https://databend-internals.psiace.me/docs/contribute-to-databend/write-and-run-tests/#yun-xing-1">运行</a></li>
+  											
+  											<li><a href="https://databend-internals.psiace.me/docs/contribute-to-databend/write-and-run-tests/#pai-cha-1">排查</a></li>
+  											
+  									</ul>
+  							
+  							
+  							<li><a href="https://databend-internals.psiace.me/docs/contribute-to-databend/write-and-run-tests/#sqlacner-for-databend-ce-shi">SQLacner for Databend 测试</a></li>
+  							
+  									<ul>
+  											
+  											<li><a href="https://databend-internals.psiace.me/docs/contribute-to-databend/write-and-run-tests/#yi-yun-xing">一、运行</a></li>
+  											
+  											<li><a href="https://databend-internals.psiace.me/docs/contribute-to-databend/write-and-run-tests/#er-pai-cha">二、排查</a></li>
+  											
+  									</ul>
+  							
+  							
+  					</ul>
+  			</nav>
+  	</div>
+  </nav>
+  
+
+      <main class="docs-content col-lg-11 col-xl-9">
+        <h1>如何为 Databend 添加新的测试</h1>
+        <p class="lead">测试是提高软件健壮性、加速迭代进程的不二法宝。本文将会介绍如何为 Databend 添加不同种类的测试。</p>
+        <blockquote>
+<p>在「<a href="https://databend-internals.psiace.me/docs/productivity-topics/quality-assurance-in-databend/">产品力：Databend 的质量保障</a>」一文中，已经介绍到组成 Databend 测试的两个重要部分 —— 单元测试和功能测试。如有遗忘，不妨回顾一下。</p>
+</blockquote>
+<h2 id="dan-yuan-ce-shi">单元测试</h2>
+<p>Databend 的单元测试组织形式有别于一般的 Rust 项目，是直接一股脑放在 <code>tests/it</code> 目录下的。同时，在各个 crate 的 <code>Cargo.toml</code> 中，也针对性地禁用了 <code>doctest</code> 和 <code>bin/lib test</code> 。</p>
+<p><strong>优点</strong></p>
+<ul>
+<li>减少需要构建的测试目标，提高测试编译/链接速度。</li>
+<li>当需要添加新单元测试时（不修改 <code>src</code>），只需要编译对应的 <code>it(test)</code> ，节省时间。</li>
+</ul>
+<p><strong>缺点</strong></p>
+<ul>
+<li><code>tests/it</code> 会把需要测试的 crate 当作一个外部对象，所有待测试的内容都需要被设定为 <code>pub</code> 。不利于软件设计上的分层，整个项目结构会迅速的被破坏，需要引入编码规范并更加依赖开发者的主动维护。</li>
+</ul>
+<h3 id="bian-xie">编写</h3>
+<p>可以简单地将单元测试分为两类，一类是不需要外部文件介入的纯 Rust 测试，一类是 Golden Files 测试。</p>
+<p><strong>Rust 测试</strong></p>
+<p>与平时编写 Rust 单元测试相同，只是待测试的内容需要设为 <code>pub</code> ，且引用待测试 crate 需要使用该 crate 的名字。</p>
+<p>Databend 提供一些用于模拟全局状态的函数，如 <code>create_query_context</code> 等，可能会有助于编写测试。</p>
+<pre data-lang="rust" style="background-color:#2b303b;color:#c0c5ce;" class="language-rust "><code class="language-rust" data-lang="rust"><span>#[</span><span style="color:#bf616a;">tokio</span><span>::</span><span style="color:#bf616a;">test</span><span>(flavor = &quot;</span><span style="color:#a3be8c;">multi_thread</span><span>&quot;, worker_threads = 1)]
+</span><span>async </span><span style="color:#b48ead;">fn </span><span style="color:#8fa1b3;">test_credits_table</span><span>() -&gt; Result&lt;()&gt; {
+</span><span>    </span><span style="color:#b48ead;">let</span><span> ctx = </span><span style="color:#b48ead;">crate</span><span>::tests::create_query_context().await?;
+</span><span>
+</span><span>    </span><span style="color:#b48ead;">let</span><span> table = CreditsTable::create(</span><span style="color:#d08770;">1</span><span>);
+</span><span>    </span><span style="color:#b48ead;">let</span><span> source_plan = table.</span><span style="color:#96b5b4;">read_plan</span><span>(ctx.</span><span style="color:#96b5b4;">clone</span><span>(), None).await?;
+</span><span>
+</span><span>    </span><span style="color:#b48ead;">let</span><span> stream = table.</span><span style="color:#96b5b4;">read</span><span>(ctx, &amp;source_plan).await?;
+</span><span>    </span><span style="color:#b48ead;">let</span><span> result = stream.try_collect::&lt;Vec&lt;_&gt;&gt;().await?;
+</span><span>    </span><span style="color:#b48ead;">let</span><span> block = &amp;result[</span><span style="color:#d08770;">0</span><span>];
+</span><span>    assert_eq!(block.</span><span style="color:#96b5b4;">num_columns</span><span>(), </span><span style="color:#d08770;">3</span><span>);
+</span><span>    Ok(())
+</span><span>}
+</span></code></pre>
+<p>上面示例来自 <code>credits_table</code> 的测试，先构建 <code>read_plan</code> 读取新建的 <code>CreditsTable</code> 表，再对列数进行断言。</p>
+<p><strong>Golden Files 测试</strong></p>
+<blockquote>
+<p>Golden File Testing are like unit tests, except the expected output is stored in a separate file. -- Max Grigorev at <a href="https://wiki.haskell.org/ZuriHac2010">ZuriHac</a></p>
+</blockquote>
+<p>Golden Files 测试是一种常用的测试手段，相当于是一类快照测试，如果执行情况和预期结果存在差异则认为测试失败。</p>
+<p>Databend 使用 <code>goldenfile</code> 这个 crate 来编写 Golden Files 测试。目前 Databend 有计划用此替代 <code>assert_blocks</code> 系列断言。</p>
+<pre data-lang="rust" style="background-color:#2b303b;color:#c0c5ce;" class="language-rust "><code class="language-rust" data-lang="rust"><span>#[</span><span style="color:#bf616a;">test</span><span>]
+</span><span style="color:#b48ead;">fn </span><span style="color:#8fa1b3;">test_expr_error</span><span>() {
+</span><span>    </span><span style="color:#b48ead;">let mut</span><span> mint = Mint::new(&quot;</span><span style="color:#a3be8c;">tests/it/testdata</span><span>&quot;);
+</span><span>    </span><span style="color:#b48ead;">let mut</span><span> file = mint.</span><span style="color:#96b5b4;">new_goldenfile</span><span>(&quot;</span><span style="color:#a3be8c;">expr-error.txt</span><span>&quot;).</span><span style="color:#96b5b4;">unwrap</span><span>();
+</span><span>
+</span><span>    </span><span style="color:#b48ead;">let</span><span> cases = &amp;[
+</span><span>        </span><span style="color:#b48ead;">r</span><span>#&quot;</span><span style="color:#a3be8c;">5 * (a and ) 1</span><span>&quot;#,
+</span><span>        </span><span style="color:#b48ead;">r</span><span>#&quot;</span><span style="color:#a3be8c;">a + +</span><span>&quot;#,
+</span><span>        </span><span style="color:#b48ead;">r</span><span>#&quot;</span><span style="color:#a3be8c;">CAST(col1 AS foo)</span><span>&quot;#,
+</span><span>        </span><span style="color:#b48ead;">r</span><span>#&quot;</span><span style="color:#a3be8c;">1 a</span><span>&quot;#,
+</span><span>        </span><span style="color:#b48ead;">r</span><span>#&quot;</span><span style="color:#a3be8c;">CAST(col1)</span><span>&quot;#,
+</span><span>        </span><span style="color:#b48ead;">r</span><span>#&quot;</span><span style="color:#a3be8c;">G.E.B IS NOT NULL AND
+</span><span style="color:#a3be8c;">            col1 NOT BETWEEN col2 AND
+</span><span style="color:#a3be8c;">                AND 1 + col3 DIV sum(col4)</span><span>&quot;#,
+</span><span>    ];
+</span><span>
+</span><span>    </span><span style="color:#b48ead;">for</span><span> case in cases {
+</span><span>        run_parser!(file, expr, case);
+</span><span>    }
+</span><span>}
+</span></code></pre>
+<p>编写 Golden Files 测试时需要指定挂载的目录和对应预期结果的文件。</p>
+<p>在执行测试的主体部分（如上面示例中的 <code>run_parser!</code> 宏），除了封装运行测试的必要逻辑外，还需要定义输出时的格式。</p>
+<p>测试文件必须按指定格式编写。或者，使用 <code>REGENERATE_GOLDENFILES=1</code> 生成。</p>
+<p>下面 Golden File 的例子节选自 <code>common/ast</code> 模块测试的 <code>testdata/expr-error.txt</code>，<code>Output</code> 对应解析 <code>5 * (a and ) 1</code> 的预期结果。</p>
+<pre data-lang="plain text" style="background-color:#2b303b;color:#c0c5ce;" class="language-plain text "><code class="language-plain text" data-lang="plain text"><span>---------- Input ----------
+</span><span>5 * (a and ) 1
+</span><span>---------- Output ---------
+</span><span>error: 
+</span><span>  --&gt; SQL:1:12
+</span><span>  |
+</span><span>1 | 5 * (a and ) 1
+</span><span>  | -          ^ expected more tokens for expression
+</span><span>  | |           
+</span><span>  | while parsing expression
+</span></code></pre>
+<h3 id="yun-xing">运行</h3>
+<p>单元测试的运行可以运行 <code>make unit-test</code> 或者是 <code>cargo test --workspace</code> 。</p>
+<p>二者的区别在于 <code>make unit-test</code> 封装了 ulimit 命令控制最大文件数和栈的大小以确保测试能够顺利运行，如果使用 MacOS 则更建议使用 <code>make unit-test</code> 。</p>
+<p>通过过滤机制，可以轻松指定运行名字中具有特定内容的测试，例如 <code>cargo test test_expr_error</code> 。</p>
+<h3 id="pai-cha">排查</h3>
+<p><strong>Rust 测试</strong></p>
+<p>同其他项目中的 Rust 测试一样，可以根据友好的错误提示轻松定位出现故障的测试。如果需要详细的 Backtrace ，可以在运行测试命令时添加环境变量 <code>RUST_BACKTRACE=1</code> 。</p>
+<pre data-lang="bash" style="background-color:#2b303b;color:#c0c5ce;" class="language-bash "><code class="language-bash" data-lang="bash"><span style="color:#bf616a;">failures:
+</span><span>
+</span><span style="color:#bf616a;">----</span><span> buffer::buffer_read_number_ext::test_read_number_ext stdout ----
+</span><span style="color:#bf616a;">Error:</span><span> Code: 1046, displayText = Cannot parse value:</span><span style="color:#b48ead;">[]</span><span> to number type, cause: lexical parse error: &#39;</span><span style="color:#a3be8c;">the string to parse was empty</span><span>&#39; at index 0.
+</span><span>
+</span><span>&lt;Backtrace </span><span style="color:#bf616a;">disabled</span><span> by default. Please use RUST_BACKTRACE=1 to enable&gt; 
+</span><span style="color:#bf616a;">thread </span><span>&#39;</span><span style="color:#a3be8c;">buffer::buffer_read_number_ext::test_read_number_ext</span><span>&#39; panicked at &#39;</span><span style="color:#a3be8c;">assertion failed: `(left == right)`
+</span><span style="color:#a3be8c;">  left: `1`,
+</span><span style="color:#a3be8c;"> right: `0`: the test returned a termination value with a non-zero status code (1) which indicates a failure</span><span>&#39;, /rustc/cd282d7f75da9080fda0f1740a729516e7fbec68/library/test/src/lib.rs:185:5
+</span><span style="color:#bf616a;">note:</span><span> run with `</span><span style="color:#bf616a;">RUST_BACKTRACE</span><span>=</span><span style="color:#a3be8c;">1</span><span>` environment variable to display a backtrace
+</span></code></pre>
+<p><strong>Golden Files 测试</strong></p>
+<p>Golden Files 测试的执行命令与 Rust 测试相同，但在错误提示方面有所差异。得益于 goldenfiles 引入了 <code>similar-assert</code> ，可以轻松识别 diff ：</p>
+<pre data-lang="plain text" style="background-color:#2b303b;color:#c0c5ce;" class="language-plain text "><code class="language-plain text" data-lang="plain text"><span>Differences (-left|+right):
+</span><span> ---------- Output ---------
+</span><span> &#39;I&#39;m who I&#39;m.&#39;
+</span><span> ---------- AST ------------
+</span><span> Literal {
+</span><span>     span: [
+</span><span>-        QuotedString(0..18),
+</span><span>+        QuotedString(0..16),
+</span><span>     ],
+</span><span>     lit: String(
+</span><span>         &quot;I&#39;m who I&#39;m.&quot;,
+</span><span>     ),
+</span><span> }
+</span><span>.cargo/git/checkouts/rust-goldenfile-6352648ef139d984/16c5783/src/differs.rs:15:5
+</span><span>note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+</span></code></pre>
+<p>上面示例中，<code>+</code> 对应测试实际结果，<code>-</code> 对应测试预期结果，其他为相关的上下文。</p>
+<p>goldenfiles 的报错可能会涉及多个测试文件，受限于长文本支持和空格显示，排查仍可能存在不便。</p>
+<p>这里提供一个相对友好的排查思路：</p>
+<ol>
+<li>确保之前的更改都已经提交，然后运行 <code>REGENERATE_GOLDENFILES=1 cargo test -p &lt;package&gt; --test it</code> 重新生成对应的测试。</li>
+<li>执行 <code>git diff</code> 来显示前后 goldenfiles 文件的差异。</li>
+<li>仔细辨别问题出现原因，确定是否存在预期外的问题。</li>
+</ol>
+<h2 id="gong-neng-ce-shi">功能测试</h2>
+<p>功能测试主要由 SQL 逻辑测试（sqllogictest）和 stateful 测试两个部分组成。</p>
+<p>从本质上讲，这两类功能测试流程相同：</p>
+<ul>
+<li>启动 databend 实例。</li>
+<li>使用对应的客户端/驱动执行查询。</li>
+<li>对比查询情况和预期行为之间的差异，判断测试是否通过。</li>
+</ul>
+<p>在设计上，SQL 逻辑测试可以提供更全面的能力：</p>
+<ul>
+<li>拓展比较结果文件的方式到其他协议（涵盖 http handler）。</li>
+<li>提示每个语句的结果。</li>
+<li>提供错误处理的能力。</li>
+<li>支持排序、重试等测试逻辑。</li>
+</ul>
+<h3 id="bian-xie-1">编写</h3>
+<p><strong>SQL 逻辑测试</strong></p>
+<p>SQL 逻辑测试放在 <code>tests/logictest</code> 目录下。</p>
+<p>语句规范在 sqlite sqllogictest 的基础上进行拓展，可以分成以下几类：</p>
+<ul>
+<li><code>statement ok</code> ：SQL 语句正确，且成功执行。</li>
+<li><code>statement error &lt;error regex&gt;</code> ：SQL 语句输出期望的错误。</li>
+<li><code>statement query &lt;desired_query_schema_type&gt; &lt;options&gt; &lt;labels&gt;</code> ：SQL语句成功执行并输出预期结果。</li>
+</ul>
+<pre data-lang="sql" style="background-color:#2b303b;color:#c0c5ce;" class="language-sql "><code class="language-sql" data-lang="sql"><span>statement query B label(mysql,http)
+</span><span style="color:#b48ead;">select </span><span style="color:#96b5b4;">count</span><span>(</span><span style="color:#d08770;">1</span><span>) &gt; </span><span style="color:#d08770;">1 </span><span style="color:#b48ead;">from </span><span style="color:#d08770;">information_schema</span><span>.</span><span style="color:#d08770;">columns</span><span>;
+</span><span>
+</span><span style="color:#65737e;">----  mysql
+</span><span style="color:#d08770;">1
+</span><span>
+</span><span style="color:#65737e;">----  http
+</span><span style="color:#d08770;">true
+</span></code></pre>
+<p>上面的例子展示了如何对 mysql 和 http 分别设计对应的输出结果。其中 <code>B</code> 表示结果为布尔类型，<code>label</code> 用来标记协议。</p>
+<p>SQL 逻辑测试同样支持测试集生成 <code>python3 gen_suites.py</code> 。</p>
+<p><strong>stateful 测试</strong></p>
+<p>stateful 测试放在 <code>tests/suites</code> 目录下：</p>
+<blockquote>
+<p>这里展示的是一类 stateless 写法，stateful 与之类似，区别在于 stateful 会加载数据集并执行查询。</p>
+</blockquote>
+<ul>
+<li>
+<p>输入是一系列 sql 语句，对应目录中的 <code>*.sql</code> 文件。</p>
+<pre data-lang="sql" style="background-color:#2b303b;color:#c0c5ce;" class="language-sql "><code class="language-sql" data-lang="sql"><span style="color:#b48ead;">SELECT </span><span>&#39;</span><span style="color:#a3be8c;">==Array(Int32)==</span><span>&#39;;
+</span><span>
+</span><span style="color:#b48ead;">CREATE TABLE </span><span>IF NOT EXISTS </span><span style="color:#8fa1b3;">t2</span><span>(id </span><span style="color:#b48ead;">Int </span><span style="color:#d08770;">null</span><span>, arr Array(Int32) </span><span style="color:#d08770;">null</span><span>) Engine = Fuse;
+</span><span>
+</span><span style="color:#b48ead;">INSERT INTO</span><span> t2 </span><span style="color:#b48ead;">VALUES</span><span>(</span><span style="color:#d08770;">1</span><span>, [</span><span style="color:#d08770;">1</span><span>,</span><span style="color:#d08770;">2</span><span>,</span><span style="color:#d08770;">3</span><span>]);
+</span><span style="color:#b48ead;">INSERT INTO</span><span> t2 </span><span style="color:#b48ead;">VALUES</span><span>(</span><span style="color:#d08770;">2</span><span>, [</span><span style="color:#d08770;">1</span><span>,</span><span style="color:#d08770;">2</span><span>,</span><span style="color:#d08770;">4</span><span>]);
+</span><span style="color:#b48ead;">INSERT INTO</span><span> t2 </span><span style="color:#b48ead;">VALUES</span><span>(</span><span style="color:#d08770;">3</span><span>, [</span><span style="color:#d08770;">3</span><span>,</span><span style="color:#d08770;">4</span><span>,</span><span style="color:#d08770;">5</span><span>]);
+</span><span style="color:#b48ead;">SELECT </span><span style="color:#96b5b4;">max</span><span>(arr), </span><span style="color:#96b5b4;">min</span><span>(arr) </span><span style="color:#b48ead;">FROM</span><span> t2;
+</span><span style="color:#b48ead;">SELECT</span><span> arg_max(id, arr), arg_min(id, arr) </span><span style="color:#b48ead;">FROM</span><span> (</span><span style="color:#b48ead;">SELECT</span><span> id, arr </span><span style="color:#b48ead;">FROM</span><span> t2);
+</span></code></pre>
+</li>
+<li>
+<p>输出对应查询结果（含报错），如果没有输出则需要置空，对应目录中的 <code>*.result</code> 文件。</p>
+<pre data-lang="plain text" style="background-color:#2b303b;color:#c0c5ce;" class="language-plain text "><code class="language-plain text" data-lang="plain text"><span>==Array(Int32)==
+</span><span>[3, 4, 5]	[1, 2, 3]
+</span><span>3	1
+</span></code></pre>
+</li>
+</ul>
+<p>测试可以覆盖 SQL 执行过程中遇到预期错误的情况，有两种方式：</p>
+<ul>
+<li>
+<p>沿用上面的方法，在 <code>result</code> 文件中标注具体报错信息。</p>
+</li>
+<li>
+<p>也可以采用 <code>ErrorCode</code> 注释的方式，此时无需在 <code>result</code> 文件中添加对应内容。</p>
+<pre data-lang="sql" style="background-color:#2b303b;color:#c0c5ce;" class="language-sql "><code class="language-sql" data-lang="sql"><span style="color:#b48ead;">SELECT</span><span> INET_ATON(&#39;</span><span style="color:#a3be8c;">hello</span><span>&#39;);</span><span style="color:#65737e;">-- {ErrorCode 1060}
+</span></code></pre>
+</li>
+</ul>
+<h3 id="yun-xing-1">运行</h3>
+<blockquote>
+<p>由于 stateful 测试和 sqllogictest 测试均由 Python 编写，在运行前请确保你已经安装全部的依赖。</p>
+</blockquote>
+<p>这几类测试都有对应的 <code>make</code> 命令，并支持集群模式测试：</p>
+<ul>
+<li><code>sqllogictest</code> 测试：<code>make sqllogic-test</code> &amp; <code>make sqllogic-cluster-test</code> 。</li>
+<li><code>stateful</code> 测试：<code>make stateful-test</code> &amp; <code>make stateful-cluster-test</code> 。（一般在 CI 中运行，本地需要正确配置 MINIO 环境）。</li>
+</ul>
+<h3 id="pai-cha-1">排查</h3>
+<p><strong>sqllogictest 测试</strong></p>
+<p>sqllogictest 测试能提供精准到语句的报错，并提供更多有效的上下文帮助排查问题。</p>
+<pre style="background-color:#2b303b;color:#c0c5ce;"><code><span>AssertionError: Expected:
+</span><span>INFORMATION_SCHEMA
+</span><span>default
+</span><span> Actual:
+</span><span>  INFORMATION_SCHEMA
+</span><span>          db_12_0003
+</span><span>             default
+</span><span> Statement:
+</span><span>Parsed Statement
+</span><span>    at_line: 77,
+</span><span>    s_type: Statement: query, type: T, query_type: T, retry: False,
+</span><span>    suite_name: gen/02_function/02_0005_function_compare,
+</span><span>    text:
+</span><span>        select * from system.databases where name not like &#39;%sys%&#39; order by name;
+</span><span>    results: [(&lt;re.Match object; span=(0, 4), match=&#39;----&#39;&gt;, 83, &#39;INFORMATION_SCHEMA\ndefault&#39;)],
+</span><span>    runs_on: {&#39;mysql&#39;, &#39;clickhouse&#39;, &#39;http&#39;},
+</span><span> Start Line: 83, Result Label: 
+</span><span>make: *** [Makefile:82: sqllogic-test] Error 1
+</span></code></pre>
+<p><strong>stateful 测试</strong></p>
+<p>目前 stateful 测试能够提供文件级的报错和 diff ，但无法确定报错是由哪一条语句产生。</p>
+<blockquote>
+<p>这里展示的是过去 stateless 引发的报错，stateful 与之类似。</p>
+</blockquote>
+<pre style="background-color:#2b303b;color:#c0c5ce;"><code><span>02_0057_function_nullif:                                                [ FAIL ] - result differs with:
+</span><span>--- /projects/datafuselabs/databend/tests/suites/0_stateless/02_function/02_0057_function_nullif.result
+</span><span>+++ /projects/datafuselabs/databend/tests/suites/0_stateless/02_function/02_0057_function_nullif.stdout
+</span><span>@@ -3,7 +3,7 @@
+</span><span> 1
+</span><span> 1
+</span><span> NULL
+</span><span>-a
+</span><span>+b
+</span><span> b
+</span><span> a
+</span><span> NULL
+</span><span>
+</span><span>Having 1 errors! 207 tests passed.                     0 tests skipped.
+</span><span>The failure tests:
+</span><span>    /projects/datafuselabs/databend/tests/suites/0_stateless/02_function/02_0057_function_nullif.sql
+</span></code></pre>
+<p><strong>提示</strong></p>
+<ul>
+<li>移除 <code>databend-query-standalone-embedded-meta.sh</code> 等脚本中的 <code>nohup</code> 有助于在测试时同时输出日志到终端，可能同样有助于排查。</li>
+<li>stateful 超时类错误（Timeout!）的默认时间限制为 10 分钟。为方便排查，可以将 <code>databend-test</code> 文件中的 <code>timeout</code> 改短。</li>
+</ul>
+<h2 id="sqlacner-for-databend-ce-shi">SQLacner for Databend 测试</h2>
+<h3 id="yi-yun-xing">一、运行</h3>
+<p>1、启动databend-query并创建用户</p>
+<pre data-lang="bash" style="background-color:#2b303b;color:#c0c5ce;" class="language-bash "><code class="language-bash" data-lang="bash"><span style="color:#bf616a;">./databend/bin/databend-query </span><span>&amp;
+</span><span style="color:#bf616a;">mysql -uroot -h127</span><span>.0.0.1</span><span style="color:#bf616a;"> -P3307 -e </span><span>&quot;</span><span style="color:#a3be8c;">CREATE USER &#39;sqlancer&#39; IDENTIFIED BY &#39;sqlancer&#39;; GRANT ALL ON *.* TO sqlancer;</span><span>&quot;
+</span></code></pre>
+<p>2、打包sqlancer</p>
+<pre data-lang="bash" style="background-color:#2b303b;color:#c0c5ce;" class="language-bash "><code class="language-bash" data-lang="bash"><span style="color:#bf616a;">git</span><span> clone https://github.com/sqlancer/sqlancer.git
+</span><span style="color:#96b5b4;">cd</span><span> sqlancer
+</span><span style="color:#bf616a;">mvn</span><span> package</span><span style="color:#bf616a;"> -DskipTests
+</span></code></pre>
+<p>3、运行sqlancer</p>
+<pre data-lang="bash" style="background-color:#2b303b;color:#c0c5ce;" class="language-bash "><code class="language-bash" data-lang="bash"><span style="color:#65737e;">#方式一，运行test单元
+</span><span style="color:#bf616a;">DATABEND_AVAILABLE</span><span>=</span><span style="color:#a3be8c;">true </span><span style="color:#bf616a;">mvn -Dtest</span><span>=TestDatabend test
+</span><span style="color:#65737e;">#方式二，运行jar包，可指定参数
+</span><span style="color:#96b5b4;">cd</span><span> target
+</span><span style="color:#bf616a;">java -jar</span><span> sqlancer-*.jar</span><span style="color:#bf616a;"> --num-threads</span><span> 4</span><span style="color:#bf616a;"> --random-string-generation</span><span> ALPHANUMERIC databend</span><span style="color:#bf616a;"> --oracle</span><span> WHERE
+</span><span style="color:#65737e;">#运行成功每5s输出一条信息
+</span><span style="color:#bf616a;">[2022/10/01</span><span> 19:33:12] Executed 1037 queries (207 queries/s; </span><span style="color:#bf616a;">0.80/s</span><span> dbs, successful statements: 100%)</span><span style="color:#96b5b4;">.</span><span> Threads shut down: 0.
+</span><span style="color:#bf616a;">[2022/10/01</span><span> 19:33:17] Executed 2133 queries (219 queries/s; </span><span style="color:#bf616a;">0.00/s</span><span> dbs, successful statements: 100%)</span><span style="color:#96b5b4;">.</span><span> Threads shut down: 0.
+</span><span style="color:#bf616a;">[2022/10/01</span><span> 19:33:22] Executed 3248 queries (223 queries/s; </span><span style="color:#bf616a;">0.00/s</span><span> dbs, successful statements: 100%)</span><span style="color:#96b5b4;">.</span><span> Threads shut down: 0.
+</span><span style="color:#bf616a;">[2022/10/01</span><span> 19:33:27] Executed 4351 queries (220 queries/s; </span><span style="color:#bf616a;">0.00/s</span><span> dbs, successful statements: 100%)</span><span style="color:#96b5b4;">.</span><span> Threads shut down: 0.
+</span></code></pre>
+<p>4、列举以下常用options（主可选项定义在MainOptions类，另外一个定义在DatabendOptions类）</p>
+<p>-h：查看帮助</p>
+<p>--num-threads：线程数</p>
+<p>--timeout-seconds：运行时间，单位秒，默认-1无限执行</p>
+<p>--num-tries：指定多少次异常后停止测试，默认100</p>
+<p>--database-prefix：数据库的前缀名</p>
+<p>--random-string-generation：随机字符串模式</p>
+<p>--host：主机，默认localhost</p>
+<p>--port：端口，默认3307</p>
+<p>--username：用户名，默认sqlancer</p>
+<p>--password：密码，默认sqlancer</p>
+<p>databend：指定的DBMS</p>
+<p>--oracle：测试的方式</p>
+<p>Non-optimizing Reference Engine Construction (NoREC)</p>
+<ul>
+<li>NoREC</li>
+</ul>
+<p>Ternary Logic Partitioning (TLP)</p>
+<ul>
+<li>QUERY_PARTITIONING</li>
+<li>WHERE</li>
+<li>GROUP_BY</li>
+<li>HAVING</li>
+<li>DISTINCT</li>
+<li>AGGREGATE</li>
+</ul>
+<h3 id="er-pai-cha">二、排查</h3>
+<p>当sqlancer停止测试后，会先清除原来的日志文件（注意备份），然后将所有错误写入到新的日志文件中 <code>./sqlancer/logs/databend/*.log</code> 其中 <code>*-cur.log</code> 为某个db执行的sql记录。</p>
+<h4 id="1-tlpjian-ce-chu-logic-bug">1、TLP检测出logic bug</h4>
+<p>若TLP检测出logic bug，日志文件会包含以下信息（错误的 query sql与重现db的sql）：其中cardinality不一致说明发生了logic bug。</p>
+<pre style="background-color:#2b303b;color:#c0c5ce;"><code><span>--java.lang.AssertionError: the size of the result sets mismatch (3 and 6)!
+</span><span>-- Time: 2022/08/29 16:57:50
+</span><span>-- Database: databend1
+</span><span>-- Database version: 8.0.26-v0.8.12-nightly-74d0287-simd(rust-1.64.0-nightly-2022-08-27T03:09:50.519081067Z)
+</span><span>-- seed value: 1
+</span><span>DROP DATABASE IF EXISTS databend1;
+</span><span>CREATE DATABASE databend1;
+</span><span>USE databend1;
+</span><span>CREATE TABLE t0(c0BOOLEAN BOOLEAN NULL DEFAULT(true));
+</span><span>CREATE TABLE t1(c0FLOAT DOUBLE NULL DEFAULT(0.8522535562515259), c1VARCHAR VARCHAR NULL);
+</span><span>INSERT INTO t1(c0float) VALUES (0.48751503229141235);
+</span><span>INSERT INTO t1(c0float, c1varchar) VALUES (0.8522535562515259, NULL);
+</span><span>INSERT INTO t1(c1varchar) VALUES (&#39;2&#39;), (&#39;78&#39;);
+</span><span>INSERT INTO t0(c0boolean) VALUES (false), (false), (true);
+</span><span>INSERT INTO t1(c0float) VALUES (0.8522535562515259), (0.48751503229141235);
+</span><span>INSERT INTO t1(c0float, c1varchar) VALUES (0.48751503229141235, &#39;7555834&#39;), (0.7298239469528198, &#39;8&#39;);
+</span><span>-- SELECT t0.c0boolean FROM t0;
+</span><span>-- cardinality: 3
+</span><span>-- SELECT t0.c0boolean FROM t0 WHERE (NULL BETWEEN NULL AND NULL) UNION ALL SELECT t0.c0boolean FROM t0 WHERE (NOT (NULL BETWEEN NULL AND NULL)) UNION ALL SELECT t0.c0boolean FROM t0 WHERE (((NULL BETWEEN NULL AND NULL)) IS NULL);
+</span><span>-- cardinality: 6
+</span></code></pre>
+<p>TLP发现的bug例如：<a href="https://github.com/datafuselabs/databend/issues/7360">sqlancer: expression expansion error · Issue #7360 · datafuselabs/databend (github.com)</a></p>
+<h4 id="2-norecjian-ce-chu-logic-bug">2、NoREC检测出logic bug</h4>
+<p>若NoREC检测出logic bug，日志文件会包含以下信息（错误的query sql与重现db的sql）：</p>
+<p>第一条 query sql 返回的是结果的row数，第二条 query sql 返回的是count的和，若两数不一致则出现logic bug。</p>
+<pre style="background-color:#2b303b;color:#c0c5ce;"><code><span>java.lang.AssertionError: SELECT t1.c0float, t1.c1varchar, t0.c0boolean FROM t1 RIGHT  JOIN t0 ON true WHERE (NOT -1257754687); -- 3
+</span><span>SELECT SUM(count) FROM (SELECT (((NOT -1257754687) IS NOT NULL AND (NOT -1257754687)) ::BIGINT)as count FROM t1 RIGHT JOIN t0 ON true) as res -- 0
+</span><span>-- Time: 2022/09/24 09:27:50
+</span><span>-- Database: databend1
+</span><span>-- Database version: 8.0.26-v0.8.46-nightly-f524701-simd(rust-1.66.0-nightly-2022-09-23T16:20:13.611527635Z)
+</span><span>-- seed value: 1
+</span><span>DROP DATABASE IF EXISTS databend1;
+</span><span>CREATE DATABASE databend1;
+</span><span>USE databend1;
+</span><span>CREATE TABLE t0(c0BOOLEAN BOOLEAN NULL DEFAULT(true));
+</span><span>CREATE TABLE t1(c0FLOAT DOUBLE NULL DEFAULT(0.8522535562515259), c1VARCHAR VARCHAR NULL);
+</span><span>INSERT INTO t1(c0float) VALUES (0.48751503229141235);
+</span></code></pre>
+<p>NoREC发现的bug例如：<a href="https://github.com/datafuselabs/databend/issues/7863">bug: select error · Issue #7863 · datafuselabs/databend (github.com)</a></p>
+<h4 id="3-norecyu-tlpjian-ce-chu-qi-ta-bug">3、NoREC与TLP检测出其他Bug</h4>
+<p>NoREC与TLP测试期间还会检测出使得databend错乱的bug：</p>
+<p>如果报错信息有 <code>Cause by</code> 且报错信息很复杂则极有可能是bug，也可能是sqlancer生成的sql语法错误。</p>
+<p>情况比较多，例如：</p>
+<ul>
+<li><a href="https://github.com/datafuselabs/databend/discussions/7162">Can't construct type from Float32(Float32) and Int64(Int64) · Discussion #7162 · datafuselabs/databend (github.com)</a></li>
+<li>这种bug较难发现，因为它极有可能是语法错误：<a href="https://github.com/datafuselabs/databend/issues/8000">bug: return error after adding form and join · Issue #8000 · datafuselabs/databend (github.com)</a></li>
+<li>根据执行的速度，判断可能存在的问题：<a href="https://github.com/datafuselabs/databend/issues/7225">long SQL makes parser work really slow. · Issue #7225 · datafuselabs/databend (github.com)</a></li>
+<li><a href="https://github.com/datafuselabs/databend/issues/7241">bug: const types and nullable types are orthogonal · Issue #7241 · datafuselabs/databend (github.com)</a></li>
+<li><a href="https://github.com/datafuselabs/databend/issues/7949">bug: ERROR 2013 (HY000): Lost connection to server during query · Issue #7949 · datafuselabs/databend (github.com)</a></li>
+<li><a href="https://github.com/datafuselabs/databend/issues/7203">Bug in numerical_coercion of in operator · Issue #7203 · datafuselabs/databend (github.com)</a></li>
+</ul>
+<h4 id="4-ju-bu-wan-quan-tong-ji-mu-qian-ce-chu-de-bug">4、据不完全统计目前测出的Bug</h4>
+<p><a href="https://github.com/datafuselabs/databend/discussions/7162">Can't construct type from Float32(Float32) and Int64(Int64) · Discussion #7162 · datafuselabs/databend (github.com)</a></p>
+<p><a href="https://github.com/datafuselabs/databend/issues/7225">long SQL makes parser work really slow. · Issue #7225 · datafuselabs/databend (github.com)</a></p>
+<p><a href="https://github.com/datafuselabs/databend/issues/7241">bug: const types and nullable types are orthogonal · Issue #7241 · datafuselabs/databend (github.com)</a></p>
+<p><a href="https://github.com/datafuselabs/databend/issues/7203">Bug in numerical_coercion of in operator · Issue #7203 · datafuselabs/databend (github.com)</a></p>
+<p><a href="https://github.com/datafuselabs/databend/issues/7360">sqlancer: expression expansion error · Issue #7360 · datafuselabs/databend (github.com)</a></p>
+<p><a href="https://github.com/datafuselabs/databend/issues/7366">bug: Code: 4000, displayText = block pruning failure, task 1050895 panicked. · Issue #7366 · datafuselabs/databend (github.com)</a></p>
+<p><a href="https://github.com/datafuselabs/databend/issues/7457">bug: where clause error · Issue #7457 · datafuselabs/databend (github.com)</a></p>
+<p><a href="https://github.com/datafuselabs/databend/issues/7460">bug: expression evaluation error · Issue #7460 · datafuselabs/databend (github.com)</a></p>
+<p><a href="https://github.com/datafuselabs/databend/issues/7461">bug: Code: 4000, displayText = unexpected end of file (failed to fill whole buffer) (while in processor thread 15). · Issue #7461 · datafuselabs/databend (github.com)</a></p>
+<p><a href="https://github.com/datafuselabs/databend/issues/7460">bug: expression evaluation error · Issue #7460 · datafuselabs/databend (github.com)</a></p>
+<p><a href="https://github.com/datafuselabs/databend/issues/7463">bug: the content of the result sets mismatch · Issue #7463 · datafuselabs/databend (github.com)</a></p>
+<p><a href="https://github.com/datafuselabs/databend/issues/7464">bug: Code: 4000, displayText = block pruning failure, task 4274595 panicked. · Issue #7464 · datafuselabs/databend (github.com)</a></p>
+<p><a href="https://github.com/datafuselabs/databend/issues/7483">bug: Code: 1058, displayText = downcast column error · Issue #7483 · datafuselabs/databend (github.com)</a></p>
+<p><a href="https://github.com/datafuselabs/databend/issues/7495">bug: Hash table capacity overflow · Issue #7495 · datafuselabs/databend (github.com)</a></p>
+<p><a href="https://github.com/datafuselabs/databend/issues/7498">bug: cannot convert NULL to a non-nullable type · Issue #7498 · datafuselabs/databend (github.com)</a></p>
+<p><a href="https://github.com/datafuselabs/databend/issues/7543">bug: expression explain error · Issue #7543 · datafuselabs/databend (github.com)</a></p>
+<p><a href="https://github.com/datafuselabs/databend/issues/7573">bug: select view error · Issue #7573 · datafuselabs/databend (github.com)</a></p>
+<p><a href="https://github.com/datafuselabs/databend/issues/7863">bug: select error · Issue #7863 · datafuselabs/databend (github.com)</a></p>
+<p><a href="https://github.com/datafuselabs/databend/issues/7864">bug: where clause explain error · Issue #7864 · datafuselabs/databend (github.com)</a></p>
+<p><a href="https://github.com/datafuselabs/databend/issues/7949">bug: ERROR 2013 (HY000): Lost connection to server during query · Issue #7949 · datafuselabs/databend (github.com)</a></p>
+<p><a href="https://github.com/datafuselabs/databend/issues/8000">bug: return error after adding form and join · Issue #8000 · datafuselabs/databend (github.com)</a></p>
+
+        
+        
+<div class="docs-navigation d-flex justify-content-between">
+  
+  
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+          
+        
+      
+        
+        
+          
+        
+      
+        
+        
+          
+        
+      
+        
+        
+          
+            
+              
+              <a href="https:&#x2F;&#x2F;databend-internals.psiace.me&#x2F;docs&#x2F;minibend&#x2F;datasource&#x2F;">
+                <div class="card my-1">
+                  <div class="card-body py-2">
+                    &larr; 第二弹 - Data Source
+                  </div>
+                </div>
+              </a>
+            
+            
+            
+          
+        
+      
+        
+        
+          
+        
+      
+        
+        
+          
+        
+      
+        
+        
+          
+        
+      
+        
+        
+          
+        
+      
+    
+  
+
+  
+  
+  
+  
+  
+    
+    
+    
+      
+      
+        
+      
+    
+      
+      
+        
+      
+    
+      
+      
+        
+      
+    
+      
+      
+        
+      
+    
+      
+      
+        
+      
+    
+      
+      
+        
+      
+    
+      
+      
+        
+          
+          
+          <a class="ms-auto" href="https:&#x2F;&#x2F;databend-internals.psiace.me&#x2F;docs&#x2F;advanced-workshops&#x2F;paper-list&#x2F;">
+            <div class="card my-1">
+              <div class="card-body py-2">
+                推荐阅读的论文清单 &rarr;
+              </div>
+            </div>
+          </a>
+          
+          
+          
+        
+      
+    
+      
+      
+        
+      
+    
+  
+</div>
+
+        
+        <script src="https://giscus.app/client.js" data-repo="psiace/databend-internals" data-repo-id="R_kgDOHQXEtA"
+          data-category="Announcements" data-category-id="DIC_kwDOHQXEtM4CPQhI" data-mapping="title"
+          data-reactions-enabled="1" data-emit-metadata="0" data-input-position="top" data-theme="light_protanopia"
+          data-lang="zh-CN" data-loading="lazy" crossorigin="anonymous" async>
+          </script>
+        
+      </main>
+    </div>
+  </div>
+</div>
+
+
+  
+    
+<footer class="footer text-muted">
+	<div class="container">
+		<div class="row">
+			<div class="col-lg-8 order-last order-lg-first">
+				<ul class="list-inline">
+					
+						<li class="list-inline-item">由 <a href="https://pages.github.com/">GitHub Pages</a> 、<a href="https://www.getzola.org/">Zola</a> 及 <a href="https://github.com/aaranxu/adidoks">AdiDoks</a> 强力驱动</li>
+					
+				</ul>
+			</div>
+			<div class="col-lg-8 order-first order-lg-last text-lg-end">
+				<ul class="list-inline">
+					
+						
+							<li class="list-inline-item"><a href="https://databend-internals.psiace.me/privacy-policy/">隐私政策</a></li>
+						
+							<li class="list-inline-item"><a href="https://databend-internals.psiace.me/docs/contributing/code-of-conduct/">行为准则</a></li>
+						
+					
+				</ul>
+			</div>
+		</div>
+	</div>
+</footer>
+
+  
+
+  
+<script type="text/javascript" src="https://databend-internals.psiace.me/js/main.js" defer></script>
+
+  
+</body>
+</html>

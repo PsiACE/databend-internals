@@ -1,0 +1,663 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="x-ua-compatible" content="ie=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+  <link rel="preload" as="font" href="https://databend-internals.psiace.me/fonts/vendor/jost/jost-v4-latin-regular.woff2" type="font/woff2" crossorigin>
+  <link rel="preload" as="font" href="https://databend-internals.psiace.me/fonts/vendor/jost/jost-v4-latin-700.woff2"  type="font/woff2" crossorigin>
+
+
+<link rel="stylesheet" href="https://databend-internals.psiace.me/main.css">
+
+
+
+  
+  
+    
+  
+
+  
+  
+    
+    
+  
+  
+  
+    
+  
+  
+  
+  
+    
+  
+  
+  
+
+
+  <meta name="robots" content="index, follow">
+  <meta name="googlebot" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1">
+  <meta name="bingbot" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1">
+
+
+	
+
+
+	
+
+<title>Databend 源码阅读：配置管理 | Databend 内幕大揭秘</title>
+<meta name="description" content="“Databend 源码阅读”系列文章的第四篇，从配置入手，解读环境变量、配置文件和命令行选项之间是如何映射的。">
+<link rel="canonical" href="https://databend-internals.psiace.me/docs/source-reading/config/">
+
+
+
+
+
+
+
+
+
+
+<script type="application/ld+json">
+  {
+    "@context": "http://schema.org",
+    "@type": "BreadcrumbList",
+    
+      
+      
+        
+        
+        
+        
+        
+        
+        
+        
+          {
+            "@type": "ListItem",
+            "position":  1 ,
+            "name": "Home",
+            "item": "https://databend-internals.psiace.me/"
+          },
+          
+          
+          {
+            "@type": "ListItem",
+            "position":  2 ,
+            "name": "Docs",
+            "item": "https://databend-internals.psiace.me/docs/"
+          },
+        
+      
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+          
+          
+          {
+            "@type": "ListItem",
+            "position":  3 ,
+            "name": "Source Reading",
+            "item": "https://databend-internals.psiace.me/docs/source-reading/"
+          },
+        
+      
+        
+        
+        
+        
+        
+        
+        
+        
+          
+          
+          {
+            "@type": "ListItem",
+            "position":  4 ,
+            "name": "Config",
+            "item": "https://databend-internals.psiace.me/docs/source-reading/config/"
+          },
+        
+      
+    
+  }
+</script>
+
+
+
+
+
+
+  <meta name="theme-color" content="#fff">
+  <link rel="apple-touch-icon" sizes="180x180" href="https://databend-internals.psiace.me/apple-touch-icon.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="https://databend-internals.psiace.me/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="https://databend-internals.psiace.me/favicon-16x16.png">
+  
+    <link rel="manifest" href="https://databend-internals.psiace.me/site.webmanifest" crossorigin>
+  
+
+
+  
+
+</head>
+
+
+
+<body class="docs single">
+  
+
+
+
+<div class="header-bar fixed-top"></div>
+<header class="navbar fixed-top navbar-expand-md navbar-light">
+	<div class="container">
+		<input class="menu-btn order-0" type="checkbox" id="menu-btn">
+		<label class="menu-icon d-md-none" for="menu-btn"><span class="navicon"></span></label>
+		<a class="navbar-brand order-1 order-md-0 me-auto" href="https://databend-internals.psiace.me">Databend 内幕大揭秘</a>
+		<button id="mode" class="btn btn-link order-2 order-md-4" type="button" aria-label="Toggle mode">
+			<span class="toggle-dark"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-moon"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg></span>
+			<span class="toggle-light"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-sun"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg></span>
+		</button>
+		<ul class="navbar-nav fork-me order-3 order-md-5">
+			
+				
+					<li class="nav-item">
+						<a class="nav-link" href="https://twitter.com/repsiace"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-twitter"><path d="M23 3a10.9 10.9 0 0 1-3.14 1.53 4.48 4.48 0 0 0-7.86 3v1A10.66 10.66 0 0 1 3 4s-4 9 5 13a11.64 11.64 0 0 1-7 2c9 5 20 0 20-11.5a4.5 4.5 0 0 0-.08-.83A7.72 7.72 0 0 0 23 3z"></path></svg><span class="ms-2 visually-hidden">Twitter</span></a>
+					</li>
+				
+					<li class="nav-item">
+						<a class="nav-link" href="https://github.com/psiace/databend-internals"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-github"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"></path></svg><span class="ms-2 visually-hidden">GitHub</span></a>
+					</li>
+				
+			
+		</ul>
+		<div class="collapse navbar-collapse order-4 order-md-1">
+			<ul class="navbar-nav main-nav me-auto order-5 order-md-2">
+				
+					
+				
+				
+				
+					
+						<li class="nav-item docs active">
+							<a class="nav-link" href="https://databend-internals.psiace.me/docs/getting-started/introduction/">在线阅读</a>
+						</li>
+					
+				
+			</ul>
+			<div class="break order-6 d-md-none"></div>
+			
+		</div>
+	</div>
+</header>
+
+
+
+  
+<div class="wrap container" role="document">
+  <div class="content">
+    <div class="row flex-xl-nowrap">
+      
+<div class="col-lg-5 col-xl-4 docs-sidebar">
+	<nav class="docs-links" aria-label="Main navigation">
+			
+			
+			
+			
+					
+					
+					
+							<h3>入门指南</h3>
+							<ul class="list-unstyled">
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/getting-started/introduction/">简介</a></li>
+							
+					</ul>
+					
+					
+					
+					
+							<h3>基础导览</h3>
+							<ul class="list-unstyled">
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/the-basics/storage/">存储</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/the-basics/about-index/">索引</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/the-basics/executor-in-query-process/">查询执行</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/the-basics/query-optimization/">查询优化</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/the-basics/mpp/">大规模并行处理</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/the-basics/distributed/">分布式</a></li>
+							
+					</ul>
+					
+					
+					
+					
+							<h3>特性探索</h3>
+							<ul class="list-unstyled">
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/productivity-topics/databend-rustchinaconf/">使用 Rust 构建云原生数仓 Databend</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/productivity-topics/quality-assurance-in-databend/">Databend 的质量保障</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/productivity-topics/the-databend-way-to-sky/">多云转晴：Databend 的天空计算之路</a></li>
+							
+					</ul>
+					
+					
+					
+					
+							<h3>源码解读</h3>
+							<ul class="list-unstyled">
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/source-reading/intro/">Databend 源码阅读： 开篇</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/source-reading/init-session-handler/">Databend 源码阅读： Query Server 启动、Session 管理及请求处理</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/source-reading/pipeline-execution/">Databend 源码阅读： pipeline 的执行</a></li>
+							                           
+									<li><a class="docs-link active" href="https://databend-internals.psiace.me/docs/source-reading/config/">Databend 源码阅读：配置管理</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/source-reading/pipeline-model-graph-based/">Databend 源码阅读： 图解 pipeline 调度模型</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/source-reading/storage-basics-read-partitions/">Databend 源码阅读： Storage 概要和 Read Partitions</a></li>
+							
+					</ul>
+					
+					
+					
+					
+							<h3>minibend</h3>
+							<ul class="list-unstyled">
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/minibend/intro/">第一弹 - minibend 简介</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/minibend/datasource/">第二弹 - Data Source</a></li>
+							
+					</ul>
+					
+					
+					
+					
+							<h3>开源贡献</h3>
+							<ul class="list-unstyled">
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/contribute-to-databend/development-environment/">如何设置 Databend 开发环境</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/contribute-to-databend/build-and-more/">轻松了解 Databend 构建</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/contribute-to-databend/build-with-pgo/">使用 PGO 优化 Databend 二进制构建</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/contribute-to-databend/write-and-run-tests/">如何为 Databend 添加新的测试</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/contribute-to-databend/how-to-contribute/">如何参与 Databend 开源协作</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/contribute-to-databend/tracing-in-databend/">Databend 全链路追踪</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/contribute-to-databend/how-to-benchmark/">如何对 Databend 进行基准测试</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/contribute-to-databend/how-to-profile/">Databend 性能剖析方法与工具</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/contribute-to-databend/how-to-write-functions/">如何为 Databend 添加新的函数</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/contribute-to-databend/how-to-write-system-table/">如何为 Databend 添加新的系统表</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/contribute-to-databend/release/">Databend 版本发布</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/contribute-to-databend/routine-maintenance/">Databend 的日常维护是怎么进行的</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/contribute-to-databend/faq/">常见问题解答</a></li>
+							
+					</ul>
+					
+					
+					
+					
+							<h3>专题研讨</h3>
+							<ul class="list-unstyled">
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/advanced-workshops/paper-list/">推荐阅读的论文清单</a></li>
+							
+					</ul>
+					
+					
+					
+					
+							<h3>贡献相关</h3>
+							<ul class="list-unstyled">
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/contributing/outline/">大纲速览</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/contributing/code-of-conduct/">行为准则</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/contributing/how-to-contributing/">如何协作</a></li>
+							
+					</ul>
+					
+					
+			
+	</nav>
+</div>
+
+      
+  
+  <nav class="docs-toc d-none d-xl-block col-xl-3" aria-label="Secondary navigation">
+  	<div class="page-links">
+  			<h3>On this page</h3>
+  			<nav id="TableOfContents">
+  					<ul>
+  							
+  							<li><a href="https://databend-internals.psiace.me/docs/source-reading/config/#databend-query-zhong-de-ying-she">Databend Query 中的映射</a></li>
+  							
+  							
+  							<li><a href="https://databend-internals.psiace.me/docs/source-reading/config/#databend-meta-zhong-de-ying-she">Databend Meta 中的映射</a></li>
+  							
+  							
+  					</ul>
+  			</nav>
+  	</div>
+  </nav>
+  
+
+      <main class="docs-content col-lg-11 col-xl-9">
+        <h1>Databend 源码阅读：配置管理</h1>
+        
+        <p>对于 Databend 这样复杂的数据库服务端程序，往往需要支持大量的可配置选项，以帮助运维人员根据实际使用需要管理和调优系统。</p>
+<p>Databend 目前支持三种配置方式：命令行、环境变量和配置文件，优先级依次递减。</p>
+<ul>
+<li>一般情况下，推荐使用配置文件来记录和管理各种配置。</li>
+<li>对于 K8S 集群，为了灵活变更部分配置（比如，特性开关），使用环境变量可能是更优雅的形式。</li>
+<li>命令行则用于调整本地环境下的少数冲突配置。</li>
+</ul>
+<h2 id="databend-query-zhong-de-ying-she">Databend Query 中的映射</h2>
+<p>对于 <code>databend-query</code> ，不管是什么形式的配置，其配置选项几乎可以看作是代码的扁平化树形映射，即基本符合代码中「配置域」+「配置项」的逻辑。</p>
+<ul>
+<li>环境变量和配置文件中，利用 <code>serfig</code> 将代码嵌套展开，使用 <code>_</code> 做为分隔符。</li>
+<li>命令行中稍有不同：一方面，分隔符使用 <code>-</code>；另一方面，部分命令行选项的名称中没有绑定配置域。</li>
+</ul>
+<p>为了更好理解这里的映射关系，我们可以深入到具体一项配置，下面将围绕 <code>admin_api_address</code> 这个配置项展开。</p>
+<ul>
+<li>
+<p>在环境变量上，需要使用 <code>QUERY_ADMIN_API_ADDRESS</code> ，<code>QUERY</code> 表征这个配置所处的域，而 <code>ADMIN_API_ADDRESS</code> 是具体的配置项。</p>
+</li>
+<li>
+<p>在配置文件中，通常是使用 toml 来进行配置。 <code>[query]</code> 表征配置所处的域，<code>admin_api_address</code> 为具体的配置项。</p>
+<pre data-lang="toml" style="background-color:#2b303b;color:#c0c5ce;" class="language-toml "><code class="language-toml" data-lang="toml"><span>[query]
+</span><span style="background-color:#bf616a;color:#2b303b;">...</span><span>
+</span><span style="color:#65737e;"># Databend Query http address.
+</span><span style="color:#65737e;"># For admin RESET API.
+</span><span style="color:#bf616a;">admin_api_address </span><span>= &quot;</span><span style="color:#a3be8c;">0.0.0.0:8081</span><span>&quot;
+</span><span style="background-color:#bf616a;color:#2b303b;">...</span><span>
+</span></code></pre>
+</li>
+<li>
+<p>命令行中需要使用 <code>--admin-api-address</code> 进行配置，这一项没有绑定「配置域」。如果是配置 <code>--storage-s3-access-key-id</code> ，那么「storage」+ 「s3」构成配置域，「access-key-id」是具体的配置项。</p>
+</li>
+</ul>
+<p>在了解如何对 <code>admin_api_address</code> 进行配置后，让我们进入到配置相关的代码，进一步查看映射关系的代码形式（位于 <code>src/query/config/src/config.rs</code>）。</p>
+<pre data-lang="rust" style="background-color:#2b303b;color:#c0c5ce;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="color:#b48ead;">pub struct </span><span>Config {
+</span><span>    ...
+</span><span>
+</span><span>    </span><span style="color:#65737e;">// Query engine config.
+</span><span>    #[</span><span style="color:#bf616a;">clap</span><span>(flatten)]
+</span><span>    </span><span style="color:#b48ead;">pub </span><span style="color:#bf616a;">query</span><span>: QueryConfig,
+</span><span>    
+</span><span>    ...
+</span><span>}
+</span><span>
+</span><span style="color:#65737e;">/// Query config group.
+</span><span>#[</span><span style="color:#bf616a;">derive</span><span>(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, Args)]
+</span><span>#[</span><span style="color:#bf616a;">serde</span><span>(default, deny_unknown_fields)]
+</span><span style="color:#b48ead;">pub struct </span><span>QueryConfig {
+</span><span>    ...
+</span><span>    
+</span><span>    #[</span><span style="color:#bf616a;">clap</span><span>(long, default_value = &quot;</span><span style="color:#a3be8c;">127.0.0.1:8080</span><span>&quot;)]
+</span><span>    </span><span style="color:#b48ead;">pub </span><span style="color:#bf616a;">admin_api_address</span><span>: String,
+</span><span>    
+</span><span>    ...
+</span><span>}
+</span></code></pre>
+<p>因为代码中使用了嵌套的层级结构，最上层是 <code>Config</code>，而 <code>admin_api_address</code> 是 <code>pub query: QueryConfig</code> 中的一个配置项，经过 <code>serfig</code> 处理后，需要使用 <code>QUERY</code> 或者 <code>[query]</code> 表征其所处的域，配置项就还是 <code>admin_api_address</code> 。</p>
+<p>而命令行中具体的配置项名称和默认值会受到 <code>#[clap(long = &quot;&lt;long-name&gt;&quot;, default_value = &quot;&lt;value&gt;&quot;)]</code> 控制），<code>clap</code> 会接管配置：</p>
+<ul>
+<li><code>admin_api_address</code> 就变成了 <code>--admin-api-address</code>。</li>
+<li><code>--storage-s3-access-key-id</code> 而言，其实际的代码层级是 <code>Config</code> -&gt; <code>StorageConfig</code> -&gt;  <code>S3StorageConfig</code> -&gt; <code>access_key_id</code>，字段之上有标注 <code>#[clap(long = &quot;storage-s3-access-key-id&quot;, default_value_t)]</code> ，所以需要使用 <code>--storage-s3-access-key-id</code> 进行配置。</li>
+</ul>
+<h2 id="databend-meta-zhong-de-ying-she">Databend Meta 中的映射</h2>
+<p><code>databend-meta</code> 的配置文件和命令行逻辑与 <code>databend-query</code> 是基本一致的。但是环境变量是通过 <code>serfig</code> 内置的 <code>serde-env</code> 自行定义的映射关系（但同样可以尝试按「配置域」+「配置项」进行理解）。</p>
+<p>同样具体到单独的某项配置来看一下，这里以 <code>log_dir</code> 为例。</p>
+<ul>
+<li>
+<p>在环境变量上，需要使用 <code>METASRV_LOG_DIR</code> ，<code>METASRV</code> 表征这个配置所处的域，而 <code>LOG_DIR</code> 是具体的配置项。</p>
+</li>
+<li>
+<p>而在配置文件中，这一配置项作用于全局，只需要：</p>
+<pre data-lang="toml" style="background-color:#2b303b;color:#c0c5ce;" class="language-toml "><code class="language-toml" data-lang="toml"><span style="color:#bf616a;">log_dir                 </span><span>= &quot;</span><span style="color:#a3be8c;">./.databend/logs1</span><span>&quot;
+</span></code></pre>
+</li>
+<li>
+<p>在命令行中当然也直接 <code>--log-dir</code> 进行配置。</p>
+</li>
+</ul>
+<p>让我们通过代码来解构其映射，代码位于 <code>src/meta/service/src/configs/outer_v0.rs</code>。</p>
+<pre data-lang="rust" style="background-color:#2b303b;color:#c0c5ce;" class="language-rust "><code class="language-rust" data-lang="rust"><span>#[</span><span style="color:#bf616a;">derive</span><span>(Clone, Debug, Serialize, Deserialize, PartialEq, Eq, Parser)]
+</span><span>#[</span><span style="color:#bf616a;">clap</span><span>(about, version = &amp;**METASRV_COMMIT_VERSION, author)]
+</span><span>#[</span><span style="color:#bf616a;">serde</span><span>(default)]
+</span><span style="color:#b48ead;">pub struct </span><span>Config {
+</span><span>    ...
+</span><span>    </span><span style="color:#65737e;">/// Log file dir
+</span><span>    #[</span><span style="color:#bf616a;">clap</span><span>(long = &quot;</span><span style="color:#a3be8c;">log-dir</span><span>&quot;, default_value = &quot;</span><span style="color:#a3be8c;">./.databend/logs</span><span>&quot;)]
+</span><span>    </span><span style="color:#b48ead;">pub </span><span style="color:#bf616a;">log_dir</span><span>: String,
+</span><span>    ...
+</span><span>}
+</span></code></pre>
+<p>配置文件和命令行参数相关的配置项是由 <code>Config</code> 结构体管理的，逻辑与 <code>databend-query</code> 一致，就不再赘述。</p>
+<p>而环境变量的配置项是由 <code>ConfigViaEnv</code> 结构体进行处理的，如下：</p>
+<pre data-lang="rust" style="background-color:#2b303b;color:#c0c5ce;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="color:#65737e;">/// #[serde(flatten)] doesn&#39;t work correctly for env.
+</span><span style="color:#65737e;">/// We should work around it by flatten them manually.
+</span><span style="color:#65737e;">/// We are seeking for better solutions.
+</span><span>#[</span><span style="color:#bf616a;">derive</span><span>(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
+</span><span>#[</span><span style="color:#bf616a;">serde</span><span>(default)]
+</span><span style="color:#b48ead;">pub struct </span><span>ConfigViaEnv {
+</span><span>    ...
+</span><span>    </span><span style="color:#b48ead;">pub </span><span style="color:#bf616a;">metasrv_log_dir</span><span>: String,
+</span><span>    ...
+</span><span>}
+</span></code></pre>
+<p>与 <code>Config</code> 之间的映射关系位于 <code>impl From&lt;Config&gt; for ConfigViaEnv</code> 和 <code>impl Into&lt;Config&gt; for ConfigViaEnv</code> 这两个部分。对于 <code>metasrv_log_dir</code> 而言，就是映射到前面的 <code>log_dir</code> 字段。</p>
+
+        
+        
+<div class="docs-navigation d-flex justify-content-between">
+  
+  
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+          
+        
+      
+        
+        
+          
+        
+      
+        
+        
+          
+        
+      
+        
+        
+          
+        
+      
+        
+        
+          
+        
+      
+        
+        
+          
+            
+              
+              <a href="https:&#x2F;&#x2F;databend-internals.psiace.me&#x2F;docs&#x2F;productivity-topics&#x2F;the-databend-way-to-sky&#x2F;">
+                <div class="card my-1">
+                  <div class="card-body py-2">
+                    &larr; 多云转晴：Databend 的天空计算之路
+                  </div>
+                </div>
+              </a>
+            
+            
+            
+          
+        
+      
+        
+        
+          
+        
+      
+        
+        
+          
+        
+      
+    
+  
+
+  
+  
+  
+  
+  
+    
+    
+    
+      
+      
+        
+      
+    
+      
+      
+        
+      
+    
+      
+      
+        
+      
+    
+      
+      
+        
+      
+    
+      
+      
+        
+          
+          
+          <a class="ms-auto" href="https:&#x2F;&#x2F;databend-internals.psiace.me&#x2F;docs&#x2F;minibend&#x2F;intro&#x2F;">
+            <div class="card my-1">
+              <div class="card-body py-2">
+                第一弹 - minibend 简介 &rarr;
+              </div>
+            </div>
+          </a>
+          
+          
+          
+        
+      
+    
+      
+      
+        
+      
+    
+      
+      
+        
+      
+    
+      
+      
+        
+      
+    
+  
+</div>
+
+        
+        <script src="https://giscus.app/client.js" data-repo="psiace/databend-internals" data-repo-id="R_kgDOHQXEtA"
+          data-category="Announcements" data-category-id="DIC_kwDOHQXEtM4CPQhI" data-mapping="title"
+          data-reactions-enabled="1" data-emit-metadata="0" data-input-position="top" data-theme="light_protanopia"
+          data-lang="zh-CN" data-loading="lazy" crossorigin="anonymous" async>
+          </script>
+        
+      </main>
+    </div>
+  </div>
+</div>
+
+
+  
+    
+<footer class="footer text-muted">
+	<div class="container">
+		<div class="row">
+			<div class="col-lg-8 order-last order-lg-first">
+				<ul class="list-inline">
+					
+						<li class="list-inline-item">由 <a href="https://pages.github.com/">GitHub Pages</a> 、<a href="https://www.getzola.org/">Zola</a> 及 <a href="https://github.com/aaranxu/adidoks">AdiDoks</a> 强力驱动</li>
+					
+				</ul>
+			</div>
+			<div class="col-lg-8 order-first order-lg-last text-lg-end">
+				<ul class="list-inline">
+					
+						
+							<li class="list-inline-item"><a href="https://databend-internals.psiace.me/privacy-policy/">隐私政策</a></li>
+						
+							<li class="list-inline-item"><a href="https://databend-internals.psiace.me/docs/contributing/code-of-conduct/">行为准则</a></li>
+						
+					
+				</ul>
+			</div>
+		</div>
+	</div>
+</footer>
+
+  
+
+  
+<script type="text/javascript" src="https://databend-internals.psiace.me/js/main.js" defer></script>
+
+  
+</body>
+</html>

@@ -1,0 +1,949 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="x-ua-compatible" content="ie=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+  <link rel="preload" as="font" href="https://databend-internals.psiace.me/fonts/vendor/jost/jost-v4-latin-regular.woff2" type="font/woff2" crossorigin>
+  <link rel="preload" as="font" href="https://databend-internals.psiace.me/fonts/vendor/jost/jost-v4-latin-700.woff2"  type="font/woff2" crossorigin>
+
+
+<link rel="stylesheet" href="https://databend-internals.psiace.me/main.css">
+
+
+
+  
+  
+    
+  
+
+  
+  
+    
+    
+  
+  
+  
+    
+  
+  
+  
+  
+    
+  
+  
+  
+
+
+  <meta name="robots" content="index, follow">
+  <meta name="googlebot" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1">
+  <meta name="bingbot" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1">
+
+
+	
+
+
+	
+
+<title>Databend 源码阅读： Query Server 启动、Session 管理及请求处理 | Databend 内幕大揭秘</title>
+<meta name="description" content="“Databend 源码阅读”系列文章的第二篇，帮助大家了解从 databend 启动服务到接受 SQL 请求并开始处理的流程。">
+<link rel="canonical" href="https://databend-internals.psiace.me/docs/source-reading/init-session-handler/">
+
+
+
+
+
+
+
+
+
+
+<script type="application/ld+json">
+  {
+    "@context": "http://schema.org",
+    "@type": "BreadcrumbList",
+    
+      
+      
+        
+        
+        
+        
+        
+        
+        
+        
+          {
+            "@type": "ListItem",
+            "position":  1 ,
+            "name": "Home",
+            "item": "https://databend-internals.psiace.me/"
+          },
+          
+          
+          {
+            "@type": "ListItem",
+            "position":  2 ,
+            "name": "Docs",
+            "item": "https://databend-internals.psiace.me/docs/"
+          },
+        
+      
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+          
+          
+          {
+            "@type": "ListItem",
+            "position":  3 ,
+            "name": "Source Reading",
+            "item": "https://databend-internals.psiace.me/docs/source-reading/"
+          },
+        
+      
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+          
+          
+          {
+            "@type": "ListItem",
+            "position":  4 ,
+            "name": "Init Session Handler",
+            "item": "https://databend-internals.psiace.me/docs/source-reading/init-session-handler/"
+          },
+        
+      
+    
+  }
+</script>
+
+
+
+
+
+
+  <meta name="theme-color" content="#fff">
+  <link rel="apple-touch-icon" sizes="180x180" href="https://databend-internals.psiace.me/apple-touch-icon.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="https://databend-internals.psiace.me/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="https://databend-internals.psiace.me/favicon-16x16.png">
+  
+    <link rel="manifest" href="https://databend-internals.psiace.me/site.webmanifest" crossorigin>
+  
+
+
+  
+
+</head>
+
+
+
+<body class="docs single">
+  
+
+
+
+<div class="header-bar fixed-top"></div>
+<header class="navbar fixed-top navbar-expand-md navbar-light">
+	<div class="container">
+		<input class="menu-btn order-0" type="checkbox" id="menu-btn">
+		<label class="menu-icon d-md-none" for="menu-btn"><span class="navicon"></span></label>
+		<a class="navbar-brand order-1 order-md-0 me-auto" href="https://databend-internals.psiace.me">Databend 内幕大揭秘</a>
+		<button id="mode" class="btn btn-link order-2 order-md-4" type="button" aria-label="Toggle mode">
+			<span class="toggle-dark"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-moon"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg></span>
+			<span class="toggle-light"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-sun"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg></span>
+		</button>
+		<ul class="navbar-nav fork-me order-3 order-md-5">
+			
+				
+					<li class="nav-item">
+						<a class="nav-link" href="https://twitter.com/repsiace"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-twitter"><path d="M23 3a10.9 10.9 0 0 1-3.14 1.53 4.48 4.48 0 0 0-7.86 3v1A10.66 10.66 0 0 1 3 4s-4 9 5 13a11.64 11.64 0 0 1-7 2c9 5 20 0 20-11.5a4.5 4.5 0 0 0-.08-.83A7.72 7.72 0 0 0 23 3z"></path></svg><span class="ms-2 visually-hidden">Twitter</span></a>
+					</li>
+				
+					<li class="nav-item">
+						<a class="nav-link" href="https://github.com/psiace/databend-internals"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-github"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"></path></svg><span class="ms-2 visually-hidden">GitHub</span></a>
+					</li>
+				
+			
+		</ul>
+		<div class="collapse navbar-collapse order-4 order-md-1">
+			<ul class="navbar-nav main-nav me-auto order-5 order-md-2">
+				
+					
+				
+				
+				
+					
+						<li class="nav-item docs active">
+							<a class="nav-link" href="https://databend-internals.psiace.me/docs/getting-started/introduction/">在线阅读</a>
+						</li>
+					
+				
+			</ul>
+			<div class="break order-6 d-md-none"></div>
+			
+		</div>
+	</div>
+</header>
+
+
+
+  
+<div class="wrap container" role="document">
+  <div class="content">
+    <div class="row flex-xl-nowrap">
+      
+<div class="col-lg-5 col-xl-4 docs-sidebar">
+	<nav class="docs-links" aria-label="Main navigation">
+			
+			
+			
+			
+					
+					
+					
+							<h3>入门指南</h3>
+							<ul class="list-unstyled">
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/getting-started/introduction/">简介</a></li>
+							
+					</ul>
+					
+					
+					
+					
+							<h3>基础导览</h3>
+							<ul class="list-unstyled">
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/the-basics/storage/">存储</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/the-basics/about-index/">索引</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/the-basics/executor-in-query-process/">查询执行</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/the-basics/query-optimization/">查询优化</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/the-basics/mpp/">大规模并行处理</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/the-basics/distributed/">分布式</a></li>
+							
+					</ul>
+					
+					
+					
+					
+							<h3>特性探索</h3>
+							<ul class="list-unstyled">
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/productivity-topics/databend-rustchinaconf/">使用 Rust 构建云原生数仓 Databend</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/productivity-topics/quality-assurance-in-databend/">Databend 的质量保障</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/productivity-topics/the-databend-way-to-sky/">多云转晴：Databend 的天空计算之路</a></li>
+							
+					</ul>
+					
+					
+					
+					
+							<h3>源码解读</h3>
+							<ul class="list-unstyled">
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/source-reading/intro/">Databend 源码阅读： 开篇</a></li>
+							                           
+									<li><a class="docs-link active" href="https://databend-internals.psiace.me/docs/source-reading/init-session-handler/">Databend 源码阅读： Query Server 启动、Session 管理及请求处理</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/source-reading/pipeline-execution/">Databend 源码阅读： pipeline 的执行</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/source-reading/config/">Databend 源码阅读：配置管理</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/source-reading/pipeline-model-graph-based/">Databend 源码阅读： 图解 pipeline 调度模型</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/source-reading/storage-basics-read-partitions/">Databend 源码阅读： Storage 概要和 Read Partitions</a></li>
+							
+					</ul>
+					
+					
+					
+					
+							<h3>minibend</h3>
+							<ul class="list-unstyled">
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/minibend/intro/">第一弹 - minibend 简介</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/minibend/datasource/">第二弹 - Data Source</a></li>
+							
+					</ul>
+					
+					
+					
+					
+							<h3>开源贡献</h3>
+							<ul class="list-unstyled">
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/contribute-to-databend/development-environment/">如何设置 Databend 开发环境</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/contribute-to-databend/build-and-more/">轻松了解 Databend 构建</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/contribute-to-databend/build-with-pgo/">使用 PGO 优化 Databend 二进制构建</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/contribute-to-databend/write-and-run-tests/">如何为 Databend 添加新的测试</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/contribute-to-databend/how-to-contribute/">如何参与 Databend 开源协作</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/contribute-to-databend/tracing-in-databend/">Databend 全链路追踪</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/contribute-to-databend/how-to-benchmark/">如何对 Databend 进行基准测试</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/contribute-to-databend/how-to-profile/">Databend 性能剖析方法与工具</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/contribute-to-databend/how-to-write-functions/">如何为 Databend 添加新的函数</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/contribute-to-databend/how-to-write-system-table/">如何为 Databend 添加新的系统表</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/contribute-to-databend/release/">Databend 版本发布</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/contribute-to-databend/routine-maintenance/">Databend 的日常维护是怎么进行的</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/contribute-to-databend/faq/">常见问题解答</a></li>
+							
+					</ul>
+					
+					
+					
+					
+							<h3>专题研讨</h3>
+							<ul class="list-unstyled">
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/advanced-workshops/paper-list/">推荐阅读的论文清单</a></li>
+							
+					</ul>
+					
+					
+					
+					
+							<h3>贡献相关</h3>
+							<ul class="list-unstyled">
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/contributing/outline/">大纲速览</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/contributing/code-of-conduct/">行为准则</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/contributing/how-to-contributing/">如何协作</a></li>
+							
+					</ul>
+					
+					
+			
+	</nav>
+</div>
+
+      
+  
+  <nav class="docs-toc d-none d-xl-block col-xl-3" aria-label="Secondary navigation">
+  	<div class="page-links">
+  			<h3>On this page</h3>
+  			<nav id="TableOfContents">
+  					<ul>
+  							
+  							<li><a href="https://databend-internals.psiace.me/docs/source-reading/init-session-handler/#query-qi-dong-ru-kou">Query 启动入口</a></li>
+  							
+  									<ul>
+  											
+  											<li><a href="https://databend-internals.psiace.me/docs/source-reading/init-session-handler/#globalservices">GlobalServices</a></li>
+  											
+  											<li><a href="https://databend-internals.psiace.me/docs/source-reading/init-session-handler/#shutdownhandle">ShutdownHandle</a></li>
+  											
+  									</ul>
+  							
+  							
+  							<li><a href="https://databend-internals.psiace.me/docs/source-reading/init-session-handler/#session-xiang-guan">Session 相关</a></li>
+  							
+  									<ul>
+  											
+  											<li><a href="https://databend-internals.psiace.me/docs/source-reading/init-session-handler/#sessionmanager">SessionManager</a></li>
+  											
+  											<li><a href="https://databend-internals.psiace.me/docs/source-reading/init-session-handler/#session">Session</a></li>
+  											
+  											<li><a href="https://databend-internals.psiace.me/docs/source-reading/init-session-handler/#querycontext">QueryContext</a></li>
+  											
+  											<li><a href="https://databend-internals.psiace.me/docs/source-reading/init-session-handler/#querycontextshared">QueryContextShared</a></li>
+  											
+  									</ul>
+  							
+  							
+  							<li><a href="https://databend-internals.psiace.me/docs/source-reading/init-session-handler/#handler">Handler</a></li>
+  							
+  							
+  							<li><a href="https://databend-internals.psiace.me/docs/source-reading/init-session-handler/#wei-sheng">尾声</a></li>
+  							
+  							
+  					</ul>
+  			</nav>
+  	</div>
+  </nav>
+  
+
+      <main class="docs-content col-lg-11 col-xl-9">
+        <h1>Databend 源码阅读： Query Server 启动、Session 管理及请求处理</h1>
+        
+        <p>作者：<a href="https://github.com/AriesDevil">AriesDevil</a> | Databend Labs 成员，数据库研发工程师</p>
+<h2 id="query-qi-dong-ru-kou">Query 启动入口</h2>
+<p>Databend Query Server 的启动入口在 <code>databend/src/binaries/query/main.rs</code> 下，在初始化配置之后，它会创建一个 <code>GlobalServices</code> 和 server 关闭时负责处理 shutdown 逻辑的 <code>shutdown_handle</code> 。</p>
+<pre data-lang="rust" style="background-color:#2b303b;color:#c0c5ce;" class="language-rust "><code class="language-rust" data-lang="rust"><span>GlobalServices::init(conf.</span><span style="color:#96b5b4;">clone</span><span>()).await?;
+</span><span style="color:#b48ead;">let mut</span><span> shutdown_handle = ShutdownHandle::create()?;
+</span></code></pre>
+<h3 id="globalservices">GlobalServices</h3>
+<p><code>GlobalServices</code> 负责启动 databend-query 的所有全局服务，这些服务都遵循单一责任原则。</p>
+<pre data-lang="rust" style="background-color:#2b303b;color:#c0c5ce;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="color:#b48ead;">pub struct </span><span>GlobalServices {
+</span><span>    </span><span style="color:#bf616a;">global_runtime</span><span>: UnsafeCell&lt;Option&lt;Arc&lt;Runtime&gt;&gt;&gt;,
+</span><span>    </span><span style="color:#65737e;">// 负责处理 query log
+</span><span>    </span><span style="color:#bf616a;">query_logger</span><span>: UnsafeCell&lt;Option&lt;Arc&lt;QueryLogger&gt;&gt;&gt;,
+</span><span>    </span><span style="color:#65737e;">// 负责 databend query 集群发现
+</span><span>    </span><span style="color:#bf616a;">cluster_discovery</span><span>: UnsafeCell&lt;Option&lt;Arc&lt;ClusterDiscovery&gt;&gt;&gt;,
+</span><span>    </span><span style="color:#65737e;">// 负责与 storage 层交互来读写数据
+</span><span>    </span><span style="color:#bf616a;">storage_operator</span><span>: UnsafeCell&lt;Option&lt;Operator&gt;&gt;,
+</span><span>    </span><span style="color:#bf616a;">async_insert_manager</span><span>: UnsafeCell&lt;Option&lt;Arc&lt;AsyncInsertManager&gt;&gt;&gt;,
+</span><span>    </span><span style="color:#bf616a;">cache_manager</span><span>: UnsafeCell&lt;Option&lt;Arc&lt;CacheManager&gt;&gt;&gt;,
+</span><span>    </span><span style="color:#bf616a;">catalog_manager</span><span>: UnsafeCell&lt;Option&lt;Arc&lt;CatalogManager&gt;&gt;&gt;,
+</span><span>    </span><span style="color:#bf616a;">http_query_manager</span><span>: UnsafeCell&lt;Option&lt;Arc&lt;HttpQueryManager&gt;&gt;&gt;,
+</span><span>    </span><span style="color:#bf616a;">data_exchange_manager</span><span>: UnsafeCell&lt;Option&lt;Arc&lt;DataExchangeManager&gt;&gt;&gt;,
+</span><span>    </span><span style="color:#bf616a;">session_manager</span><span>: UnsafeCell&lt;Option&lt;Arc&lt;SessionManager&gt;&gt;&gt;,
+</span><span>    </span><span style="color:#bf616a;">users_manager</span><span>: UnsafeCell&lt;Option&lt;Arc&lt;UserApiProvider&gt;&gt;&gt;,
+</span><span>    </span><span style="color:#bf616a;">users_role_manager</span><span>: UnsafeCell&lt;Option&lt;Arc&lt;RoleCacheManager&gt;&gt;&gt;,
+</span><span>}
+</span></code></pre>
+<p>GlobalServices 中的全局服务都实现了单例 trait，这些全局管理器后续会有对应的源码分析文章介绍，本文介绍与 Session 处理相关的逻辑。</p>
+<pre data-lang="rust" style="background-color:#2b303b;color:#c0c5ce;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="color:#b48ead;">pub trait </span><span>SingletonImpl&lt;T&gt;: Send + Sync {
+</span><span>    </span><span style="color:#b48ead;">fn </span><span style="color:#8fa1b3;">get</span><span>(&amp;</span><span style="color:#bf616a;">self</span><span>) -&gt; T;
+</span><span>
+</span><span>    </span><span style="color:#b48ead;">fn </span><span style="color:#8fa1b3;">init</span><span>(&amp;</span><span style="color:#bf616a;">self</span><span>, </span><span style="color:#bf616a;">value</span><span>: T) -&gt; Result&lt;()&gt;;
+</span><span>}
+</span><span>
+</span><span style="color:#b48ead;">pub type </span><span>Singleton&lt;T&gt; = Arc&lt;dyn SingletonImpl&lt;T&gt;&gt;;
+</span></code></pre>
+<h3 id="shutdownhandle">ShutdownHandle</h3>
+<p>接下来会根据网络协议初始化 handlers，并把它们注册到 <code>shutdown_handler</code> 的 services 中，任何实现 <code>Server</code> trait 的类型都可以被添加到 services 中。</p>
+<p><img src="https://databend-internals.psiace.me/source-reading/init-session-handler/01-query-server.png" alt="query server" /></p>
+<pre data-lang="rust" style="background-color:#2b303b;color:#c0c5ce;" class="language-rust "><code class="language-rust" data-lang="rust"><span>#[</span><span style="color:#bf616a;">async_trait</span><span>::</span><span style="color:#bf616a;">async_trait</span><span>]
+</span><span style="color:#b48ead;">pub trait </span><span>Server: Send {
+</span><span>    async </span><span style="color:#b48ead;">fn </span><span style="color:#8fa1b3;">shutdown</span><span>(&amp;</span><span style="color:#b48ead;">mut </span><span style="color:#bf616a;">self</span><span>, </span><span style="color:#bf616a;">graceful</span><span>: </span><span style="color:#b48ead;">bool</span><span>);
+</span><span>    async </span><span style="color:#b48ead;">fn </span><span style="color:#8fa1b3;">start</span><span>(&amp;</span><span style="color:#b48ead;">mut </span><span style="color:#bf616a;">self</span><span>, </span><span style="color:#bf616a;">listening</span><span>: SocketAddr) -&gt; Result&lt;SocketAddr&gt;;
+</span><span>}
+</span></code></pre>
+<p>目前 Databend 支持三种协议提交查询请求：MySql, ClickHouse HTTP, Raw HTTP 。</p>
+<pre data-lang="rust" style="background-color:#2b303b;color:#c0c5ce;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="color:#65737e;">// MySQL handler.
+</span><span>{
+</span><span>    </span><span style="color:#b48ead;">let</span><span> hostname = conf.query.mysql_handler_host.</span><span style="color:#96b5b4;">clone</span><span>();
+</span><span>    </span><span style="color:#b48ead;">let</span><span> listening = format!(&quot;</span><span style="color:#d08770;">{}</span><span style="color:#a3be8c;">:</span><span style="color:#d08770;">{}</span><span>&quot;, hostname, conf.query.mysql_handler_port);
+</span><span>    </span><span style="color:#b48ead;">let mut</span><span> handler = MySQLHandler::create(session_manager.</span><span style="color:#96b5b4;">clone</span><span>());
+</span><span>    </span><span style="color:#b48ead;">let</span><span> listening = handler.</span><span style="color:#96b5b4;">start</span><span>(listening.</span><span style="color:#96b5b4;">parse</span><span>()?).await?;
+</span><span>    </span><span style="color:#65737e;">// 注册服务到 shutdown_handle 来处理 server shutdown 时候的关闭逻辑，下同
+</span><span>    shutdown_handle.</span><span style="color:#96b5b4;">add_service</span><span>(handler);
+</span><span>}
+</span><span>
+</span><span style="color:#65737e;">// ClickHouse HTTP handler.
+</span><span>{
+</span><span>    </span><span style="color:#b48ead;">let</span><span> hostname = conf.query.clickhouse_http_handler_host.</span><span style="color:#96b5b4;">clone</span><span>();
+</span><span>    </span><span style="color:#b48ead;">let</span><span> listening = format!(&quot;</span><span style="color:#d08770;">{}</span><span style="color:#a3be8c;">:</span><span style="color:#d08770;">{}</span><span>&quot;, hostname, conf.query.clickhouse_http_handler_port);
+</span><span>
+</span><span>    </span><span style="color:#b48ead;">let mut</span><span> srv = HttpHandler::create(session_manager.</span><span style="color:#96b5b4;">clone</span><span>(), HttpHandlerKind::Clickhouse);
+</span><span>    </span><span style="color:#b48ead;">let</span><span> listening = srv.</span><span style="color:#96b5b4;">start</span><span>(listening.</span><span style="color:#96b5b4;">parse</span><span>()?).await?;
+</span><span>    shutdown_handle.</span><span style="color:#96b5b4;">add_service</span><span>(srv);
+</span><span>}
+</span><span>
+</span><span style="color:#65737e;">// Databend HTTP handler.
+</span><span>{
+</span><span>    </span><span style="color:#b48ead;">let</span><span> hostname = conf.query.http_handler_host.</span><span style="color:#96b5b4;">clone</span><span>();
+</span><span>    </span><span style="color:#b48ead;">let</span><span> listening = format!(&quot;</span><span style="color:#d08770;">{}</span><span style="color:#a3be8c;">:</span><span style="color:#d08770;">{}</span><span>&quot;, hostname, conf.query.http_handler_port);
+</span><span>
+</span><span>    </span><span style="color:#b48ead;">let mut</span><span> srv = HttpHandler::create(session_manager.</span><span style="color:#96b5b4;">clone</span><span>(), HttpHandlerKind::Query);
+</span><span>    </span><span style="color:#b48ead;">let</span><span> listening = srv.</span><span style="color:#96b5b4;">start</span><span>(listening.</span><span style="color:#96b5b4;">parse</span><span>()?).await?;
+</span><span>    shutdown_handle.</span><span style="color:#96b5b4;">add_service</span><span>(srv);
+</span><span>}
+</span></code></pre>
+<p>之后会创建一些其它服务：</p>
+<ul>
+<li>Metric Service ：指标服务。</li>
+<li>Admin Service ：负责处理管理信息。</li>
+<li>RPC Service ：query 节点的 rpc 服务，负责 query 节点之间的通信，使用 arrow flight 协议。</li>
+</ul>
+<pre data-lang="rust" style="background-color:#2b303b;color:#c0c5ce;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="color:#65737e;">// Metric API service.
+</span><span>{
+</span><span>    </span><span style="color:#b48ead;">let</span><span> address = conf.query.metric_api_address.</span><span style="color:#96b5b4;">clone</span><span>();
+</span><span>    </span><span style="color:#b48ead;">let mut</span><span> srv = MetricService::create(session_manager.</span><span style="color:#96b5b4;">clone</span><span>());
+</span><span>    </span><span style="color:#b48ead;">let</span><span> listening = srv.</span><span style="color:#96b5b4;">start</span><span>(address.</span><span style="color:#96b5b4;">parse</span><span>()?).await?;
+</span><span>    shutdown_handle.</span><span style="color:#96b5b4;">add_service</span><span>(srv);
+</span><span>    info!(&quot;</span><span style="color:#a3be8c;">Listening for Metric API: {}/metrics</span><span>&quot;, listening);
+</span><span>}
+</span><span>
+</span><span style="color:#65737e;">// Admin HTTP API service.
+</span><span>{
+</span><span>    </span><span style="color:#b48ead;">let</span><span> address = conf.query.admin_api_address.</span><span style="color:#96b5b4;">clone</span><span>();
+</span><span>    </span><span style="color:#b48ead;">let mut</span><span> srv = HttpService::create(session_manager.</span><span style="color:#96b5b4;">clone</span><span>());
+</span><span>    </span><span style="color:#b48ead;">let</span><span> listening = srv.</span><span style="color:#96b5b4;">start</span><span>(address.</span><span style="color:#96b5b4;">parse</span><span>()?).await?;
+</span><span>    shutdown_handle.</span><span style="color:#96b5b4;">add_service</span><span>(srv);
+</span><span>    info!(&quot;</span><span style="color:#a3be8c;">Listening for Admin HTTP API: {}</span><span>&quot;, listening);
+</span><span>}
+</span><span>
+</span><span style="color:#65737e;">// RPC API service.
+</span><span>{
+</span><span>    </span><span style="color:#b48ead;">let</span><span> address = conf.query.flight_api_address.</span><span style="color:#96b5b4;">clone</span><span>();
+</span><span>    </span><span style="color:#b48ead;">let mut</span><span> srv = RpcService::create(session_manager.</span><span style="color:#96b5b4;">clone</span><span>());
+</span><span>    </span><span style="color:#b48ead;">let</span><span> listening = srv.</span><span style="color:#96b5b4;">start</span><span>(address.</span><span style="color:#96b5b4;">parse</span><span>()?).await?;
+</span><span>    shutdown_handle.</span><span style="color:#96b5b4;">add_service</span><span>(srv);
+</span><span>    info!(&quot;</span><span style="color:#a3be8c;">Listening for RPC API (interserver): {}</span><span>&quot;, listening);
+</span><span>}
+</span></code></pre>
+<p>最后会将这个 query 节点注册到 meta server 中。</p>
+<pre data-lang="rust" style="background-color:#2b303b;color:#c0c5ce;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="color:#65737e;">// Cluster register.
+</span><span>{
+</span><span>    </span><span style="color:#b48ead;">let</span><span> cluster_discovery = session_manager.</span><span style="color:#96b5b4;">get_cluster_discovery</span><span>();
+</span><span>    </span><span style="color:#b48ead;">let</span><span> register_to_metastore = cluster_discovery.</span><span style="color:#96b5b4;">register_to_metastore</span><span>(&amp;conf);
+</span><span>    register_to_metastore.await?;
+</span><span>}
+</span></code></pre>
+<h2 id="session-xiang-guan">Session 相关</h2>
+<p><code>session</code> 主要分为 4 个部分：</p>
+<ul>
+<li><code>session_manager</code> ：全局唯一，负责管理 client session 。</li>
+<li><code>session</code> ：每当有新的 client 连接到 server 之后会创建一个新的 session 并且注册到 <code>session_manager</code> 。</li>
+<li><code>query_ctx</code> ：每一条查询语句会有一个 query_ctx，用来存储当前查询的一些上下文信息 。</li>
+<li><code>query_ctx_shared</code> ：查询语句中的子查询共享的上下文信息 。</li>
+</ul>
+<p><img src="https://databend-internals.psiace.me/source-reading/init-session-handler/02-session.png" alt="session" /></p>
+<p>下面逐一来分析。</p>
+<h3 id="sessionmanager">SessionManager</h3>
+<p>代码位置：<code>query/src/sessions/session_mgr.rs</code> 。</p>
+<pre data-lang="rust" style="background-color:#2b303b;color:#c0c5ce;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="color:#b48ead;">pub struct </span><span>SessionManager {
+</span><span>    </span><span style="color:#b48ead;">pub</span><span>(in </span><span style="color:#bf616a;">crate</span><span>::sessions) conf: Config,
+</span><span>    </span><span style="color:#b48ead;">pub</span><span>(in </span><span style="color:#bf616a;">crate</span><span>::sessions) max_sessions: </span><span style="color:#b48ead;">usize</span><span>,
+</span><span>    </span><span style="color:#b48ead;">pub</span><span>(in </span><span style="color:#bf616a;">crate</span><span>::sessions) active_sessions: Arc&lt;RwLock&lt;HashMap&lt;String, Arc&lt;Session&gt;&gt;&gt;&gt;,
+</span><span>    </span><span style="color:#b48ead;">pub </span><span style="color:#bf616a;">status</span><span>: Arc&lt;RwLock&lt;SessionManagerStatus&gt;&gt;,
+</span><span>
+</span><span>    </span><span style="color:#65737e;">// When session type is MySQL, insert into this map, key is id, val is MySQL connection id.
+</span><span>    </span><span style="color:#b48ead;">pub</span><span>(</span><span style="color:#b48ead;">crate</span><span>) </span><span style="color:#bf616a;">mysql_conn_map</span><span>: Arc&lt;RwLock&lt;HashMap&lt;Option&lt;</span><span style="color:#b48ead;">u32</span><span>&gt;, String&gt;&gt;&gt;,
+</span><span>    </span><span style="color:#b48ead;">pub</span><span>(in </span><span style="color:#bf616a;">crate</span><span>::sessions) mysql_basic_conn_id: AtomicU32,
+</span><span>}
+</span></code></pre>
+<p><code>SessionManager</code> 主要用来创建和销毁 session，对应方法如下：</p>
+<pre data-lang="rust" style="background-color:#2b303b;color:#c0c5ce;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="color:#65737e;">// 根据 client 协议类型来创建 session
+</span><span style="color:#b48ead;">pub</span><span> async </span><span style="color:#b48ead;">fn </span><span style="color:#8fa1b3;">create_session</span><span>(</span><span style="color:#bf616a;">self</span><span>: &amp;Arc&lt;</span><span style="color:#b48ead;">Self</span><span>&gt;, </span><span style="color:#bf616a;">typ</span><span>: SessionType) -&gt; Result&lt;SessionRef&gt;
+</span><span>
+</span><span style="color:#65737e;">// 根据 session id 来销毁 session
+</span><span style="color:#b48ead;">pub fn </span><span style="color:#8fa1b3;">destroy_session</span><span>(</span><span style="color:#bf616a;">self</span><span>: &amp;Arc&lt;</span><span style="color:#b48ead;">Self</span><span>&gt;, </span><span style="color:#bf616a;">session_id</span><span>: &amp;String)
+</span></code></pre>
+<h3 id="session">Session</h3>
+<p>代码位置：<code>query/src/sessions/session.rs</code> 。</p>
+<p>session 主要存储 client-server 的上下文信息，代码命名已经很清晰了，这里就不再过多赘述。</p>
+<pre data-lang="rust" style="background-color:#2b303b;color:#c0c5ce;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="color:#b48ead;">pub struct </span><span>Session {
+</span><span>    </span><span style="color:#b48ead;">pub</span><span>(in </span><span style="color:#bf616a;">crate</span><span>::sessions) id: String,
+</span><span>    </span><span style="color:#b48ead;">pub</span><span>(in </span><span style="color:#bf616a;">crate</span><span>::sessions) typ: RwLock&lt;SessionType&gt;,
+</span><span>    </span><span style="color:#b48ead;">pub</span><span>(in </span><span style="color:#bf616a;">crate</span><span>::sessions) session_ctx: Arc&lt;SessionContext&gt;,
+</span><span>    </span><span style="color:#bf616a;">status</span><span>: Arc&lt;RwLock&lt;SessionStatus&gt;&gt;,
+</span><span>    </span><span style="color:#b48ead;">pub</span><span>(in </span><span style="color:#bf616a;">crate</span><span>::sessions) mysql_connection_id: Option&lt;</span><span style="color:#b48ead;">u32</span><span>&gt;,
+</span><span>}
+</span><span>
+</span><span style="color:#b48ead;">pub struct </span><span>SessionContext {
+</span><span>    </span><span style="color:#bf616a;">conf</span><span>: Config,
+</span><span>    </span><span style="color:#bf616a;">abort</span><span>: AtomicBool,
+</span><span>    </span><span style="color:#bf616a;">current_catalog</span><span>: RwLock&lt;String&gt;,
+</span><span>    </span><span style="color:#bf616a;">current_database</span><span>: RwLock&lt;String&gt;,
+</span><span>    </span><span style="color:#bf616a;">current_tenant</span><span>: RwLock&lt;String&gt;,
+</span><span>    </span><span style="color:#bf616a;">current_user</span><span>: RwLock&lt;Option&lt;UserInfo&gt;&gt;,
+</span><span>    </span><span style="color:#bf616a;">auth_role</span><span>: RwLock&lt;Option&lt;String&gt;&gt;,
+</span><span>    </span><span style="color:#bf616a;">client_host</span><span>: RwLock&lt;Option&lt;SocketAddr&gt;&gt;,
+</span><span>    </span><span style="color:#bf616a;">io_shutdown_tx</span><span>: RwLock&lt;Option&lt;Sender&lt;Sender&lt;()&gt;&gt;&gt;&gt;,
+</span><span>    </span><span style="color:#bf616a;">query_context_shared</span><span>: RwLock&lt;Option&lt;Arc&lt;QueryContextShared&gt;&gt;&gt;,
+</span><span>}
+</span><span>
+</span><span style="color:#b48ead;">pub struct </span><span>SessionStatus {
+</span><span>    </span><span style="color:#b48ead;">pub </span><span style="color:#bf616a;">session_started_at</span><span>: Instant,
+</span><span>    </span><span style="color:#b48ead;">pub </span><span style="color:#bf616a;">last_query_finished_at</span><span>: Option&lt;Instant&gt;,
+</span><span>}
+</span></code></pre>
+<p>Session 的另一个大的功能是负责创建和获取 QueryContext，每次接收到新的 query 请求都会创建一个 QueryContext 并绑定在对应的 query 语句上。</p>
+<h3 id="querycontext">QueryContext</h3>
+<p>代码位置：<code>query/src/sessions/query_ctx.rs</code> 。</p>
+<p><code>QueryContext</code> 主要是维护查询的上下文信息，它通过 <code>QueryContext::create_from_shared</code> (query_ctx_shared) 创建。</p>
+<pre data-lang="rust" style="background-color:#2b303b;color:#c0c5ce;" class="language-rust "><code class="language-rust" data-lang="rust"><span>#[</span><span style="color:#bf616a;">derive</span><span>(Clone)]
+</span><span style="color:#b48ead;">pub struct </span><span>QueryContext {
+</span><span>    </span><span style="color:#bf616a;">version</span><span>: String,
+</span><span>    </span><span style="color:#bf616a;">statistics</span><span>: Arc&lt;RwLock&lt;Statistics&gt;&gt;,
+</span><span>    </span><span style="color:#bf616a;">partition_queue</span><span>: Arc&lt;RwLock&lt;VecDeque&lt;PartInfoPtr&gt;&gt;&gt;,
+</span><span>    </span><span style="color:#bf616a;">shared</span><span>: Arc&lt;QueryContextShared&gt;,
+</span><span>    </span><span style="color:#bf616a;">precommit_blocks</span><span>: Arc&lt;RwLock&lt;Vec&lt;DataBlock&gt;&gt;&gt;,
+</span><span>    </span><span style="color:#bf616a;">fragment_id</span><span>: Arc&lt;AtomicUsize&gt;,
+</span><span>}
+</span></code></pre>
+<p>其中 <code>partition_queue</code> 主要存储查询对应的 <code>PartInfo</code>，包括 part 的地址、版本信息、涉及数据的行数，part 使用的压缩算法、以及涉及到 column 的 meta 信息。在 pipeline build 时候会去设置 partition 。pipeline 后续会有专门的文章介绍。</p>
+<p><code>precommit_blocks</code> 负责暂存插入操作的时已经写入到存储， 但是尚未提交的元数据，<code>DataBlock</code> 主要包含 Column 的元信息引用和 arrow schema 的信息。</p>
+<h3 id="querycontextshared">QueryContextShared</h3>
+<p>代码位置：<code>query/src/sessions/query_ctx_shared.rs</code> 。</p>
+<p>对于包含子查询的查询，需要共享很多上下文信息，这就是 <code>QueryContextShared</code> 存在的理由。</p>
+<pre data-lang="rust" style="background-color:#2b303b;color:#c0c5ce;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="color:#65737e;">/// 数据需要在查询上下文中被共享，这个很重要，比如:
+</span><span style="color:#65737e;">///     USE database_1;
+</span><span style="color:#65737e;">///     SELECT
+</span><span style="color:#65737e;">///         (SELECT scalar FROM table_name_1) AS scalar_1,
+</span><span style="color:#65737e;">///         (SELECT scalar FROM table_name_2) AS scalar_2,
+</span><span style="color:#65737e;">///         (SELECT scalar FROM table_name_3) AS scalar_3
+</span><span style="color:#65737e;">///     FROM table_name_4;
+</span><span style="color:#65737e;">/// 对于上面子查询, 会共享 runtime, session, progress, init_query_id
+</span><span style="color:#b48ead;">pub struct </span><span>QueryContextShared {
+</span><span>    </span><span style="color:#65737e;">/// scan_progress for scan metrics of datablocks (uncompressed)
+</span><span>    </span><span style="color:#b48ead;">pub</span><span>(in </span><span style="color:#bf616a;">crate</span><span>::sessions) scan_progress: Arc&lt;Progress&gt;,
+</span><span>    </span><span style="color:#65737e;">/// write_progress for write/commit metrics of datablocks (uncompressed)
+</span><span>    </span><span style="color:#b48ead;">pub</span><span>(in </span><span style="color:#bf616a;">crate</span><span>::sessions) write_progress: Arc&lt;Progress&gt;,
+</span><span>    </span><span style="color:#65737e;">/// result_progress for metrics of result datablocks (uncompressed)
+</span><span>    </span><span style="color:#b48ead;">pub</span><span>(in </span><span style="color:#bf616a;">crate</span><span>::sessions) result_progress: Arc&lt;Progress&gt;,
+</span><span>    </span><span style="color:#b48ead;">pub</span><span>(in </span><span style="color:#bf616a;">crate</span><span>::sessions) error: Arc&lt;Mutex&lt;Option&lt;ErrorCode&gt;&gt;&gt;,
+</span><span>    </span><span style="color:#b48ead;">pub</span><span>(in </span><span style="color:#bf616a;">crate</span><span>::sessions) session: Arc&lt;Session&gt;,
+</span><span>    </span><span style="color:#b48ead;">pub</span><span>(in </span><span style="color:#bf616a;">crate</span><span>::sessions) runtime: Arc&lt;RwLock&lt;Option&lt;Arc&lt;Runtime&gt;&gt;&gt;&gt;,
+</span><span>    </span><span style="color:#b48ead;">pub</span><span>(in </span><span style="color:#bf616a;">crate</span><span>::sessions) init_query_id: Arc&lt;RwLock&lt;String&gt;&gt;,
+</span><span>    ...
+</span><span>}
+</span></code></pre>
+<p>它提供了 query 上下文所需要的一切基本信息。</p>
+<h2 id="handler">Handler</h2>
+<p>之前提到了 Databend 支持多种 handler，下面就以 mysql 为例，看一下 handler 的处理流程以及如何与 session 产生交互。</p>
+<p>首先 <code>MySQLHandler</code> 会包含一个 <code>SessionManager</code> 的引用。</p>
+<pre data-lang="rust" style="background-color:#2b303b;color:#c0c5ce;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="color:#b48ead;">pub struct </span><span>MySQLHandler {
+</span><span>    </span><span style="color:#bf616a;">abort_handle</span><span>: AbortHandle,
+</span><span>    </span><span style="color:#bf616a;">abort_registration</span><span>: Option&lt;AbortRegistration&gt;,
+</span><span>    </span><span style="color:#bf616a;">join_handle</span><span>: Option&lt;JoinHandle&lt;()&gt;&gt;,
+</span><span>}
+</span></code></pre>
+<p><code>MySQLHandler</code> 在启动后，会 <code>spawn</code> 一个 tokio task 来持续监听 tcp stream，并且创建一个 session 再启动一个 task 去执行之后的查询请求。</p>
+<pre data-lang="rust" style="background-color:#2b303b;color:#c0c5ce;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="color:#b48ead;">fn </span><span style="color:#8fa1b3;">accept_socket</span><span>(</span><span style="color:#bf616a;">session_mgr</span><span>: Arc&lt;SessionManager&gt;, </span><span style="color:#bf616a;">executor</span><span>: Arc&lt;Runtime&gt;, </span><span style="color:#bf616a;">socket</span><span>: TcpStream) {
+</span><span>    executor.</span><span style="color:#96b5b4;">spawn</span><span>(async </span><span style="color:#b48ead;">move </span><span>{
+</span><span>        </span><span style="color:#65737e;">// 创建 session
+</span><span>        </span><span style="color:#b48ead;">match</span><span> session_mgr.</span><span style="color:#96b5b4;">create_session</span><span>(SessionType::MySQL).await {
+</span><span>            Err(error) =&gt; </span><span style="color:#b48ead;">Self</span><span>::reject_session(socket, error).await,
+</span><span>            Ok(session) =&gt; {
+</span><span>                info!(&quot;</span><span style="color:#a3be8c;">MySQL connection coming: {:?}</span><span>&quot;, socket.</span><span style="color:#96b5b4;">peer_addr</span><span>());
+</span><span>                </span><span style="color:#65737e;">// 执行查询
+</span><span>                </span><span style="color:#b48ead;">if let </span><span>Err(error) = MySQLConnection::run_on_stream(session, socket) {
+</span><span>                    error!(&quot;</span><span style="color:#a3be8c;">Unexpected error occurred during query: {:?}</span><span>&quot;, error);
+</span><span>                };
+</span><span>            }
+</span><span>        }
+</span><span>    });
+</span><span>}
+</span></code></pre>
+<p>在 <code>MySQLConnection::run_on_stream</code> 中，session 会先 attach 到对应的 client host 并且注册一个 shutdown 闭包来处理关闭连接关闭时需要执行的清理，关键代码如下：</p>
+<pre data-lang="rust" style="background-color:#2b303b;color:#c0c5ce;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="color:#65737e;">// mysql_session.rs
+</span><span style="color:#b48ead;">pub fn </span><span style="color:#8fa1b3;">run_on_stream</span><span>(</span><span style="color:#bf616a;">session</span><span>: SessionRef, </span><span style="color:#bf616a;">stream</span><span>: TcpStream) -&gt; Result&lt;()&gt; {
+</span><span>    </span><span style="color:#b48ead;">let</span><span> blocking_stream = </span><span style="color:#b48ead;">Self</span><span>::convert_stream(stream)?;
+</span><span>    MySQLConnection::attach_session(&amp;session, &amp;blocking_stream)?;
+</span><span>
+</span><span>    ...
+</span><span>}
+</span><span>
+</span><span style="color:#b48ead;">fn </span><span style="color:#8fa1b3;">attach_session</span><span>(</span><span style="color:#bf616a;">session</span><span>: &amp;SessionRef, </span><span style="color:#bf616a;">blocking_stream</span><span>: &amp;std::net::TcpStream) -&gt; Result&lt;()&gt; {
+</span><span>    </span><span style="color:#b48ead;">let</span><span> host = blocking_stream.</span><span style="color:#96b5b4;">peer_addr</span><span>().</span><span style="color:#96b5b4;">ok</span><span>();
+</span><span>    </span><span style="color:#b48ead;">let</span><span> blocking_stream_ref = blocking_stream.</span><span style="color:#96b5b4;">try_clone</span><span>()?;
+</span><span>    session.</span><span style="color:#96b5b4;">attach</span><span>(host, </span><span style="color:#b48ead;">move </span><span>|| {
+</span><span>        </span><span style="color:#65737e;">// 注册 shutdown 逻辑
+</span><span>        </span><span style="color:#b48ead;">if let </span><span>Err(error) = blocking_stream_ref.</span><span style="color:#96b5b4;">shutdown</span><span>(Shutdown::Both) {
+</span><span>            error!(&quot;</span><span style="color:#a3be8c;">Cannot shutdown MySQL session io {}</span><span>&quot;, error);
+</span><span>        }
+</span><span>    });
+</span><span>
+</span><span>    Ok(())
+</span><span>}
+</span><span>
+</span><span style="color:#65737e;">// session.rs
+</span><span style="color:#b48ead;">pub fn </span><span style="color:#8fa1b3;">attach</span><span>&lt;F&gt;(</span><span style="color:#bf616a;">self</span><span>: &amp;Arc&lt;</span><span style="color:#b48ead;">Self</span><span>&gt;, </span><span style="color:#bf616a;">host</span><span>: Option&lt;SocketAddr&gt;, </span><span style="color:#bf616a;">io_shutdown</span><span>: F)
+</span><span style="color:#b48ead;">where</span><span> F: FnOnce() + Send + </span><span style="color:#b48ead;">&#39;static </span><span>{
+</span><span>    </span><span style="color:#b48ead;">let </span><span>(tx, rx) = oneshot::channel();
+</span><span>    </span><span style="color:#bf616a;">self</span><span>.session_ctx.</span><span style="color:#96b5b4;">set_client_host</span><span>(host);
+</span><span>    </span><span style="color:#bf616a;">self</span><span>.session_ctx.</span><span style="color:#96b5b4;">set_io_shutdown_tx</span><span>(Some(tx));
+</span><span>
+</span><span>    common_base::base::tokio::spawn(async </span><span style="color:#b48ead;">move </span><span>{
+</span><span>        </span><span style="color:#65737e;">// 在 session quit 时候触发清理
+</span><span>        </span><span style="color:#b48ead;">if let </span><span>Ok(tx) = rx.await {
+</span><span>            (io_shutdown)();
+</span><span>            tx.</span><span style="color:#96b5b4;">send</span><span>(()).</span><span style="color:#96b5b4;">ok</span><span>();
+</span><span>        }
+</span><span>    });
+</span><span>}
+</span></code></pre>
+<p>之后会启动一个 MySQL InteractiveWorker 来处理后续的查询。</p>
+<pre data-lang="rust" style="background-color:#2b303b;color:#c0c5ce;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="color:#b48ead;">let</span><span> join_handle = query_executor.</span><span style="color:#96b5b4;">spawn</span><span>(async </span><span style="color:#b48ead;">move </span><span>{
+</span><span>    </span><span style="color:#b48ead;">let</span><span> client_addr = non_blocking_stream.</span><span style="color:#96b5b4;">peer_addr</span><span>().</span><span style="color:#96b5b4;">unwrap</span><span>().</span><span style="color:#96b5b4;">to_string</span><span>();
+</span><span>    </span><span style="color:#b48ead;">let</span><span> interactive_worker = InteractiveWorker::create(session, client_addr);
+</span><span>    </span><span style="color:#b48ead;">let</span><span> opts = IntermediaryOptions {
+</span><span>        process_use_statement_on_query: </span><span style="color:#d08770;">true</span><span>,
+</span><span>    };
+</span><span>    </span><span style="color:#b48ead;">let </span><span>(r, w) = non_blocking_stream.</span><span style="color:#96b5b4;">into_split</span><span>();
+</span><span>    </span><span style="color:#b48ead;">let</span><span> w = BufWriter::with_capacity(</span><span style="color:#d08770;">DEFAULT_RESULT_SET_WRITE_BUFFER_SIZE</span><span>, w);
+</span><span>    AsyncMysqlIntermediary::run_with_options(interactive_worker, r, w, &amp;opts).await
+</span><span>});
+</span><span style="color:#b48ead;">let </span><span>_ = futures::executor::block_on(join_handle);
+</span></code></pre>
+<p>该 <code>InteractiveWorker</code> 会实现 <code>AsyncMysqlShim</code> trait 的方法，比如：<code>on_execute</code> 、<code>on_query</code> 等。查询到来时会回调这些方法来执行查询。</p>
+<p>这里以 <code>on_query</code> 为例，关键代码如下：</p>
+<pre data-lang="rust" style="background-color:#2b303b;color:#c0c5ce;" class="language-rust "><code class="language-rust" data-lang="rust"><span>async </span><span style="color:#b48ead;">fn </span><span style="color:#8fa1b3;">on_query</span><span>&lt;</span><span style="color:#b48ead;">&#39;a</span><span>&gt;(
+</span><span>    &amp;</span><span style="color:#b48ead;">&#39;a mut </span><span style="color:#bf616a;">self</span><span>,
+</span><span>    </span><span style="color:#bf616a;">query</span><span>: &amp;</span><span style="color:#b48ead;">&#39;a str</span><span>,
+</span><span>    </span><span style="color:#bf616a;">writer</span><span>: QueryResultWriter&lt;</span><span style="color:#b48ead;">&#39;a</span><span>, W&gt;,
+</span><span>) -&gt; Result&lt;()&gt; {
+</span><span>    ...
+</span><span>
+</span><span>    </span><span style="color:#65737e;">// response writer
+</span><span>    </span><span style="color:#b48ead;">let mut</span><span> writer = DFQueryResultWriter::create(writer);
+</span><span>
+</span><span>    </span><span style="color:#b48ead;">let</span><span> instant = Instant::now();
+</span><span>    </span><span style="color:#65737e;">// 执行查询
+</span><span>    </span><span style="color:#b48ead;">let</span><span> blocks = </span><span style="color:#bf616a;">self</span><span>.base.</span><span style="color:#96b5b4;">do_query</span><span>(query).await;
+</span><span>
+</span><span>    </span><span style="color:#65737e;">// 回写结果
+</span><span>    </span><span style="color:#b48ead;">let</span><span> format = </span><span style="color:#bf616a;">self</span><span>.base.session.</span><span style="color:#96b5b4;">get_format_settings</span><span>()?;
+</span><span>    </span><span style="color:#b48ead;">let mut</span><span> write_result = writer.</span><span style="color:#96b5b4;">write</span><span>(blocks, &amp;format);
+</span><span>
+</span><span>    ...
+</span><span>
+</span><span>    </span><span style="color:#65737e;">// metrics 信息
+</span><span>    histogram!(
+</span><span>        </span><span style="color:#b48ead;">super</span><span>::mysql_metrics::</span><span style="color:#d08770;">METRIC_MYSQL_PROCESSOR_REQUEST_DURATION</span><span>,
+</span><span>        instant.</span><span style="color:#96b5b4;">elapsed</span><span>()
+</span><span>    );
+</span><span>
+</span><span>    write_result
+</span><span>}
+</span></code></pre>
+<p>在 <code>do_query</code> 中会创建 <code>QueryContext</code> 并开始解析 sql 流程来完成后续的整个 sql 查询。关键代码如下：</p>
+<pre data-lang="rust" style="background-color:#2b303b;color:#c0c5ce;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="color:#65737e;">// 创建 QueryContext
+</span><span style="color:#b48ead;">let</span><span> context = </span><span style="color:#bf616a;">self</span><span>.session.</span><span style="color:#96b5b4;">create_query_context</span><span>().await?;
+</span><span style="color:#65737e;">// 关联到查询语句
+</span><span>context.</span><span style="color:#96b5b4;">attach_query_str</span><span>(query);
+</span><span>
+</span><span style="color:#b48ead;">let</span><span> settings = context.</span><span style="color:#96b5b4;">get_settings</span><span>();
+</span><span>
+</span><span style="color:#65737e;">// parse sql
+</span><span style="color:#b48ead;">let</span><span> stmts_hints = DfParser::parse_sql(query, context.</span><span style="color:#96b5b4;">get_current_session</span><span>().</span><span style="color:#96b5b4;">get_type</span><span>());
+</span><span>...
+</span><span>
+</span><span style="color:#65737e;">// 创建并生成查询计划
+</span><span style="color:#b48ead;">let mut</span><span> planner = Planner::new(context.</span><span style="color:#96b5b4;">clone</span><span>());
+</span><span style="color:#b48ead;">let</span><span> interpreter = planner.</span><span style="color:#96b5b4;">plan_sql</span><span>(query).await.</span><span style="color:#96b5b4;">and_then</span><span>(|</span><span style="color:#bf616a;">v</span><span>| {
+</span><span>    has_result_set = </span><span style="color:#96b5b4;">has_result_set_by_plan</span><span>(&amp;v.</span><span style="color:#d08770;">0</span><span>);
+</span><span>    InterpreterFactoryV2::get(context.</span><span style="color:#96b5b4;">clone</span><span>(), &amp;v.</span><span style="color:#d08770;">0</span><span>)
+</span><span>})
+</span><span>
+</span><span style="color:#65737e;">// 执行查询，返回结果
+</span><span style="color:#b48ead;">Self</span><span>::exec_query(interpreter.</span><span style="color:#96b5b4;">clone</span><span>(), &amp;context).await?;
+</span><span style="color:#b48ead;">let</span><span> schema = interpreter.</span><span style="color:#96b5b4;">schema</span><span>();
+</span><span>Ok(QueryResult::create(
+</span><span>    blocks,
+</span><span>    extra_info,
+</span><span>    has_result_set,
+</span><span>    schema,
+</span><span>))
+</span></code></pre>
+<h2 id="wei-sheng">尾声</h2>
+<p>以上就是从 Databend 启动服务到接受 SQL 请求并开始处理的流程。最近我们因为一些原因（ClickHouse TCP 协议偏向 ClickHouse 的底层，协议没有公开的文档说明，同时里面历史包袱比较重，排查问题浪费大量精力）去掉了 ClickHouse Native TCP Client，具体请参见: <a href="https://github.com/datafuselabs/databend/pull/7012">https://github.com/datafuselabs/databend/pull/7012</a></p>
+<p>如果你阅读完代码有好的提议，欢迎来这里讨论，另外如果发现相关的问题，可以提交到 issue 来帮助我们提高 Databend 的稳定性。Databend 社区欢迎一切善意的意见和建议 :)</p>
+
+        
+        
+<div class="docs-navigation d-flex justify-content-between">
+  
+  
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+          
+        
+      
+        
+        
+          
+        
+      
+        
+        
+          
+        
+      
+        
+        
+          
+        
+      
+        
+        
+          
+        
+      
+        
+        
+          
+            
+              
+              <a href="https:&#x2F;&#x2F;databend-internals.psiace.me&#x2F;docs&#x2F;productivity-topics&#x2F;the-databend-way-to-sky&#x2F;">
+                <div class="card my-1">
+                  <div class="card-body py-2">
+                    &larr; 多云转晴：Databend 的天空计算之路
+                  </div>
+                </div>
+              </a>
+            
+            
+            
+          
+        
+      
+        
+        
+          
+        
+      
+        
+        
+          
+        
+      
+    
+  
+
+  
+  
+  
+  
+  
+    
+    
+    
+      
+      
+        
+      
+    
+      
+      
+        
+      
+    
+      
+      
+        
+      
+    
+      
+      
+        
+      
+    
+      
+      
+        
+          
+          
+          <a class="ms-auto" href="https:&#x2F;&#x2F;databend-internals.psiace.me&#x2F;docs&#x2F;minibend&#x2F;intro&#x2F;">
+            <div class="card my-1">
+              <div class="card-body py-2">
+                第一弹 - minibend 简介 &rarr;
+              </div>
+            </div>
+          </a>
+          
+          
+          
+        
+      
+    
+      
+      
+        
+      
+    
+      
+      
+        
+      
+    
+      
+      
+        
+      
+    
+  
+</div>
+
+        
+        <script src="https://giscus.app/client.js" data-repo="psiace/databend-internals" data-repo-id="R_kgDOHQXEtA"
+          data-category="Announcements" data-category-id="DIC_kwDOHQXEtM4CPQhI" data-mapping="title"
+          data-reactions-enabled="1" data-emit-metadata="0" data-input-position="top" data-theme="light_protanopia"
+          data-lang="zh-CN" data-loading="lazy" crossorigin="anonymous" async>
+          </script>
+        
+      </main>
+    </div>
+  </div>
+</div>
+
+
+  
+    
+<footer class="footer text-muted">
+	<div class="container">
+		<div class="row">
+			<div class="col-lg-8 order-last order-lg-first">
+				<ul class="list-inline">
+					
+						<li class="list-inline-item">由 <a href="https://pages.github.com/">GitHub Pages</a> 、<a href="https://www.getzola.org/">Zola</a> 及 <a href="https://github.com/aaranxu/adidoks">AdiDoks</a> 强力驱动</li>
+					
+				</ul>
+			</div>
+			<div class="col-lg-8 order-first order-lg-last text-lg-end">
+				<ul class="list-inline">
+					
+						
+							<li class="list-inline-item"><a href="https://databend-internals.psiace.me/privacy-policy/">隐私政策</a></li>
+						
+							<li class="list-inline-item"><a href="https://databend-internals.psiace.me/docs/contributing/code-of-conduct/">行为准则</a></li>
+						
+					
+				</ul>
+			</div>
+		</div>
+	</div>
+</footer>
+
+  
+
+  
+<script type="text/javascript" src="https://databend-internals.psiace.me/js/main.js" defer></script>
+
+  
+</body>
+</html>

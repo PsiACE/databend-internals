@@ -1,0 +1,826 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="x-ua-compatible" content="ie=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+  <link rel="preload" as="font" href="https://databend-internals.psiace.me/fonts/vendor/jost/jost-v4-latin-regular.woff2" type="font/woff2" crossorigin>
+  <link rel="preload" as="font" href="https://databend-internals.psiace.me/fonts/vendor/jost/jost-v4-latin-700.woff2"  type="font/woff2" crossorigin>
+
+
+<link rel="stylesheet" href="https://databend-internals.psiace.me/main.css">
+
+
+
+  
+  
+    
+  
+
+  
+  
+    
+    
+  
+  
+  
+    
+  
+  
+  
+  
+    
+  
+  
+  
+
+
+  <meta name="robots" content="index, follow">
+  <meta name="googlebot" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1">
+  <meta name="bingbot" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1">
+
+
+	
+
+
+	
+
+<title>如何对 Databend 进行基准测试 | Databend 内幕大揭秘</title>
+<meta name="description" content="Databend 的设计目标之一就是保持最佳性能，为了更好观测和评估性能，社区不光提供一套简单的本地基准测试方案，还建立了可视化的持续基准测试。">
+<link rel="canonical" href="https://databend-internals.psiace.me/docs/contribute-to-databend/how-to-benchmark/">
+
+
+
+
+
+
+
+
+
+
+<script type="application/ld+json">
+  {
+    "@context": "http://schema.org",
+    "@type": "BreadcrumbList",
+    
+      
+      
+        
+        
+        
+        
+        
+        
+        
+        
+          {
+            "@type": "ListItem",
+            "position":  1 ,
+            "name": "Home",
+            "item": "https://databend-internals.psiace.me/"
+          },
+          
+          
+          {
+            "@type": "ListItem",
+            "position":  2 ,
+            "name": "Docs",
+            "item": "https://databend-internals.psiace.me/docs/"
+          },
+        
+      
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+          
+          
+          {
+            "@type": "ListItem",
+            "position":  3 ,
+            "name": "Contribute To Databend",
+            "item": "https://databend-internals.psiace.me/docs/contribute-to-databend/"
+          },
+        
+      
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+          
+          
+          {
+            "@type": "ListItem",
+            "position":  4 ,
+            "name": "How To Benchmark",
+            "item": "https://databend-internals.psiace.me/docs/contribute-to-databend/how-to-benchmark/"
+          },
+        
+      
+    
+  }
+</script>
+
+
+
+
+
+
+  <meta name="theme-color" content="#fff">
+  <link rel="apple-touch-icon" sizes="180x180" href="https://databend-internals.psiace.me/apple-touch-icon.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="https://databend-internals.psiace.me/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="https://databend-internals.psiace.me/favicon-16x16.png">
+  
+    <link rel="manifest" href="https://databend-internals.psiace.me/site.webmanifest" crossorigin>
+  
+
+
+  
+
+</head>
+
+
+
+<body class="docs single">
+  
+
+
+
+<div class="header-bar fixed-top"></div>
+<header class="navbar fixed-top navbar-expand-md navbar-light">
+	<div class="container">
+		<input class="menu-btn order-0" type="checkbox" id="menu-btn">
+		<label class="menu-icon d-md-none" for="menu-btn"><span class="navicon"></span></label>
+		<a class="navbar-brand order-1 order-md-0 me-auto" href="https://databend-internals.psiace.me">Databend 内幕大揭秘</a>
+		<button id="mode" class="btn btn-link order-2 order-md-4" type="button" aria-label="Toggle mode">
+			<span class="toggle-dark"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-moon"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg></span>
+			<span class="toggle-light"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-sun"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg></span>
+		</button>
+		<ul class="navbar-nav fork-me order-3 order-md-5">
+			
+				
+					<li class="nav-item">
+						<a class="nav-link" href="https://twitter.com/repsiace"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-twitter"><path d="M23 3a10.9 10.9 0 0 1-3.14 1.53 4.48 4.48 0 0 0-7.86 3v1A10.66 10.66 0 0 1 3 4s-4 9 5 13a11.64 11.64 0 0 1-7 2c9 5 20 0 20-11.5a4.5 4.5 0 0 0-.08-.83A7.72 7.72 0 0 0 23 3z"></path></svg><span class="ms-2 visually-hidden">Twitter</span></a>
+					</li>
+				
+					<li class="nav-item">
+						<a class="nav-link" href="https://github.com/psiace/databend-internals"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-github"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"></path></svg><span class="ms-2 visually-hidden">GitHub</span></a>
+					</li>
+				
+			
+		</ul>
+		<div class="collapse navbar-collapse order-4 order-md-1">
+			<ul class="navbar-nav main-nav me-auto order-5 order-md-2">
+				
+					
+				
+				
+				
+					
+						<li class="nav-item docs active">
+							<a class="nav-link" href="https://databend-internals.psiace.me/docs/getting-started/introduction/">在线阅读</a>
+						</li>
+					
+				
+			</ul>
+			<div class="break order-6 d-md-none"></div>
+			
+		</div>
+	</div>
+</header>
+
+
+
+  
+<div class="wrap container" role="document">
+  <div class="content">
+    <div class="row flex-xl-nowrap">
+      
+<div class="col-lg-5 col-xl-4 docs-sidebar">
+	<nav class="docs-links" aria-label="Main navigation">
+			
+			
+			
+			
+					
+					
+					
+							<h3>入门指南</h3>
+							<ul class="list-unstyled">
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/getting-started/introduction/">简介</a></li>
+							
+					</ul>
+					
+					
+					
+					
+							<h3>基础导览</h3>
+							<ul class="list-unstyled">
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/the-basics/storage/">存储</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/the-basics/about-index/">索引</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/the-basics/executor-in-query-process/">查询执行</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/the-basics/query-optimization/">查询优化</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/the-basics/mpp/">大规模并行处理</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/the-basics/distributed/">分布式</a></li>
+							
+					</ul>
+					
+					
+					
+					
+							<h3>特性探索</h3>
+							<ul class="list-unstyled">
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/productivity-topics/databend-rustchinaconf/">使用 Rust 构建云原生数仓 Databend</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/productivity-topics/quality-assurance-in-databend/">Databend 的质量保障</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/productivity-topics/the-databend-way-to-sky/">多云转晴：Databend 的天空计算之路</a></li>
+							
+					</ul>
+					
+					
+					
+					
+							<h3>源码解读</h3>
+							<ul class="list-unstyled">
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/source-reading/intro/">Databend 源码阅读： 开篇</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/source-reading/init-session-handler/">Databend 源码阅读： Query Server 启动、Session 管理及请求处理</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/source-reading/pipeline-execution/">Databend 源码阅读： pipeline 的执行</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/source-reading/config/">Databend 源码阅读：配置管理</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/source-reading/pipeline-model-graph-based/">Databend 源码阅读： 图解 pipeline 调度模型</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/source-reading/storage-basics-read-partitions/">Databend 源码阅读： Storage 概要和 Read Partitions</a></li>
+							
+					</ul>
+					
+					
+					
+					
+							<h3>minibend</h3>
+							<ul class="list-unstyled">
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/minibend/intro/">第一弹 - minibend 简介</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/minibend/datasource/">第二弹 - Data Source</a></li>
+							
+					</ul>
+					
+					
+					
+					
+							<h3>开源贡献</h3>
+							<ul class="list-unstyled">
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/contribute-to-databend/development-environment/">如何设置 Databend 开发环境</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/contribute-to-databend/build-and-more/">轻松了解 Databend 构建</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/contribute-to-databend/build-with-pgo/">使用 PGO 优化 Databend 二进制构建</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/contribute-to-databend/write-and-run-tests/">如何为 Databend 添加新的测试</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/contribute-to-databend/how-to-contribute/">如何参与 Databend 开源协作</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/contribute-to-databend/tracing-in-databend/">Databend 全链路追踪</a></li>
+							                           
+									<li><a class="docs-link active" href="https://databend-internals.psiace.me/docs/contribute-to-databend/how-to-benchmark/">如何对 Databend 进行基准测试</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/contribute-to-databend/how-to-profile/">Databend 性能剖析方法与工具</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/contribute-to-databend/how-to-write-functions/">如何为 Databend 添加新的函数</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/contribute-to-databend/how-to-write-system-table/">如何为 Databend 添加新的系统表</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/contribute-to-databend/release/">Databend 版本发布</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/contribute-to-databend/routine-maintenance/">Databend 的日常维护是怎么进行的</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/contribute-to-databend/faq/">常见问题解答</a></li>
+							
+					</ul>
+					
+					
+					
+					
+							<h3>专题研讨</h3>
+							<ul class="list-unstyled">
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/advanced-workshops/paper-list/">推荐阅读的论文清单</a></li>
+							
+					</ul>
+					
+					
+					
+					
+							<h3>贡献相关</h3>
+							<ul class="list-unstyled">
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/contributing/outline/">大纲速览</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/contributing/code-of-conduct/">行为准则</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/contributing/how-to-contributing/">如何协作</a></li>
+							
+					</ul>
+					
+					
+			
+	</nav>
+</div>
+
+      
+  
+  <nav class="docs-toc d-none d-xl-block col-xl-3" aria-label="Secondary navigation">
+  	<div class="page-links">
+  			<h3>On this page</h3>
+  			<nav id="TableOfContents">
+  					<ul>
+  							
+  							<li><a href="https://databend-internals.psiace.me/docs/contribute-to-databend/how-to-benchmark/#ben-di-ji-zhun-ce-shi">本地基准测试</a></li>
+  							
+  									<ul>
+  											
+  											<li><a href="https://databend-internals.psiace.me/docs/contribute-to-databend/how-to-benchmark/#qian-qi-zhun-bei">前期准备</a></li>
+  											
+  											<li><a href="https://databend-internals.psiace.me/docs/contribute-to-databend/how-to-benchmark/#she-ji-ji-zhun-ce-shi-tao-jian">设计基准测试套件</a></li>
+  											
+  											<li><a href="https://databend-internals.psiace.me/docs/contribute-to-databend/how-to-benchmark/#shi-yong-bash-jiao-ben-jian-hua-liu-cheng">使用 bash 脚本简化流程</a></li>
+  											
+  											<li><a href="https://databend-internals.psiace.me/docs/contribute-to-databend/how-to-benchmark/#zhi-xing-ji-zhun-ce-shi-bing-huo-qu-jie-guo">执行基准测试并获取结果</a></li>
+  											
+  									</ul>
+  							
+  							
+  							<li><a href="https://databend-internals.psiace.me/docs/contribute-to-databend/how-to-benchmark/#chi-xu-ji-zhun-ce-shi">持续基准测试</a></li>
+  							
+  									<ul>
+  											
+  											<li><a href="https://databend-internals.psiace.me/docs/contribute-to-databend/how-to-benchmark/#ji-ben-jie-shao">基本介绍</a></li>
+  											
+  											<li><a href="https://databend-internals.psiace.me/docs/contribute-to-databend/how-to-benchmark/#ce-shi-tao-jian">测试套件</a></li>
+  											
+  											<li><a href="https://databend-internals.psiace.me/docs/contribute-to-databend/how-to-benchmark/#shu-ju-chu-li">数据处理</a></li>
+  											
+  											<li><a href="https://databend-internals.psiace.me/docs/contribute-to-databend/how-to-benchmark/#ke-shi-hua">可视化</a></li>
+  											
+  											<li><a href="https://databend-internals.psiace.me/docs/contribute-to-databend/how-to-benchmark/#hou-xu-you-hua">后续优化</a></li>
+  											
+  									</ul>
+  							
+  							
+  					</ul>
+  			</nav>
+  	</div>
+  </nav>
+  
+
+      <main class="docs-content col-lg-11 col-xl-9">
+        <h1>如何对 Databend 进行基准测试</h1>
+        <p class="lead">Databend 的设计目标之一就是保持最佳性能，为了更好观测和评估性能，社区不光提供一套简单的本地基准测试方案，还建立了可视化的持续基准测试。</p>
+        <h2 id="ben-di-ji-zhun-ce-shi">本地基准测试</h2>
+<p>hyperfine 是一种跨平台的命令行基准测试工具，支持预热和参数化基准测试。</p>
+<p>Databend 建议使用 hyperfine 通过 ClickHouse / MySQL 客户端执行基准测试，本文将使用 MySQL 客户端来介绍它。</p>
+<h3 id="qian-qi-zhun-bei">前期准备</h3>
+<p>进行本地基准测试之前，必须完成以下几项准备工作：</p>
+<ul>
+<li>参照 <a href="https://databend.rs/doc/deploy">Docs - Deploy Databend</a> 完成部署。</li>
+<li>安装 MySQL 客户端。</li>
+<li>根据 <a href="https://github.com/sharkdp/hyperfine#installation">hyperfine - installation</a> 的提示安装 hyperfine 。</li>
+</ul>
+<h3 id="she-ji-ji-zhun-ce-shi-tao-jian">设计基准测试套件</h3>
+<p>根据你的数据集特征和关键查询设计 SQL 语句，如果需要预先加载数据，请参考 <a href="https://databend.rs/doc/load-data">Docs - Load Data</a> 。</p>
+<p>为方便示范，这里选用 <a href="https://databend.rs/doc/contributing/benchmarking#vectorized-execution-benchmarking">Continuous Benchmarking - Vectorized Execution Benchmarking</a> 列出的 10 条语句，保存到 <code>bench.sql</code> 中。</p>
+<pre data-lang="sql" style="background-color:#2b303b;color:#c0c5ce;" class="language-sql "><code class="language-sql" data-lang="sql"><span style="color:#b48ead;">SELECT </span><span style="color:#96b5b4;">avg</span><span>(</span><span style="color:#b48ead;">number</span><span>) </span><span style="color:#b48ead;">FROM</span><span> numbers_mt(</span><span style="color:#d08770;">100000000000</span><span>)
+</span><span style="color:#b48ead;">SELECT </span><span style="color:#96b5b4;">sum</span><span>(</span><span style="color:#b48ead;">number</span><span>) </span><span style="color:#b48ead;">FROM</span><span> numbers_mt(</span><span style="color:#d08770;">100000000000</span><span>)
+</span><span style="color:#b48ead;">SELECT </span><span style="color:#96b5b4;">min</span><span>(</span><span style="color:#b48ead;">number</span><span>) </span><span style="color:#b48ead;">FROM</span><span> numbers_mt(</span><span style="color:#d08770;">100000000000</span><span>)
+</span><span style="color:#b48ead;">SELECT </span><span style="color:#96b5b4;">max</span><span>(</span><span style="color:#b48ead;">number</span><span>) </span><span style="color:#b48ead;">FROM</span><span> numbers_mt(</span><span style="color:#d08770;">100000000000</span><span>)
+</span><span style="color:#b48ead;">SELECT </span><span style="color:#96b5b4;">count</span><span>(</span><span style="color:#b48ead;">number</span><span>) </span><span style="color:#b48ead;">FROM</span><span> numbers_mt(</span><span style="color:#d08770;">100000000000</span><span>)
+</span><span style="color:#b48ead;">SELECT </span><span style="color:#96b5b4;">sum</span><span>(</span><span style="color:#b48ead;">number</span><span>+</span><span style="color:#b48ead;">number</span><span>+</span><span style="color:#b48ead;">number</span><span>) </span><span style="color:#b48ead;">FROM</span><span> numbers_mt(</span><span style="color:#d08770;">100000000000</span><span>)
+</span><span style="color:#b48ead;">SELECT </span><span style="color:#96b5b4;">sum</span><span>(</span><span style="color:#b48ead;">number</span><span>) / </span><span style="color:#96b5b4;">count</span><span>(</span><span style="color:#b48ead;">number</span><span>) </span><span style="color:#b48ead;">FROM</span><span> numbers_mt(</span><span style="color:#d08770;">100000000000</span><span>)
+</span><span style="color:#b48ead;">SELECT </span><span style="color:#96b5b4;">sum</span><span>(</span><span style="color:#b48ead;">number</span><span>) / </span><span style="color:#96b5b4;">count</span><span>(</span><span style="color:#b48ead;">number</span><span>), </span><span style="color:#96b5b4;">max</span><span>(</span><span style="color:#b48ead;">number</span><span>), </span><span style="color:#96b5b4;">min</span><span>(</span><span style="color:#b48ead;">number</span><span>) </span><span style="color:#b48ead;">FROM</span><span> numbers_mt(</span><span style="color:#d08770;">100000000000</span><span>)
+</span><span style="color:#b48ead;">SELECT number FROM</span><span> numbers_mt(</span><span style="color:#d08770;">10000000000</span><span>) </span><span style="color:#b48ead;">ORDER BY number DESC LIMIT </span><span style="color:#d08770;">10
+</span><span style="color:#b48ead;">SELECT </span><span style="color:#96b5b4;">max</span><span>(</span><span style="color:#b48ead;">number</span><span>), </span><span style="color:#96b5b4;">sum</span><span>(</span><span style="color:#b48ead;">number</span><span>) </span><span style="color:#b48ead;">FROM</span><span> numbers_mt(</span><span style="color:#d08770;">1000000000</span><span>) </span><span style="color:#b48ead;">GROUP BY number</span><span> % </span><span style="color:#d08770;">3</span><span>, </span><span style="color:#b48ead;">number</span><span> % </span><span style="color:#d08770;">4</span><span>, </span><span style="color:#b48ead;">number</span><span> % </span><span style="color:#d08770;">5 </span><span style="color:#b48ead;">LIMIT </span><span style="color:#d08770;">10
+</span></code></pre>
+<h3 id="shi-yong-bash-jiao-ben-jian-hua-liu-cheng">使用 bash 脚本简化流程</h3>
+<p>下面给出一个 <code>benchmark.sh</code> 范本，可以简化整个基准测试流程：</p>
+<pre data-lang="bash" style="background-color:#2b303b;color:#c0c5ce;" class="language-bash "><code class="language-bash" data-lang="bash"><span style="color:#65737e;">#!/bin/bash
+</span><span>
+</span><span style="color:#bf616a;">WARMUP</span><span>=</span><span style="color:#a3be8c;">3
+</span><span style="color:#bf616a;">RUN</span><span>=</span><span style="color:#a3be8c;">10
+</span><span>
+</span><span style="color:#b48ead;">export </span><span style="color:#bf616a;">script</span><span>=&quot;</span><span style="color:#a3be8c;">hyperfine -w </span><span>$</span><span style="color:#bf616a;">WARMUP</span><span style="color:#a3be8c;"> -r </span><span>$</span><span style="color:#bf616a;">RUN</span><span>&quot;
+</span><span>
+</span><span style="color:#bf616a;">script</span><span>=&quot;&quot;
+</span><span style="color:#b48ead;">function </span><span style="color:#8fa1b3;">run</span><span>() {
+</span><span>        </span><span style="color:#bf616a;">port</span><span>=$</span><span style="color:#bf616a;">1
+</span><span>        </span><span style="color:#bf616a;">sql</span><span>=$</span><span style="color:#bf616a;">2
+</span><span>        </span><span style="color:#bf616a;">result</span><span>=$</span><span style="color:#bf616a;">3
+</span><span>        </span><span style="color:#bf616a;">script</span><span>=&quot;</span><span style="color:#a3be8c;">hyperfine -w </span><span>$</span><span style="color:#bf616a;">WARMUP</span><span style="color:#a3be8c;"> -r </span><span>$</span><span style="color:#bf616a;">RUN</span><span>&quot;
+</span><span>        </span><span style="color:#b48ead;">while </span><span style="color:#96b5b4;">read</span><span> SQL; </span><span style="color:#b48ead;">do
+</span><span>                </span><span style="color:#bf616a;">n</span><span>=&quot;</span><span style="color:#a3be8c;">-n </span><span style="color:#96b5b4;">\&quot;</span><span>$</span><span style="color:#bf616a;">SQL</span><span style="color:#96b5b4;">\&quot; </span><span>&quot;
+</span><span>                </span><span style="color:#bf616a;">s</span><span>=&quot;</span><span style="color:#a3be8c;">echo </span><span style="color:#96b5b4;">\&quot;</span><span>$</span><span style="color:#bf616a;">SQL</span><span style="color:#96b5b4;">\&quot;</span><span style="color:#a3be8c;"> | mysql -h127.0.0.1 -P</span><span>$</span><span style="color:#bf616a;">port</span><span style="color:#a3be8c;"> -uroot -s</span><span>&quot;
+</span><span>                </span><span style="color:#bf616a;">script</span><span>=&quot;$</span><span style="color:#bf616a;">script</span><span style="color:#a3be8c;"> &#39;</span><span>$</span><span style="color:#bf616a;">n</span><span style="color:#a3be8c;">&#39; &#39;</span><span>$</span><span style="color:#bf616a;">s</span><span style="color:#a3be8c;">&#39;</span><span>&quot;
+</span><span>        </span><span style="color:#b48ead;">done </span><span>&lt;&lt;&lt; $(</span><span style="color:#bf616a;">cat </span><span>$</span><span style="color:#bf616a;">sql</span><span>)
+</span><span>
+</span><span>        </span><span style="color:#bf616a;">script</span><span>=&quot;$</span><span style="color:#bf616a;">script</span><span style="color:#a3be8c;">  --export-markdown </span><span>$</span><span style="color:#bf616a;">result</span><span>&quot;
+</span><span>        </span><span style="color:#96b5b4;">echo </span><span>$</span><span style="color:#bf616a;">script </span><span>| </span><span style="color:#bf616a;">bash -x
+</span><span>}
+</span><span>
+</span><span>
+</span><span style="color:#bf616a;">run </span><span>&quot;$</span><span style="color:#bf616a;">1</span><span>&quot; &quot;$</span><span style="color:#bf616a;">2</span><span>&quot; &quot;$</span><span style="color:#bf616a;">3</span><span>&quot;
+</span></code></pre>
+<p>在这个脚本中：</p>
+<ul>
+<li>使用 <code>-w/--warmup</code> &amp; <code>WARMUP</code> 在实际基准测试之前运行 3 次程序执行来预热。</li>
+<li>使用 <code>-r/--runs</code> &amp; <code>RUN</code> 要求执行 10 次基准测试。</li>
+<li>允许指定 Databend MySQL 兼容服务的端口。</li>
+<li>允许指定输入的 SQL 文件，以及输出时的 Markdown 文件。</li>
+</ul>
+<p>在使用前需要先运行 <code>chmod a+x ./benchmark.sh</code> 赋予其可执行权限。</p>
+<p>用法如下所示：</p>
+<pre data-lang="bash" style="background-color:#2b303b;color:#c0c5ce;" class="language-bash "><code class="language-bash" data-lang="bash"><span style="color:#bf616a;">./benchmark.sh </span><span>&lt;port&gt; &lt;sql&gt; &lt;result&gt;
+</span></code></pre>
+<h3 id="zhi-xing-ji-zhun-ce-shi-bing-huo-qu-jie-guo">执行基准测试并获取结果</h3>
+<p>在这个例子中，MySQL 兼容服务的端口是 <code>3307</code> ，基准测试用到的 SQL 文件为 <code>bench.sql</code> , 预期的输出在 <code>databend-hyperfine.md</code> 。</p>
+<pre data-lang="bash" style="background-color:#2b303b;color:#c0c5ce;" class="language-bash "><code class="language-bash" data-lang="bash"><span style="color:#bf616a;">./benchmark.sh</span><span> 3307 bench.sql databend-hyperfine.md
+</span></code></pre>
+<p>当然，你可以根据自己的配置和需要进行调整。</p>
+<blockquote>
+<p><em>注意：下面的示例是在 AMD Ryzen 9 5900HS &amp; 16GB RAM 配置下运行产生，仅供参考。</em></p>
+</blockquote>
+<p>终端中的输出如下所示：</p>
+<pre style="background-color:#2b303b;color:#c0c5ce;"><code><span>Benchmark 1:  &quot;SELECT avg(number) FROM numbers_mt(100000000000)&quot;
+</span><span>  Time (mean ± σ):      3.486 s ±  0.016 s    [User: 0.003 s, System: 0.002 s]
+</span><span>  Range (min … max):    3.459 s …  3.506 s    10 runs
+</span></code></pre>
+<p>最终的结果会保存在 <code>databend-hyperfine.md</code> 中，如下所示。</p>
+<table><thead><tr><th style="text-align: left">Command</th><th style="text-align: right">Mean [s]</th><th style="text-align: right">Min [s]</th><th style="text-align: right">Max [s]</th><th style="text-align: right">Relative</th></tr></thead><tbody>
+<tr><td style="text-align: left"><code>&quot;SELECT avg(number) FROM numbers_mt(100000000000)&quot;</code></td><td style="text-align: right">3.690 ± 0.193</td><td style="text-align: right">3.425</td><td style="text-align: right">4.086</td><td style="text-align: right">2.58 ± 0.16</td></tr>
+<tr><td style="text-align: left"><code>&quot;SELECT sum(number) FROM numbers_mt(100000000000)&quot;</code></td><td style="text-align: right">3.660 ± 0.156</td><td style="text-align: right">3.386</td><td style="text-align: right">3.911</td><td style="text-align: right">2.56 ± 0.13</td></tr>
+<tr><td style="text-align: left"><code>&quot;SELECT min(number) FROM numbers_mt(100000000000)&quot;</code></td><td style="text-align: right">9.581 ± 0.158</td><td style="text-align: right">9.246</td><td style="text-align: right">9.884</td><td style="text-align: right">6.69 ± 0.23</td></tr>
+<tr><td style="text-align: left"><code>&quot;SELECT max(number) FROM numbers_mt(100000000000)&quot;</code></td><td style="text-align: right">6.388 ± 0.142</td><td style="text-align: right">6.203</td><td style="text-align: right">6.624</td><td style="text-align: right">4.46 ± 0.17</td></tr>
+<tr><td style="text-align: left"><code>&quot;SELECT count(number) FROM numbers_mt(100000000000)&quot;</code></td><td style="text-align: right">2.647 ± 0.108</td><td style="text-align: right">2.424</td><td style="text-align: right">2.757</td><td style="text-align: right">1.85 ± 0.09</td></tr>
+<tr><td style="text-align: left"><code>&quot;SELECT sum(number+number+number) FROM numbers_mt(100000000000)&quot;</code></td><td style="text-align: right">19.408 ± 1.125</td><td style="text-align: right">17.857</td><td style="text-align: right">21.616</td><td style="text-align: right">13.55 ± 0.89</td></tr>
+<tr><td style="text-align: left"><code>&quot;SELECT sum(number) / count(number) FROM numbers_mt(100000000000)&quot;</code></td><td style="text-align: right">3.869 ± 0.133</td><td style="text-align: right">3.600</td><td style="text-align: right">4.073</td><td style="text-align: right">2.70 ± 0.12</td></tr>
+<tr><td style="text-align: left"><code>&quot;SELECT sum(number) / count(number), max(number), min(number) FROM numbers_mt(100000000000)&quot;</code></td><td style="text-align: right">15.488 ± 0.263</td><td style="text-align: right">15.133</td><td style="text-align: right">16.064</td><td style="text-align: right">10.81 ± 0.38</td></tr>
+<tr><td style="text-align: left"><code>&quot;SELECT number FROM numbers_mt(10000000000) ORDER BY number DESC LIMIT 10&quot;</code></td><td style="text-align: right">2.971 ± 0.085</td><td style="text-align: right">2.871</td><td style="text-align: right">3.186</td><td style="text-align: right">2.07 ± 0.09</td></tr>
+<tr><td style="text-align: left"><code>&quot;SELECT max(number), sum(number) FROM numbers_mt(1000000000) GROUP BY number % 3, number % 4, number % 5 LIMIT 10&quot;</code></td><td style="text-align: right">1.432 ± 0.044</td><td style="text-align: right">1.399</td><td style="text-align: right">1.545</td><td style="text-align: right">1.00</td></tr>
+</tbody></table>
+<h2 id="chi-xu-ji-zhun-ce-shi">持续基准测试</h2>
+<p>Databend 的持续基准测试由 GitHub Action + Vercel + DatabendCloud 强力驱动，在 <a href="https://github.com/datafuselabs/databend-perf/">datafuselabs/databend-perf</a> 这个 repo 中开源了源代码和 Workflow 。</p>
+<h3 id="ji-ben-jie-shao">基本介绍</h3>
+<p><strong>项目布局</strong></p>
+<pre style="background-color:#2b303b;color:#c0c5ce;"><code><span>.
+</span><span>├── .github/workflows    # 持续集成工作流
+</span><span>├── benchmarks           # YAML 格式的 SQL Query 测试套件
+</span><span>├── collector            # 分类存放性能数据
+</span><span>├── front                # 可视化前端
+</span><span>├── reload               # YAML 格式的 Data Load 测试套件
+</span><span>└── script               # 数据预处理脚本
+</span></code></pre>
+<p><strong>Workflow</strong></p>
+<p>持续基准测试工作流定时计划执行，Perf Workflow 会在每天 00:25 UTC（北京时间 08:25）执行，Reload Workflow 会在每周五 08:25 UTC（北京时间 16:25）执行。</p>
+<ol>
+<li>通过 GitHub API 获取当前日期和最新版本的 TAG 。</li>
+<li>利用 perf-tool 和 DatabendCloud 进行交互，运行测试。</li>
+<li>持久化性能数据到 databend-perf 这一 repo 中 。</li>
+<li>执行脚本处理数据，使之生成前端需要的格式。</li>
+<li>构建前端，完成可视化。</li>
+</ol>
+<h3 id="ce-shi-tao-jian">测试套件</h3>
+<p>databend-perf 中的测试套件分为 Query Benchmark 和 Load Benchmark 两类，前者放在 benchmarks 目录下，后者放在 reload 目录下。</p>
+<p>测试用 YAML 格式定义：</p>
+<pre data-lang="yaml" style="background-color:#2b303b;color:#c0c5ce;" class="language-yaml "><code class="language-yaml" data-lang="yaml"><span style="color:#bf616a;">metadata</span><span>:
+</span><span>  </span><span style="color:#bf616a;">table</span><span>: </span><span style="color:#a3be8c;">numbers
+</span><span>
+</span><span style="color:#bf616a;">statements</span><span>:
+</span><span>  - </span><span style="color:#bf616a;">name</span><span>: </span><span style="color:#a3be8c;">Q1
+</span><span>    </span><span style="color:#bf616a;">query</span><span>: &quot;</span><span style="color:#a3be8c;">SELECT avg(number) FROM numbers_mt(10000000000);</span><span>&quot;
+</span></code></pre>
+<p><code>metadata</code> 中的 <code>table</code> 字段是必须的，且分配给每类 benchmark 的值都唯一。<code>statements</code> 则只需要指定 <code>name</code> 和 <code>query</code> 。</p>
+<p><strong>向量化执行基准测试</strong></p>
+<p>定义在 benchmarks/numbers.yaml ，一组数值计算 SQL，利用 Databend 的 numbers 表函数提供百亿级别的数据量。</p>
+<p>完整语句也可以在 <a href="https://databend.rs/doc/contributing/benchmarking#vectorized-execution-benchmarking">Continuous Benchmarking - Vectorized Execution Benchmarking</a> 查看。</p>
+<p><strong>Ontime 常见分析场景基准测试</strong></p>
+<p>定义在 benchmarks/ontime.yaml ，一组常见的空中交通分析 SQL ，基于美国交通部公开的 OnTime 数据集，共计 202,687,654 条记录。</p>
+<p>当前此基准测试不包含 JOIN 语句，Q5、Q6、Q7 均采用优化后的形式。</p>
+<p>完整语句也可以在 <a href="https://databend.rs/doc/contributing/benchmarking#ontime-benchmarking">Continuous Benchmarking - Ontime Benchmarking</a> 查看。</p>
+<p><strong>Ontime 数据集载入基准测试</strong></p>
+<p>定义在 reload/ontime.yaml ，同样基于美国交通部公开的 OnTime 数据集，通过 s3 进行 COPY INTO 。</p>
+<p>关键语句：</p>
+<pre data-lang="sql" style="background-color:#2b303b;color:#c0c5ce;" class="language-sql "><code class="language-sql" data-lang="sql"><span>COPY INTO ontime </span><span style="color:#b48ead;">FROM </span><span>&#39;</span><span style="color:#a3be8c;">s3://&lt;bucket&gt;/m_ontime/</span><span>&#39; 
+</span><span>credentials=(aws_key_id=&#39;</span><span style="color:#a3be8c;">AWS_KEY_ID</span><span>&#39; aws_secret_key=&#39;</span><span style="color:#a3be8c;">AWS_SECRET_KEY</span><span>&#39;) 
+</span><span>pattern =&#39;</span><span style="color:#a3be8c;">.*[.]csv</span><span>&#39; file_format=(type=&#39;</span><span style="color:#a3be8c;">CSV</span><span>&#39; field_delimiter=&#39;</span><span style="color:#96b5b4;">\t</span><span>&#39; record_delimiter=&#39;</span><span style="color:#96b5b4;">\n</span><span>&#39; skip_header=</span><span style="color:#d08770;">1</span><span>);
+</span></code></pre>
+<p>上面 SQL 语句中的 <code>m_ontime/</code> 目录即为数据集：由原来 60.8 GB 数据全部合并后，再拆分成 100 个大小相近的文件。</p>
+<h3 id="shu-ju-chu-li">数据处理</h3>
+<p>基准测试得到的数据是 Json 格式的，会分类存放到 collector 这个目录下。</p>
+<p><code>metadata</code> 部分是包含表、版本、机器规格的信息；<code>schema</code> 部分则是对每条语句执行情况的统计，包括中位数、平均数等。</p>
+<p><strong>示例：</strong></p>
+<pre data-lang="json" style="background-color:#2b303b;color:#c0c5ce;" class="language-json "><code class="language-json" data-lang="json"><span>{
+</span><span>    &quot;</span><span style="color:#a3be8c;">metadata</span><span>&quot;:{
+</span><span>        &quot;</span><span style="color:#a3be8c;">table</span><span>&quot;:&quot;</span><span style="color:#a3be8c;">numbers</span><span>&quot;,
+</span><span>        &quot;</span><span style="color:#a3be8c;">tag</span><span>&quot;:&quot;</span><span style="color:#a3be8c;">v0.7.92-nightly</span><span>&quot;,
+</span><span>        &quot;</span><span style="color:#a3be8c;">size</span><span>&quot;:&quot;</span><span style="color:#a3be8c;">Large</span><span>&quot;
+</span><span>    },
+</span><span>    &quot;</span><span style="color:#a3be8c;">schema</span><span>&quot;:[
+</span><span>        {
+</span><span>            &quot;</span><span style="color:#a3be8c;">name</span><span>&quot;:&quot;</span><span style="color:#a3be8c;">Q1</span><span>&quot;,
+</span><span>            &quot;</span><span style="color:#a3be8c;">sql</span><span>&quot;:&quot;</span><span style="color:#a3be8c;">SELECT avg(number) FROM numbers_mt(10000000000);</span><span>&quot;,
+</span><span>            &quot;</span><span style="color:#a3be8c;">min</span><span>&quot;:</span><span style="color:#d08770;">0.305</span><span>,
+</span><span>            &quot;</span><span style="color:#a3be8c;">max</span><span>&quot;:</span><span style="color:#d08770;">0.388</span><span>,
+</span><span>            &quot;</span><span style="color:#a3be8c;">median</span><span>&quot;:</span><span style="color:#d08770;">0.354</span><span>,
+</span><span>            &quot;</span><span style="color:#a3be8c;">std_dev</span><span>&quot;:</span><span style="color:#d08770;">0.02701407040784487</span><span>,
+</span><span>            &quot;</span><span style="color:#a3be8c;">read_row</span><span>&quot;:</span><span style="color:#d08770;">10000000000</span><span>,
+</span><span>            &quot;</span><span style="color:#a3be8c;">read_byte</span><span>&quot;:</span><span style="color:#d08770;">80000000000</span><span>,
+</span><span>            &quot;</span><span style="color:#a3be8c;">time</span><span>&quot;:[
+</span><span>                </span><span style="color:#d08770;">0.315</span><span>,
+</span><span>                </span><span style="color:#d08770;">0.326</span><span>,
+</span><span>                </span><span style="background-color:#bf616a;color:#2b303b;">...</span><span>
+</span><span>            ],
+</span><span>            &quot;</span><span style="color:#a3be8c;">error</span><span>&quot;:[
+</span><span>
+</span><span>            ],
+</span><span>            &quot;</span><span style="color:#a3be8c;">mean</span><span>&quot;:</span><span style="color:#d08770;">0.34774024905853534
+</span><span>        },
+</span><span>        </span><span style="background-color:#bf616a;color:#2b303b;">...</span><span>
+</span><span>    ]
+</span><span>}   
+</span></code></pre>
+<p>经由 <code>stript/transform.go</code> 处理，为每个查询的对应图表聚合数据，主要强调最大、最小、均值、中位数四个指标。</p>
+<p><strong>示例：</strong></p>
+<pre data-lang="json" style="background-color:#2b303b;color:#c0c5ce;" class="language-json "><code class="language-json" data-lang="json"><span>{
+</span><span>    &quot;</span><span style="color:#a3be8c;">title</span><span>&quot;:&quot;</span><span style="color:#a3be8c;">Q1</span><span>&quot;,
+</span><span>    &quot;</span><span style="color:#a3be8c;">sql</span><span>&quot;:&quot;</span><span style="color:#a3be8c;">SELECT avg(number) FROM numbers_mt(10000000000);</span><span>&quot;,
+</span><span>    &quot;</span><span style="color:#a3be8c;">lines</span><span>&quot;:[
+</span><span>        {
+</span><span>            &quot;</span><span style="color:#a3be8c;">name</span><span>&quot;:&quot;</span><span style="color:#a3be8c;">min</span><span>&quot;,
+</span><span>            &quot;</span><span style="color:#a3be8c;">data</span><span>&quot;:[
+</span><span>                </span><span style="color:#d08770;">3.084</span><span>,
+</span><span>                </span><span style="color:#d08770;">3.097</span><span>,
+</span><span>                </span><span style="color:#d08770;">3.043</span><span>,
+</span><span>                </span><span style="background-color:#bf616a;color:#2b303b;">...</span><span>
+</span><span>            ],
+</span><span>        </span><span style="background-color:#bf616a;color:#2b303b;">...</span><span>
+</span><span>        }
+</span><span>    ],
+</span><span>    &quot;</span><span style="color:#a3be8c;">version</span><span>&quot;:[
+</span><span>        &quot;</span><span style="color:#a3be8c;">v0.7.0-nightly</span><span>&quot;,
+</span><span>        &quot;</span><span style="color:#a3be8c;">v0.7.1-nightly</span><span>&quot;,
+</span><span>        &quot;</span><span style="color:#a3be8c;">v0.7.2-nightly</span><span>&quot;,
+</span><span>        </span><span style="background-color:#bf616a;color:#2b303b;">...</span><span>
+</span><span>    ],
+</span><span>    &quot;</span><span style="color:#a3be8c;">legend</span><span>&quot;:[
+</span><span>        &quot;</span><span style="color:#a3be8c;">min</span><span>&quot;,
+</span><span>        </span><span style="background-color:#bf616a;color:#2b303b;">...</span><span>
+</span><span>    ], 
+</span><span>    &quot;</span><span style="color:#a3be8c;">xAxis</span><span>&quot;:[
+</span><span>        &quot;</span><span style="color:#a3be8c;">2022-03-28</span><span>&quot;,
+</span><span>        &quot;</span><span style="color:#a3be8c;">2022-03-29</span><span>&quot;,
+</span><span>        &quot;</span><span style="color:#a3be8c;">2022-03-30</span><span>&quot;,
+</span><span>        </span><span style="background-color:#bf616a;color:#2b303b;">...</span><span>
+</span><span>    ],
+</span><span>}
+</span></code></pre>
+<h3 id="ke-shi-hua">可视化</h3>
+<p>目前可视化方案采用 React + Echarts 实现，每个图表都对应上面处理得到的一个 Json 文件。在添加新的基准测试后，无需修改前端即可展现新的图表。</p>
+<p><strong>Graphs</strong></p>
+<p><img src="https://databend-internals.psiace.me/contribute-to-databend/how-to-benchmark/01-graph.png" alt="graphs" /></p>
+<ul>
+<li>以折线图的形式展示性能变化，并支持通过拖动图表下方的选择器调整展示的时间区间。</li>
+<li>横轴为日期，纵轴为执行用时，鼠标悬浮到上方即可查看当次执行的信息。</li>
+</ul>
+<p><strong>Compare</strong></p>
+<p><img src="https://databend-internals.psiace.me/contribute-to-databend/how-to-benchmark/02-compare.png" alt="compare" /></p>
+<ul>
+<li>支持任选两天对比执行用时的变化，以百分比形式展示。</li>
+</ul>
+<p><strong>Status</strong></p>
+<p><img src="https://databend-internals.psiace.me/contribute-to-databend/how-to-benchmark/03-status.png" alt="status" /></p>
+<ul>
+<li>关注当前最新性能测试结果中各指标的情况，以柱型图展示。</li>
+<li>横轴为不同类型，纵轴为执行用时。</li>
+</ul>
+<h3 id="hou-xu-you-hua">后续优化</h3>
+<p>目前 <a href="https://perf.databend.rs">https://perf.databend.rs</a> 为 Databend 提供了基本的持续性能监控方案，但仍然需要关注以下几个方向的内容：</p>
+<ul>
+<li><strong>选取更有代表性的指标</strong> 执行次数较少（只有 10 次），可供选择的指标可能不够具有代表性。例如：将次数提高到 100 次以获取 P90 来替代当前使用的中位数可能是比较合适的。</li>
+<li><strong>增加性能测试场景的覆盖</strong> 后续可以继续新增对其他数据集和场景的性能测试，比如 ssb 、hits 。</li>
+<li><strong>丰富性能监控的方向</strong> 监控 IO 和网络性能表现，对部分重点查询提供额外的性能评估，比如解析 Json 的性能表现。</li>
+</ul>
+
+        
+        
+<div class="docs-navigation d-flex justify-content-between">
+  
+  
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+          
+        
+      
+        
+        
+          
+        
+      
+        
+        
+          
+        
+      
+        
+        
+          
+            
+              
+              <a href="https:&#x2F;&#x2F;databend-internals.psiace.me&#x2F;docs&#x2F;minibend&#x2F;datasource&#x2F;">
+                <div class="card my-1">
+                  <div class="card-body py-2">
+                    &larr; 第二弹 - Data Source
+                  </div>
+                </div>
+              </a>
+            
+            
+            
+          
+        
+      
+        
+        
+          
+        
+      
+        
+        
+          
+        
+      
+        
+        
+          
+        
+      
+        
+        
+          
+        
+      
+    
+  
+
+  
+  
+  
+  
+  
+    
+    
+    
+      
+      
+        
+      
+    
+      
+      
+        
+      
+    
+      
+      
+        
+      
+    
+      
+      
+        
+      
+    
+      
+      
+        
+      
+    
+      
+      
+        
+      
+    
+      
+      
+        
+          
+          
+          <a class="ms-auto" href="https:&#x2F;&#x2F;databend-internals.psiace.me&#x2F;docs&#x2F;advanced-workshops&#x2F;paper-list&#x2F;">
+            <div class="card my-1">
+              <div class="card-body py-2">
+                推荐阅读的论文清单 &rarr;
+              </div>
+            </div>
+          </a>
+          
+          
+          
+        
+      
+    
+      
+      
+        
+      
+    
+  
+</div>
+
+        
+        <script src="https://giscus.app/client.js" data-repo="psiace/databend-internals" data-repo-id="R_kgDOHQXEtA"
+          data-category="Announcements" data-category-id="DIC_kwDOHQXEtM4CPQhI" data-mapping="title"
+          data-reactions-enabled="1" data-emit-metadata="0" data-input-position="top" data-theme="light_protanopia"
+          data-lang="zh-CN" data-loading="lazy" crossorigin="anonymous" async>
+          </script>
+        
+      </main>
+    </div>
+  </div>
+</div>
+
+
+  
+    
+<footer class="footer text-muted">
+	<div class="container">
+		<div class="row">
+			<div class="col-lg-8 order-last order-lg-first">
+				<ul class="list-inline">
+					
+						<li class="list-inline-item">由 <a href="https://pages.github.com/">GitHub Pages</a> 、<a href="https://www.getzola.org/">Zola</a> 及 <a href="https://github.com/aaranxu/adidoks">AdiDoks</a> 强力驱动</li>
+					
+				</ul>
+			</div>
+			<div class="col-lg-8 order-first order-lg-last text-lg-end">
+				<ul class="list-inline">
+					
+						
+							<li class="list-inline-item"><a href="https://databend-internals.psiace.me/privacy-policy/">隐私政策</a></li>
+						
+							<li class="list-inline-item"><a href="https://databend-internals.psiace.me/docs/contributing/code-of-conduct/">行为准则</a></li>
+						
+					
+				</ul>
+			</div>
+		</div>
+	</div>
+</footer>
+
+  
+
+  
+<script type="text/javascript" src="https://databend-internals.psiace.me/js/main.js" defer></script>
+
+  
+</body>
+</html>

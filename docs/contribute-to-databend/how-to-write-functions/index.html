@@ -1,0 +1,682 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="x-ua-compatible" content="ie=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+  <link rel="preload" as="font" href="https://databend-internals.psiace.me/fonts/vendor/jost/jost-v4-latin-regular.woff2" type="font/woff2" crossorigin>
+  <link rel="preload" as="font" href="https://databend-internals.psiace.me/fonts/vendor/jost/jost-v4-latin-700.woff2"  type="font/woff2" crossorigin>
+
+
+<link rel="stylesheet" href="https://databend-internals.psiace.me/main.css">
+
+
+
+  
+  
+    
+  
+
+  
+  
+    
+    
+  
+  
+  
+    
+  
+  
+  
+  
+    
+  
+  
+  
+
+
+  <meta name="robots" content="index, follow">
+  <meta name="googlebot" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1">
+  <meta name="bingbot" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1">
+
+
+	
+
+
+	
+
+<title>如何为 Databend 添加新的函数 | Databend 内幕大揭秘</title>
+<meta name="description" content="Databend 非常重视函数的设计与实现，这篇文章将会介绍如何为 Databend 添加新的函数。">
+<link rel="canonical" href="https://databend-internals.psiace.me/docs/contribute-to-databend/how-to-write-functions/">
+
+
+
+
+
+
+
+
+
+
+<script type="application/ld+json">
+  {
+    "@context": "http://schema.org",
+    "@type": "BreadcrumbList",
+    
+      
+      
+        
+        
+        
+        
+        
+        
+        
+        
+          {
+            "@type": "ListItem",
+            "position":  1 ,
+            "name": "Home",
+            "item": "https://databend-internals.psiace.me/"
+          },
+          
+          
+          {
+            "@type": "ListItem",
+            "position":  2 ,
+            "name": "Docs",
+            "item": "https://databend-internals.psiace.me/docs/"
+          },
+        
+      
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+          
+          
+          {
+            "@type": "ListItem",
+            "position":  3 ,
+            "name": "Contribute To Databend",
+            "item": "https://databend-internals.psiace.me/docs/contribute-to-databend/"
+          },
+        
+      
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+          
+          
+          {
+            "@type": "ListItem",
+            "position":  4 ,
+            "name": "How To Write Functions",
+            "item": "https://databend-internals.psiace.me/docs/contribute-to-databend/how-to-write-functions/"
+          },
+        
+      
+    
+  }
+</script>
+
+
+
+
+
+
+  <meta name="theme-color" content="#fff">
+  <link rel="apple-touch-icon" sizes="180x180" href="https://databend-internals.psiace.me/apple-touch-icon.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="https://databend-internals.psiace.me/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="https://databend-internals.psiace.me/favicon-16x16.png">
+  
+    <link rel="manifest" href="https://databend-internals.psiace.me/site.webmanifest" crossorigin>
+  
+
+
+  
+
+</head>
+
+
+
+<body class="docs single">
+  
+
+
+
+<div class="header-bar fixed-top"></div>
+<header class="navbar fixed-top navbar-expand-md navbar-light">
+	<div class="container">
+		<input class="menu-btn order-0" type="checkbox" id="menu-btn">
+		<label class="menu-icon d-md-none" for="menu-btn"><span class="navicon"></span></label>
+		<a class="navbar-brand order-1 order-md-0 me-auto" href="https://databend-internals.psiace.me">Databend 内幕大揭秘</a>
+		<button id="mode" class="btn btn-link order-2 order-md-4" type="button" aria-label="Toggle mode">
+			<span class="toggle-dark"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-moon"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg></span>
+			<span class="toggle-light"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-sun"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg></span>
+		</button>
+		<ul class="navbar-nav fork-me order-3 order-md-5">
+			
+				
+					<li class="nav-item">
+						<a class="nav-link" href="https://twitter.com/repsiace"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-twitter"><path d="M23 3a10.9 10.9 0 0 1-3.14 1.53 4.48 4.48 0 0 0-7.86 3v1A10.66 10.66 0 0 1 3 4s-4 9 5 13a11.64 11.64 0 0 1-7 2c9 5 20 0 20-11.5a4.5 4.5 0 0 0-.08-.83A7.72 7.72 0 0 0 23 3z"></path></svg><span class="ms-2 visually-hidden">Twitter</span></a>
+					</li>
+				
+					<li class="nav-item">
+						<a class="nav-link" href="https://github.com/psiace/databend-internals"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-github"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"></path></svg><span class="ms-2 visually-hidden">GitHub</span></a>
+					</li>
+				
+			
+		</ul>
+		<div class="collapse navbar-collapse order-4 order-md-1">
+			<ul class="navbar-nav main-nav me-auto order-5 order-md-2">
+				
+					
+				
+				
+				
+					
+						<li class="nav-item docs active">
+							<a class="nav-link" href="https://databend-internals.psiace.me/docs/getting-started/introduction/">在线阅读</a>
+						</li>
+					
+				
+			</ul>
+			<div class="break order-6 d-md-none"></div>
+			
+		</div>
+	</div>
+</header>
+
+
+
+  
+<div class="wrap container" role="document">
+  <div class="content">
+    <div class="row flex-xl-nowrap">
+      
+<div class="col-lg-5 col-xl-4 docs-sidebar">
+	<nav class="docs-links" aria-label="Main navigation">
+			
+			
+			
+			
+					
+					
+					
+							<h3>入门指南</h3>
+							<ul class="list-unstyled">
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/getting-started/introduction/">简介</a></li>
+							
+					</ul>
+					
+					
+					
+					
+							<h3>基础导览</h3>
+							<ul class="list-unstyled">
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/the-basics/storage/">存储</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/the-basics/about-index/">索引</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/the-basics/executor-in-query-process/">查询执行</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/the-basics/query-optimization/">查询优化</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/the-basics/mpp/">大规模并行处理</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/the-basics/distributed/">分布式</a></li>
+							
+					</ul>
+					
+					
+					
+					
+							<h3>特性探索</h3>
+							<ul class="list-unstyled">
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/productivity-topics/databend-rustchinaconf/">使用 Rust 构建云原生数仓 Databend</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/productivity-topics/quality-assurance-in-databend/">Databend 的质量保障</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/productivity-topics/the-databend-way-to-sky/">多云转晴：Databend 的天空计算之路</a></li>
+							
+					</ul>
+					
+					
+					
+					
+							<h3>源码解读</h3>
+							<ul class="list-unstyled">
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/source-reading/intro/">Databend 源码阅读： 开篇</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/source-reading/init-session-handler/">Databend 源码阅读： Query Server 启动、Session 管理及请求处理</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/source-reading/pipeline-execution/">Databend 源码阅读： pipeline 的执行</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/source-reading/config/">Databend 源码阅读：配置管理</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/source-reading/pipeline-model-graph-based/">Databend 源码阅读： 图解 pipeline 调度模型</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/source-reading/storage-basics-read-partitions/">Databend 源码阅读： Storage 概要和 Read Partitions</a></li>
+							
+					</ul>
+					
+					
+					
+					
+							<h3>minibend</h3>
+							<ul class="list-unstyled">
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/minibend/intro/">第一弹 - minibend 简介</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/minibend/datasource/">第二弹 - Data Source</a></li>
+							
+					</ul>
+					
+					
+					
+					
+							<h3>开源贡献</h3>
+							<ul class="list-unstyled">
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/contribute-to-databend/development-environment/">如何设置 Databend 开发环境</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/contribute-to-databend/build-and-more/">轻松了解 Databend 构建</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/contribute-to-databend/build-with-pgo/">使用 PGO 优化 Databend 二进制构建</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/contribute-to-databend/write-and-run-tests/">如何为 Databend 添加新的测试</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/contribute-to-databend/how-to-contribute/">如何参与 Databend 开源协作</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/contribute-to-databend/tracing-in-databend/">Databend 全链路追踪</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/contribute-to-databend/how-to-benchmark/">如何对 Databend 进行基准测试</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/contribute-to-databend/how-to-profile/">Databend 性能剖析方法与工具</a></li>
+							                           
+									<li><a class="docs-link active" href="https://databend-internals.psiace.me/docs/contribute-to-databend/how-to-write-functions/">如何为 Databend 添加新的函数</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/contribute-to-databend/how-to-write-system-table/">如何为 Databend 添加新的系统表</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/contribute-to-databend/release/">Databend 版本发布</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/contribute-to-databend/routine-maintenance/">Databend 的日常维护是怎么进行的</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/contribute-to-databend/faq/">常见问题解答</a></li>
+							
+					</ul>
+					
+					
+					
+					
+							<h3>专题研讨</h3>
+							<ul class="list-unstyled">
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/advanced-workshops/paper-list/">推荐阅读的论文清单</a></li>
+							
+					</ul>
+					
+					
+					
+					
+							<h3>贡献相关</h3>
+							<ul class="list-unstyled">
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/contributing/outline/">大纲速览</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/contributing/code-of-conduct/">行为准则</a></li>
+							                           
+									<li><a class="docs-link" href="https://databend-internals.psiace.me/docs/contributing/how-to-contributing/">如何协作</a></li>
+							
+					</ul>
+					
+					
+			
+	</nav>
+</div>
+
+      
+  
+  <nav class="docs-toc d-none d-xl-block col-xl-3" aria-label="Secondary navigation">
+  	<div class="page-links">
+  			<h3>On this page</h3>
+  			<nav id="TableOfContents">
+  					<ul>
+  							
+  							<li><a href="https://databend-internals.psiace.me/docs/contribute-to-databend/how-to-write-functions/#qian-yi-han-shu-dao-quan-xin-biao-da-shi-kuang-jia">迁移函数到全新表达式框架</a></li>
+  							
+  									<ul>
+  											
+  											<li><a href="https://databend-internals.psiace.me/docs/contribute-to-databend/how-to-write-functions/#bei-jing">背景</a></li>
+  											
+  											<li><a href="https://databend-internals.psiace.me/docs/contribute-to-databend/how-to-write-functions/#ru-he-qian-yi">如何迁移</a></li>
+  											
+  											<li><a href="https://databend-internals.psiace.me/docs/contribute-to-databend/how-to-write-functions/#shi-li">示例</a></li>
+  											
+  									</ul>
+  							
+  							
+  							<li><a href="https://databend-internals.psiace.me/docs/contribute-to-databend/how-to-write-functions/#han-shu-jin-jie-shi-yong">函数进阶使用</a></li>
+  							
+  									<ul>
+  											
+  											<li><a href="https://databend-internals.psiace.me/docs/contribute-to-databend/how-to-write-functions/#learn-more">Learn More</a></li>
+  											
+  									</ul>
+  							
+  							
+  					</ul>
+  			</nav>
+  	</div>
+  </nav>
+  
+
+      <main class="docs-content col-lg-11 col-xl-9">
+        <h1>如何为 Databend 添加新的函数</h1>
+        
+        <h2 id="qian-yi-han-shu-dao-quan-xin-biao-da-shi-kuang-jia">迁移函数到全新表达式框架</h2>
+<p>如果你对自定义类型系统或者数据库项目的研发感兴趣，可以看看 Databend 是如何做的。</p>
+<p>现在 Databend 正在尝试将一些旧的函数迁移到全新表达式框架中，你愿意来试试看吗？</p>
+<ul>
+<li><a href="https://github.com/datafuselabs/databend/issues/6766">Migrate String functions to new expression framework #6766</a></li>
+<li><a href="https://github.com/datafuselabs/databend/issues/6833">Migrate control-flow functions to new expression framework #6833 </a></li>
+</ul>
+<h3 id="bei-jing">背景</h3>
+<p>近期，Databend 围绕全新表达式框架的设计与实现开展了许多工作，将会带来一些有意思的特性。</p>
+<ul>
+<li>类型检查</li>
+<li>类型安全的向下转型</li>
+<li>使用 Enum 分发列</li>
+<li>泛型</li>
+</ul>
+<h3 id="ru-he-qian-yi">如何迁移</h3>
+<p>旧的函数位于 <code>query/functions/src/scalars</code> ，它们需要被迁移到 <code>query/functions-v2/src/scalars/</code> 。</p>
+<p>通常情况下，旧函数实现中的核心逻辑是可以复用的，只需要进行少量重写使其符合新的实现方案。</p>
+<p>类似地，旧的测试位于 <code>query/functions/tests/it/scalars/</code> ，也应该迁移到 <code>query/functions-v2/tests/it/scalars/</code> 。</p>
+<p>新测试将会使用 <code>goldenfile</code> 进行编写，所以可以轻松生成测试用例而无需大量繁重的手写工作。</p>
+<h3 id="shi-li">示例</h3>
+<p><code>LENGTH</code> 将会按字节数返回字符串的长度。</p>
+<p>仅仅使用 6 行，就可以在 <code>query/functions-v2/src/scalars/strings.rs</code> 中实现 <code>LENGTH</code> 函数。</p>
+<pre data-lang="rust" style="background-color:#2b303b;color:#c0c5ce;" class="language-rust "><code class="language-rust" data-lang="rust"><span>registry.register_1_arg::&lt;StringType, NumberType&lt;</span><span style="color:#b48ead;">u64</span><span>&gt;, _, _&gt;(
+</span><span>    &quot;</span><span style="color:#a3be8c;">length</span><span>&quot;,
+</span><span>    FunctionProperty::default(),
+</span><span>    |_| None,
+</span><span>    |</span><span style="color:#bf616a;">val</span><span>| val.</span><span style="color:#96b5b4;">len</span><span>() as </span><span style="color:#b48ead;">u64</span><span>,
+</span><span>);
+</span></code></pre>
+<p>由于 <code>OCTET_LENGTH</code> 是 <code>LENGTH</code> 的同义函数，只需为其添加一个函数别名即可，仅用一行。</p>
+<pre data-lang="rust" style="background-color:#2b303b;color:#c0c5ce;" class="language-rust "><code class="language-rust" data-lang="rust"><span>registry.</span><span style="color:#96b5b4;">register_aliases</span><span>(&quot;</span><span style="color:#a3be8c;">length</span><span>&quot;, &amp;[&quot;</span><span style="color:#a3be8c;">octet_length</span><span>&quot;]);
+</span></code></pre>
+<p>接下来，需要写一些测试，来确保函数实现的正确性。编辑 <code>query/functions-v2/tests/it/scalars/string.rs</code>。</p>
+<pre data-lang="rust" style="background-color:#2b303b;color:#c0c5ce;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="color:#b48ead;">fn </span><span style="color:#8fa1b3;">test_octet_length</span><span>(</span><span style="color:#bf616a;">file</span><span>: &amp;</span><span style="color:#b48ead;">mut</span><span> impl Write) {
+</span><span>    </span><span style="color:#96b5b4;">run_ast</span><span>(file, &quot;</span><span style="color:#a3be8c;">octet_length(&#39;latin&#39;)</span><span>&quot;, &amp;[]);
+</span><span>    </span><span style="color:#96b5b4;">run_ast</span><span>(file, &quot;</span><span style="color:#a3be8c;">octet_length(NULL)</span><span>&quot;, &amp;[]);
+</span><span>    </span><span style="color:#96b5b4;">run_ast</span><span>(file, &quot;</span><span style="color:#a3be8c;">length(a)</span><span>&quot;, &amp;[(
+</span><span>        &quot;</span><span style="color:#a3be8c;">a</span><span>&quot;,
+</span><span>        DataType::String,
+</span><span>        </span><span style="color:#96b5b4;">build_string_column</span><span>(&amp;[&quot;</span><span style="color:#a3be8c;">latin</span><span>&quot;, &quot;</span><span style="color:#a3be8c;">кириллица</span><span>&quot;, &quot;</span><span style="color:#a3be8c;">кириллица and latin</span><span>&quot;]),
+</span><span>    )]);
+</span><span>}
+</span></code></pre>
+<p>将其注册到 <code>test_string</code> 函数中：</p>
+<pre data-lang="rust" style="background-color:#2b303b;color:#c0c5ce;" class="language-rust "><code class="language-rust" data-lang="rust"><span>#[</span><span style="color:#bf616a;">test</span><span>]
+</span><span style="color:#b48ead;">fn </span><span style="color:#8fa1b3;">test_string</span><span>() {
+</span><span>    </span><span style="color:#b48ead;">let mut</span><span> mint = Mint::new(&quot;</span><span style="color:#a3be8c;">tests/it/scalars/testdata</span><span>&quot;);
+</span><span>    </span><span style="color:#b48ead;">let</span><span> file = &amp;</span><span style="color:#b48ead;">mut</span><span> mint.</span><span style="color:#96b5b4;">new_goldenfile</span><span>(&quot;</span><span style="color:#a3be8c;">string.txt</span><span>&quot;).</span><span style="color:#96b5b4;">unwrap</span><span>();
+</span><span>
+</span><span>    ...
+</span><span>    </span><span style="color:#96b5b4;">test_octet_length</span><span>(file);
+</span><span>    ...
+</span><span>}
+</span></code></pre>
+<p>通过命令行，可以直接生成完整的测试用例，并附加到对应的 <code>goldenflie</code> 中：</p>
+<pre data-lang="bash" style="background-color:#2b303b;color:#c0c5ce;" class="language-bash "><code class="language-bash" data-lang="bash"><span style="color:#bf616a;">REGENERATE_GOLDENFILES</span><span>=</span><span style="color:#a3be8c;">1 </span><span style="color:#bf616a;">cargo</span><span> test</span><span style="color:#bf616a;"> -p</span><span> query-functions-v2</span><span style="color:#bf616a;"> --test</span><span> it
+</span></code></pre>
+<p>请使用 <code>git diff</code> 检查一下生成的测试是否符合预期，如果一切顺利，<code>LENGTH</code> 函数的迁移工作就完成了。</p>
+<h2 id="han-shu-jin-jie-shi-yong">函数进阶使用</h2>
+<ul>
+<li>注册方法解析:</li>
+</ul>
+<p>function 中暴露了多套注册方法, 根据函数接受的参数个数不同, 分为: <code>register_0_arg</code>, <code>register_1_arg</code> ..</p>
+<p>另外, 根据不同的功能需求, 我们提供了不同Level的注册API</p>
+<table><thead><tr><th></th><th>Auto Vectorization</th><th>Access Output Column Builder</th><th>Auto Null Passthrough</th><th>Auto Combine Null</th><th>Auto Downcast</th><th>Throw Runtime Error</th><th>Varidic</th><th>Tuple</th></tr></thead><tbody>
+<tr><td>register_n_arg</td><td>✔️</td><td>❌</td><td>✔️</td><td>❌</td><td>✔️</td><td>❌</td><td>❌</td><td>❌</td></tr>
+<tr><td>register_passthrough_nullable_n_arg</td><td>❌</td><td>✔️</td><td>✔️</td><td>❌</td><td>✔️</td><td>✔️</td><td>❌</td><td>❌</td></tr>
+<tr><td>register_combine_nullable_n_arg</td><td>❌</td><td>✔️</td><td>✔️</td><td>✔️</td><td>✔️</td><td>✔️</td><td>❌</td><td>❌</td></tr>
+<tr><td>register_n_arg_core</td><td>❌</td><td>✔️</td><td>❌</td><td>❌</td><td>✔️</td><td>✔️</td><td>❌</td><td>❌</td></tr>
+<tr><td>register_function_factory</td><td>❌</td><td>✔️</td><td>❌</td><td>❌</td><td>❌</td><td>✔️</td><td>✔️</td><td>✔️</td></tr>
+</tbody></table>
+<ul>
+<li>Domain解析:</li>
+</ul>
+<p>Domain是函数的输入的值域经过函数转换后得出的值域, 一些函数计算是符合单调性等特性的, 利用这类特性我们轻量级计算出函数的值域,这对后续的Partition Prune 有很大帮助, 例如: 数据在底层是通过 timestamp 排序的, 在索引层我们会有timestamp列的 Min/Max 索引, 那么对于带 <code>where to_date(timestamp) &gt; '2020-01-01'</code> 过滤条件的SQL查询, 根据索引数据可以利用 <code>Domain</code> 计算出 <code>to_date(timestamp)</code> 列的 Min/Max 索引,从而进入 Prune 逻辑。</p>
+<ul>
+<li>类型自动转换规则:</li>
+</ul>
+<ol>
+<li>数值类型在精度不丢失的情况下能自动向上转型,如<code> i8 --&gt; i16 --&gt; i32 --&gt; i64</code></li>
+<li>所有 integer 类型能转为 int64 类型, 如 <code>u32 --&gt; i64, u64 ---&gt; i64</code>, 转型过程出现溢出会抛出错误</li>
+<li>所有数值类型能转为 float64 类型, 如 <code>i32 --&gt; f64, u64 --&gt; f64</code>, 转型过程出现溢出会抛出错误</li>
+<li><code>null</code>类型能转为<code>nullable&lt;T&gt;</code>类型, 如: <code>null --&gt; nullable&lt;i32&gt;</code></li>
+<li><code>T</code> 类型能转为 <code>nullable&lt;T&gt;</code> 类型, 如: <code>i32 --&gt; nullable&lt;i32&gt;</code></li>
+<li>嵌套规则: 如果 <code>T</code> 能转为 <code>U</code> 类型,则 <code>nullable&lt;T&gt;</code> 类型能转为 <code>nullable&lt;U&gt;</code> 类型, 则 <code>Array&lt;T&gt;</code> 类型能转为 <code>Array&lt;U&gt;</code> 类型</li>
+</ol>
+<p>由于数值类型较多,大部分情况下我们只需要定义 最大类型即可,如 <code>asin</code> 只需要定义 <code>NumberType&lt;f64&gt;</code> 类型的参数, 接收到其他类型的参数时会自动转型, 例如: <code>asin(i32)</code> 会自动转型为 <code>asin(f64)</code>; 在少数性能敏感计算,我们会给较小范围的 数值参数定义额外函数重载, 如 <code>plus</code>, <code>minus</code>, 此时由于自动转换规则的存在,我们必须注意重载的函数必须定义在最大类型的函数之前, 因为函数的查找是按注册顺序进行查找, 只捕获符合条件的第一个函数。</p>
+<p>所以:  <code>i32</code> 优先 定义于 <code>i64</code>, <code>u64</code> 优先定义于 <code>i64</code>, <code>i64</code> 优先定义于 <code>f64</code>, <code>null</code> 优先定义于 <code>nullable</code>。</p>
+<h3 id="learn-more">Learn More</h3>
+<ul>
+<li><a href="https://github.com/datafuselabs/databend/discussions/5438">RFC: Formal Type System</a></li>
+<li><a href="https://github.com/datafuselabs/databend/issues/6547">Tracking issue for new expression framework</a></li>
+</ul>
+
+        
+        
+<div class="docs-navigation d-flex justify-content-between">
+  
+  
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+          
+        
+      
+        
+        
+          
+        
+      
+        
+        
+          
+        
+      
+        
+        
+          
+            
+              
+              <a href="https:&#x2F;&#x2F;databend-internals.psiace.me&#x2F;docs&#x2F;minibend&#x2F;datasource&#x2F;">
+                <div class="card my-1">
+                  <div class="card-body py-2">
+                    &larr; 第二弹 - Data Source
+                  </div>
+                </div>
+              </a>
+            
+            
+            
+          
+        
+      
+        
+        
+          
+        
+      
+        
+        
+          
+        
+      
+        
+        
+          
+        
+      
+        
+        
+          
+        
+      
+    
+  
+
+  
+  
+  
+  
+  
+    
+    
+    
+      
+      
+        
+      
+    
+      
+      
+        
+      
+    
+      
+      
+        
+      
+    
+      
+      
+        
+      
+    
+      
+      
+        
+      
+    
+      
+      
+        
+      
+    
+      
+      
+        
+          
+          
+          <a class="ms-auto" href="https:&#x2F;&#x2F;databend-internals.psiace.me&#x2F;docs&#x2F;advanced-workshops&#x2F;paper-list&#x2F;">
+            <div class="card my-1">
+              <div class="card-body py-2">
+                推荐阅读的论文清单 &rarr;
+              </div>
+            </div>
+          </a>
+          
+          
+          
+        
+      
+    
+      
+      
+        
+      
+    
+  
+</div>
+
+        
+        <script src="https://giscus.app/client.js" data-repo="psiace/databend-internals" data-repo-id="R_kgDOHQXEtA"
+          data-category="Announcements" data-category-id="DIC_kwDOHQXEtM4CPQhI" data-mapping="title"
+          data-reactions-enabled="1" data-emit-metadata="0" data-input-position="top" data-theme="light_protanopia"
+          data-lang="zh-CN" data-loading="lazy" crossorigin="anonymous" async>
+          </script>
+        
+      </main>
+    </div>
+  </div>
+</div>
+
+
+  
+    
+<footer class="footer text-muted">
+	<div class="container">
+		<div class="row">
+			<div class="col-lg-8 order-last order-lg-first">
+				<ul class="list-inline">
+					
+						<li class="list-inline-item">由 <a href="https://pages.github.com/">GitHub Pages</a> 、<a href="https://www.getzola.org/">Zola</a> 及 <a href="https://github.com/aaranxu/adidoks">AdiDoks</a> 强力驱动</li>
+					
+				</ul>
+			</div>
+			<div class="col-lg-8 order-first order-lg-last text-lg-end">
+				<ul class="list-inline">
+					
+						
+							<li class="list-inline-item"><a href="https://databend-internals.psiace.me/privacy-policy/">隐私政策</a></li>
+						
+							<li class="list-inline-item"><a href="https://databend-internals.psiace.me/docs/contributing/code-of-conduct/">行为准则</a></li>
+						
+					
+				</ul>
+			</div>
+		</div>
+	</div>
+</footer>
+
+  
+
+  
+<script type="text/javascript" src="https://databend-internals.psiace.me/js/main.js" defer></script>
+
+  
+</body>
+</html>
