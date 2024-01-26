@@ -48,7 +48,7 @@ giscus = true
 
 ![databend arch](https://databend-internals.psiace.me/productivity-topics/Databend-RustConfChina2022/Databend-RustConfChina2022_08.png)
 
-右边是 Databend 的一个架构图。
+左边是 Databend 的一个架构图。
 
 最上一层对接 AI、BI 等应用，最下一层打通 S3、GCS、IPFS 等存储系统。中间三层则是 Databend 的主体部分。
 
