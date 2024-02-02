@@ -1,8 +1,8 @@
 use std::collections::HashMap;
 
+use crate::datasource::parquet::ParquetTable;
+use crate::datasource::TableRef;
 use crate::error::{Error, Result};
-use crate::source::parquet::ParquetTable;
-use crate::source::TableRef;
 
 #[derive(Default)]
 pub struct Catalog {

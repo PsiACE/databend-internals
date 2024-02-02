@@ -8,8 +8,8 @@ use arrow2::io::parquet::read::*;
 use async_fn_stream::fn_stream;
 
 use crate::datablock::DataBlockStream;
+use crate::datasource::DataSource;
 use crate::error::Result;
-use crate::source::DataSource;
 
 use super::TableRef;
 
@@ -69,7 +69,7 @@ impl DataSource for ParquetTable {
                             r.push(array.clone());
                         }
                         Chunk::new(r)
-                    },
+                    }
                     None => chunk,
                 };
                 // yield elements from stream via `emitter`

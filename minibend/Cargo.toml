@@ -5,15 +5,21 @@ edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
+[[bin]]
+name = "minibend"
+path = "src/bin/minibend.rs"
+doctest = false
+test = false
+
 [features]
 default = []
 simd = ["arrow2/simd"]
 
 [dependencies]
-arrow2 = { version = "0.15.0", features = ["io_parquet"] }
+arrow2 = { version = "0.17", features = ["io_parquet", "io_print"] }
 async-fn-stream = "0.2"
 futures = "0.3"
 thiserror = "1.0"
+tokio = { version = "1.28", features = ["full"] }
 
 [dev-dependencies]
-tokio = { version = "1.23", features = ["full"] }
